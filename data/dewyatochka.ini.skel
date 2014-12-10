@@ -1,0 +1,12 @@
+[xmpp]
+# Jabber login
+login =
+
+# Password to your jabber-account
+password =
+
+# Your jabber-server
+server =
+
+# Your jabber-server port
+port =

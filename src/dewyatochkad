@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+# -*- coding: UTF-8
+
+"""
+Dewyatochka \^-^/ !!!
+"""
+
+__author__ = 'Kawashiro Nitori'
+
+import sys
+from dewyatochka.core import DewyatochkaDaemon
+
+if __name__ == '__main__':
+    DewyatochkaDaemon().run(sys.argv)

@@ -1,0 +1,8 @@
+[conference1]
+# Nickname in the chat
+nick = My Nick
+# Room to shit
+room = conf@conference.jabber.example.com
+
+[conference2]
+# ... etc ...

@@ -1,0 +1,5 @@
+Be sure to install all dependencies required to run
+
+~ # git clone https://github.com/kawashiro/dewyatochka2
+~ # cd ./dewyatochka2/
+~ # python3 ./setup.py install -O2
