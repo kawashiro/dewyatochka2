@@ -10,6 +10,7 @@ import os
 from types import FunctionType
 from abc import abstractmethod, ABCMeta
 import importlib
+import logging
 
 # Registered message handlers list
 _message_handlers = []
@@ -65,7 +66,7 @@ class FunctionWrapper(MessageHandler):
         Function name emulation
         :return: string
         """
-        return '.'.join((self._function.__module__, self._function.__name__))
+        return '%s[%s.%s]' % (__name__, self._function.__module__, self._function.__name__)
 
 
 class PluginError(Exception):
@@ -137,5 +138,6 @@ def load_plugins():
     for file in os.listdir(dewyatochka_plugins_home):
         file_path = dewyatochka_plugins_home + os.sep + file
         if os.path.isfile(file_path) and file != '__init__.py' and file.endswith('.py'):
-            module_name = file[:-3]
-            importlib.import_module('dewyatochka.plugins.' + module_name)
+            module_name = 'dewyatochka.plugins.' + file[:-3]
+            importlib.import_module(module_name)
+            logging.getLogger(__name__).info('Loaded plugin: %s', module_name)

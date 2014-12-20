@@ -1,44 +1,82 @@
 # coding=utf-8
 
 """
-Test
+Tests suite for dewyatochka.core.application
 """
 
-import sys
-sys.path.append('/home/erashkevich/projects/dewyatochka2/src')
-
 import unittest
-from dewyatochka.core import application, log
+from dewyatochka.core import application
+
+
+class _TestAppClass(application.Application):
+    """
+    Test application with empty run() method
+    """
+    def run(self, args: list):
+        """
+        Run application
+        :param args: list Console arguments
+        :return:
+        """
+        pass
+
+
+class _TestServiceClass(application.Service):
+    """
+    Empty service for tests
+    """
+    pass
 
 
 class TestApplication(unittest.TestCase):
     """
-    Application
+    dewyatochka.core.application.Application
     """
 
-    class TestApp(application.Application):
+    def test_config_registration(self):
         """
-        Test application with empty run() method
+        Test get / set config
         """
-        def run(self, args: list):
-            """
-            Run application
-            :param args: list Console arguments
-            :return:
-            """
-            pass
+        app = _TestAppClass()
 
-    def test_logger_registration(self):
+        config = _TestServiceClass(app)
+        app.set_config(config)
+
+        self.assertEqual(config, app.config)
+
+    def test_conference_config_registration(self):
         """
-        Test get / set logger
+        Test get / set conferences config
         """
-        app = self.TestApp()
+        app = _TestAppClass()
 
-        logger = log.Console(app)
-        app.set_logger(logger)
+        config = _TestServiceClass(app)
+        app.set_conferences_config(config)
 
-        self.assertEqual(logger, app.log)
+        self.assertEqual(config, app.conferences_config)
+
+    def test_conference_manager_registration(self):
+        """
+        Test get / set conference_manager
+        """
+        app = _TestAppClass()
+
+        conference_manager = _TestServiceClass(app)
+        app.set_conference_manager(conference_manager)
+
+        self.assertEqual(conference_manager, app.conference_manager)
 
 
-if __name__ == '__main__':
-    unittest.main(argv=['discover'])
+class TestService(unittest.TestCase):
+    """
+    dewyatochka.core.application.Service
+    """
+
+    def test_init(self):
+        """
+        Test __init__ method
+        """
+        app = _TestAppClass()
+        service = _TestServiceClass(app)
+
+        self.assertEqual(app, service.application)

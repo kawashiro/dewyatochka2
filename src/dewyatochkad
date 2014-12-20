@@ -8,7 +8,7 @@ Dewyatochka \^-^/ !!!
 __author__ = 'Kawashiro Nitori'
 
 import sys
-from dewyatochka.core import DewyatochkaDaemon
+from dewyatochka.daemon import Application
 
 if __name__ == '__main__':
-    DewyatochkaDaemon().run(sys.argv)
+    Application().run(sys.argv)

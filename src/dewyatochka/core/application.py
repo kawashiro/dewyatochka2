@@ -8,6 +8,8 @@ Application common module
 __all__ = ['Application', 'Service']
 
 from abc import ABCMeta, abstractmethod
+import logging
+import threading
 
 
 class Application(metaclass=ABCMeta):
@@ -17,6 +19,15 @@ class Application(metaclass=ABCMeta):
 
     # Registered services
     _services = {}
+
+    # Stop event instance
+    _stop_event = None
+
+    def __init__(self):
+        """
+        Init app
+        """
+        self._stop_event = threading.Event()
 
     def _add_service(self, name, service):
         """
@@ -62,21 +73,17 @@ class Application(metaclass=ABCMeta):
         """
         return self._add_service('conference_manager', manager)
 
-    def set_xmpp_worker(self, xmpp_worker):
-        """
-        Set XMPP-connection worker instance
-        :param xmpp_worker:
-        :return: void
-        """
-        self._add_service('xmpp', xmpp_worker)
-
-    def set_logger(self, logger):
+    def set_log_handler(self, log_handler):
         """
         Set logger
-        :param logger:
+        :param log_handler:
         :return: void
         """
-        self._add_service('logger', logger)
+        logger = logging.getLogger()
+        logger.setLevel(self.config.global_section.get('log_level', logging.INFO))
+
+        logger.handlers = []
+        logger.addHandler(log_handler)
 
     @property
     def config(self):
@@ -86,13 +93,14 @@ class Application(metaclass=ABCMeta):
         """
         return self._get_service('config')
 
-    @property
-    def log(self):
+    @staticmethod
+    def log(module):
         """
-        Get logger
+        Get loger for module
+        :param module: str
         :return: config
         """
-        return self._get_service('logger')
+        return logging.getLogger(module)
 
     @property
     def conferences_config(self):
@@ -110,14 +118,6 @@ class Application(metaclass=ABCMeta):
         """
         return self._get_service('conference_manager')
 
-    @property
-    def xmpp_worker(self):
-        """
-        Get xmpp-worker
-        :return: config
-        """
-        return self._get_service('xmpp')
-
     @abstractmethod
     def run(self, args: list):
         """
@@ -126,6 +126,21 @@ class Application(metaclass=ABCMeta):
         :return:
         """
         pass
+
+    def stop(self):
+        """
+        Stop app
+        :return: void
+        """
+        self._stop_event.set()
+
+    @property
+    def running(self):
+        """
+        Check if application is not stopped
+        :return: bool
+        """
+        return not self._stop_event.is_set()
 
 
 class Service():

@@ -4,4 +4,4 @@
 Dewyatochka core package
 """
 
-__all__ = ['core', 'plugins']
+__all__ = ['core', 'plugins', 'daemon']

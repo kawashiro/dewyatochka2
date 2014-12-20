@@ -4,9 +4,18 @@
 Functions / classes to work with a single xmpp-connection
 """
 
-__all__ = ['Client']
+__all__ = ['Client', 'DEFAULT_RETRIES', 'DEFAULT_TIMEOUT']
 
 import sleekxmpp
+import logging
+import time
+
+
+# Default connection timeout
+DEFAULT_TIMEOUT = 30
+
+# Default retries count
+DEFAULT_RETRIES = 0
 
 
 class XMPPConnectionError(Exception):
@@ -33,18 +42,29 @@ class Client():
     # User jid
     _jid = ''
 
-    def __init__(self, host, login, password, port=5222, location=''):
+    # Connection timeout (seconds)
+    _timeout = DEFAULT_TIMEOUT
+
+    # Attempts to connect count
+    _retries = DEFAULT_RETRIES
+
+    def __init__(self, host, login, password, port=5222, location='', timeout=DEFAULT_TIMEOUT, retries=DEFAULT_RETRIES):
         """
         Initialize xmpp connection instance
         :param host: XMPP server host
         :param login: User login
         :param password: User password
         :param port: Server port, default 5222
+        :param timeout: Connection timeout (seconds)
+        :param retries: Attempts to connect count
         :return: void
         """
         full_jid = '{0}@{1}{2}'.format(login, host, location)
         self._server = host, port
         self._jid = full_jid
+
+        self._timeout = timeout
+        self._retries = retries
 
         self._xmpp = sleekxmpp.ClientXMPP(full_jid, password)
         self._xmpp.register_plugin('xep_0045')  # Enable MUC extension
@@ -57,9 +77,20 @@ class Client():
         if self._connected:
             return
 
-        self._connected = self._xmpp.connect(self._server)
+        logger = logging.getLogger(__name__)
+        logger.info('Trying to login as %s' % self._jid)
+
+        self._connected = self._xmpp.connect(self._server, reattempt=False)
+        retries_left = self._retries
+        while not self._connected and retries_left != 0:
+            logger.warning('Failed to establish connection to the XMPP-server, waiting %d seconds'
+                           % self._timeout)
+            time.sleep(self._timeout)
+            retries_left -= 1
+            self._connected = self._xmpp.connect(self._server, reattempt=False)
+
         if not self._connected:
-            raise XMPPConnectionError
+            raise XMPPConnectionError('Failed to connect to %s' % ':'.join(self._server))
 
         self._xmpp.send_presence()
 
@@ -74,6 +105,16 @@ class Client():
             nick = self._jid
 
         self.connection.plugin['xep_0045'].joinMUC(room, nick)
+
+    def leave_room(self, room, nick, reason):
+        """
+        Leave room specified
+        :param room:
+        :param nick:
+        :param reason:
+        :return:
+        """
+        self.connection.plugin['xep_0045'].leaveMUC(room, nick, reason)
 
     def set_message_handler(self, callback):
         """

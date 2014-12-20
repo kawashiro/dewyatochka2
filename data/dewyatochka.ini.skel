@@ -10,3 +10,15 @@ server =
 
 # Your jabber-server port
 port =
+
+# Connection timeout (seconds)
+timeout = 10
+# Reattempts count, -1 for unlimited
+retry = 3
+
+[global]
+# Custom conferences config path
+conferences_config =
+
+# Logging level
+log_level = INFO
