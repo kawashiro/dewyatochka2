@@ -50,7 +50,7 @@ def get_question(category):
             _log.info('No questions left, loading new')
 
             request_uri = '/api/v2/questlist?n=100&state=A&cat=%s' % urlparse.quote_plus(category)
-            response = http.Client('otvet.mail.rus').get(request_uri)
+            response = http.Client('otvet.mail.ru').get(request_uri)
             questions = [question['qtext'] for question in json.loads(response).get('qst', [])]
 
             if questions:
