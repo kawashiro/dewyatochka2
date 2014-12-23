@@ -1,0 +1,22 @@
+# Copyright 2014-Infinity Kawashiro Nitori
+# Distributed under the terms of the GNU General Public License v3
+
+depend() {
+	need net
+}
+
+start() {
+	checkpath -d /var/run/dewyatochka2
+	ebegin "Starting Dewyatochka daemon"
+	start-stop-daemon --start --quiet --user dewyatochka \
+		--exec /usr/bin/dewyatochkad \
+		--pidfile /var/run/dewyatochka2/dewyatochkad.pid
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping Dewyatochka daemon"
+	start-stop-daemon --stop --quiet \
+		--pidfile /var/run/dewyatochka2/dewyatochkad.pid
+	eend $?
+}

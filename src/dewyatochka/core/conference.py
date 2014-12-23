@@ -4,7 +4,7 @@
 Chat environment
 """
 
-__all__ = ['Conference', 'ConferenceManager', 'Message', 'Worker']
+__all__ = ['Conference', 'ConferenceManager', 'Message']
 
 import time
 import threading
@@ -35,15 +35,20 @@ class Conference:
     # Member nickname
     _nick = ''
 
-    def __init__(self, bare, nick):
+    # Cmd prefix
+    _prefix = None
+
+    def __init__(self, bare, nick, cmd_prefix=None):
         """
         Create new environment instance
         :param bare: some_room@conference.jabber.example.com
+        :param cmd_prefix: Prefix for reserved chat commands
         :return:
         """
         self._room, self._server = bare.split('@')
         self._bare = bare
         self._nick = nick
+        self._prefix = cmd_prefix
 
     @property
     def name(self):
@@ -81,8 +86,17 @@ class Conference:
     def resource(self):
         """
         Get self conference resource
+        :return: str
         """
         return '/'.join((self.jid, self.member))
+
+    @property
+    def prefix(self):
+        """
+        Get chat command prefix
+        :return: str
+        """
+        return self._prefix
 
     def __repr__(self):
         """
@@ -138,7 +152,7 @@ class ConferenceManager(application.Service):
             daemon=True
         ).start()
 
-    def _start_messages_reader(self):
+    def _start_messages_handler(self):
         """
         Start messages sender thread
         :return: void
@@ -149,22 +163,30 @@ class ConferenceManager(application.Service):
             :param message: dict
             :return:
             """
-            def _message_handler_wrapper(_conference, _message, _handler, _manager):
+            def _message_handler_wrapper(_handler, _handler_kwargs, _manager):
                 """
                 Common message handler thread
-                :param _conference: Conference
-                :param _message: dict
                 :param _handler: callable
-                :param _manager: ConferenceManager
+                :param _handler_kwargs: dict
                 :return: void
                 """
-                handler_kwargs = {'message': _message, 'conference': _conference, 'application': _manager.application}
                 _manager.application.log(__name__).debug(
                     'Started handler %s.%s',
                     handler.__module__,
                     handler.__name__
                 )
-                _response_message = Message(_handler.handle(**handler_kwargs), _message['from'])
+
+                try:
+                    _response_message = Message(_handler.handle(**_handler_kwargs), _handler_kwargs['message']['from'])
+                except Exception as e:
+                    _manager.application.log(__name__).error(
+                        'Handler %s.%s failed: %s',
+                        handler.__module__,
+                        handler.__name__,
+                        e
+                    )
+                    raise e
+
                 _manager.application.log(__name__).debug(
                     'Handler %s.%s returned %s',
                     handler.__module__,
@@ -179,11 +201,28 @@ class ConferenceManager(application.Service):
             if not conference:
                 return
 
-            for handler in plugin.get_message_handlers():
+            handlers = []
+            handler_kwargs = {'message': message, 'conference': conference, 'application': manager.application}
+
+            own_message = conference.member == message['from'].resource
+            sys_message = not message['from'].resource
+            regular_message = not own_message and not sys_message
+
+            if regular_message and conference.prefix and message['body'].startswith(conference.prefix):
+                command, *cmd_args = message['body'][len(conference.prefix):].split(' ')
+                handler = plugin.get_command_handler(command)
+                if handler:
+                    handlers.append(handler)
+                    handler_kwargs['command'] = command
+                    handler_kwargs['command_args'] = cmd_args
+
+            handlers += plugin.get_message_handlers(regular=regular_message, system=sys_message, own=own_message)
+
+            for handler in handlers:
                 threading.Thread(
                     name='dewyatochka.msg_handler.%s.%s' % (handler.__module__, handler.__name__),
                     target=_message_handler_wrapper,
-                    args=(conference, message, handler, manager),
+                    args=(handler, handler_kwargs, manager),
                     daemon=True
                 ).start()
 
@@ -224,8 +263,13 @@ class ConferenceManager(application.Service):
         :return: dict
         """
         if not self._conferences_dict:
-            self._conferences_dict = {section.get('room'): Conference(section.get('room'), section.get('nick'))
-                                      for section in self.application.conferences_config}
+            self._conferences_dict = {
+                section.get('room'): Conference(
+                    section.get('room'),
+                    section.get('nick'),
+                    section.get('prefix')
+                ) for section in self.application.conferences_config
+            }
         return self._conferences_dict
 
     def enter_conferences(self):
@@ -259,7 +303,7 @@ class ConferenceManager(application.Service):
         """
         try:
             self._start_response_sender()
-            self._start_messages_reader()
+            self._start_messages_handler()
 
             self.enter_conferences()
 
@@ -267,6 +311,9 @@ class ConferenceManager(application.Service):
                 time.sleep(0.1)
 
             self.leave_conferences()
+        except Exception as e:
+            self.application.error(__name__, e)
+            raise RuntimeError('Fatal error: Conference manager failed')
         finally:
             # TODO: Check event when all conferences are offline
             time.sleep(1)
@@ -280,6 +327,5 @@ class ConferenceManager(application.Service):
         """
         threading.Thread(
             name='dewyatochka.conference_manager',
-            target=self.run,
-            daemon=True
+            target=self.run
         ).start()

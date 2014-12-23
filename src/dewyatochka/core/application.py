@@ -10,6 +10,7 @@ __all__ = ['Application', 'Service']
 from abc import ABCMeta, abstractmethod
 import logging
 import threading
+import traceback
 
 
 class Application(metaclass=ABCMeta):
@@ -73,6 +74,14 @@ class Application(metaclass=ABCMeta):
         """
         return self._add_service('conference_manager', manager)
 
+    def set_helper_manager(self, manager):
+        """
+        Get helpers manager
+        :param manager:
+        :return: config
+        """
+        return self._add_service('helper_manager', manager)
+
     def set_log_handler(self, log_handler):
         """
         Set logger
@@ -118,6 +127,14 @@ class Application(metaclass=ABCMeta):
         """
         return self._get_service('conference_manager')
 
+    @property
+    def helper_manager(self):
+        """
+        Get helpers manager
+        :return: config
+        """
+        return self._get_service('helper_manager')
+
     @abstractmethod
     def run(self, args: list):
         """
@@ -133,6 +150,18 @@ class Application(metaclass=ABCMeta):
         :return: void
         """
         self._stop_event.set()
+
+    def error(self, module_name, exception):
+        """
+        Handle fatal error
+        :param module_name: str
+        :param exception: Exception
+        :return: void
+        """
+        self.log(__name__).error(
+            '%s: %s\n%s', module_name, exception, ''.join(traceback.format_tb(exception.__traceback__)).strip()
+        )
+        self.stop()
 
     @property
     def running(self):

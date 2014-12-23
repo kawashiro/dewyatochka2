@@ -3,6 +3,8 @@
 nick = My Nick
 # Room to shit
 room = conf@conference.jabber.example.com
+# Prefix for regular commands, e.g. "!cmd param1 param2"
+prefix = !
 
 [conference2]
 # ... etc ...

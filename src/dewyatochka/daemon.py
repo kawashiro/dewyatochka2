@@ -9,7 +9,7 @@ __all__ = ['Application']
 import time
 from dewyatochka.core.application import Application as BaseApplication
 from dewyatochka.core.config import GlobalConfig, ConferenceConfig
-from dewyatochka.core import conference, plugin, log
+from dewyatochka.core import conference, plugin, log, helper
 
 
 class Application(BaseApplication):
@@ -36,7 +36,7 @@ class Application(BaseApplication):
         Init logger instance
         :return:
         """
-        self.set_log_handler(log.ConsoleHandler(self))
+        self.set_log_handler(log.TempFileHandler(self))
 
     def run(self, args: list):
         """
@@ -51,9 +51,15 @@ class Application(BaseApplication):
             plugin.load_plugins()
 
             conf_manager = conference.ConferenceManager(self)
-            conf_manager.start()
+            self.set_conference_manager(conf_manager)
 
-            while True:
+            helper_manager = helper.HelpersManager(self)
+            self.set_helper_manager(helper_manager)
+
+            self.conference_manager.start()
+            self.helper_manager.start()
+
+            while self.running:
                 time.sleep(1)
         except (KeyboardInterrupt, SystemExit):
             self.log(__name__).info('Terminated by user, exiting')
