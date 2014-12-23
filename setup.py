@@ -20,7 +20,7 @@ setup(
     platforms=['POSIX'],
     # Python packages
     package_dir={'': 'src/'},
-    packages=['dewyatochka', 'dewyatochka.core', 'dewyatochka.plugins'],
+    packages=['dewyatochka', 'dewyatochka.core', 'dewyatochka.plugins', 'dewyatochka.utils'],
     # Python extensions
     #ext_modules=[Extension('dewyatochka.binary', ['src/ext/binarymodule/binarymodule.c'])],
     # Executable files
