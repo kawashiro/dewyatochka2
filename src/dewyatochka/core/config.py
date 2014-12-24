@@ -95,7 +95,7 @@ class GlobalConfig(_INIFIleConfig):
     DEFAULT_LOCK_FILE = '/var/run/dewyatochka2/dewyatochkad.pid'
 
     # Default path to the log-file
-    DEFAULT_LOG_FILE = '/var/log/dewyatochkad.log'
+    DEFAULT_LOG_FILE = '/var/log/dewyatochka2/dewyatochkad.log'
 
 
 class ConferenceConfig(_INIFIleConfig):

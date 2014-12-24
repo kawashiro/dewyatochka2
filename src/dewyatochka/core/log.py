@@ -43,7 +43,7 @@ class LogHandlerWrapper(Service, metaclass=ABCMeta):
         :return: logging.Handler
         """
         if not self._handler:
-            self._handler = logging.StreamHandler(stream=sys.stdout)
+            self._handler = self._create_handler()
 
         return self._handler
 
@@ -77,5 +77,5 @@ class FileHandler(LogHandlerWrapper):
         Create new handler instance
         :return: logging.Handler
         """
-        log_file = self.config.section('global').get('log_file', GlobalConfig.DEFAULT_LOG_FILE)
+        log_file = self.application.config.section('global').get('log_file', GlobalConfig.DEFAULT_LOG_FILE)
         return logging.FileHandler(log_file)
