@@ -77,5 +77,5 @@ class FileHandler(LogHandlerWrapper):
         Create new handler instance
         :return: logging.Handler
         """
-        log_file = self.config.section('global').get('lo_file', GlobalConfig.DEFAULT_LOG_FILE)
+        log_file = self.config.section('global').get('log_file', GlobalConfig.DEFAULT_LOG_FILE)
         return logging.FileHandler(log_file)
