@@ -53,9 +53,8 @@ docs/_build/
 # PyBuilder
 target/
 
-# Config files
-data/*.ini
+# Dev config files
+conf/*.ini
 
 # PyCharm
 .idea
-

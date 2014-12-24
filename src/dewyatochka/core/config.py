@@ -4,11 +4,18 @@
 Config module
 """
 
-__all__ = ['ConferenceConfig', 'GlobalConfig']
+__all__ = ['ConferenceConfig', 'GlobalConfig', 'ConfigError']
 
 from os import path
 import configparser
 from dewyatochka.core.application import Service
+
+
+class ConfigError(Exception):
+    """
+    Exception on invalid config file content
+    """
+    pass
 
 
 class _INIFIleConfig(Service):
@@ -36,7 +43,10 @@ class _INIFIleConfig(Service):
         if not path.isfile(config_file):
             raise FileExistsError('Config file %s not found' % config_file)
 
-        self._parser.read(config_file)
+        try:
+            self._parser.read(config_file)
+        except configparser.Error as e:
+            raise ConfigError(e)
 
     def section(self, section):
         """
@@ -80,6 +90,12 @@ class GlobalConfig(_INIFIleConfig):
 
     # Path to a global config file
     DEFAULT_FILE_PATH = '/etc/dewyatochka/dewyatochka.ini'
+
+    # Default path to the lock-file
+    DEFAULT_LOCK_FILE = '/var/run/dewyatochka2/dewyatochkad.pid'
+
+    # Default path to the log-file
+    DEFAULT_LOG_FILE = '/var/log/dewyatochka2/dewyatochkad.log'
 
 
 class ConferenceConfig(_INIFIleConfig):

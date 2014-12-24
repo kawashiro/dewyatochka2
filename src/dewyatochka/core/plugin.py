@@ -12,7 +12,6 @@ from types import FunctionType
 from abc import abstractmethod, ABCMeta
 import importlib
 import logging
-import traceback
 
 # Registered message handlers list for regular messages
 _regular_message_handlers = []
@@ -220,9 +219,4 @@ def load_plugins():
                 importlib.import_module(module_name)
                 logging.getLogger(__name__).info('Loaded plugin: %s', module_name)
             except Exception as e:
-                logging.getLogger(__name__).error(
-                    'Failed to load module %s: %s\n%s',
-                    module_name,
-                    e,
-                    ''.join(traceback.format_tb(e.__traceback__)).strip()
-                )
+                logging.getLogger(__name__).exception('Failed to load module %s: %s', module_name, e)

@@ -10,7 +10,6 @@ __all__ = ['Application', 'Service']
 from abc import ABCMeta, abstractmethod
 import logging
 import threading
-import traceback
 
 
 class Application(metaclass=ABCMeta):
@@ -23,6 +22,9 @@ class Application(metaclass=ABCMeta):
 
     # Stop event instance
     _stop_event = None
+
+    # Code to exit with
+    _exit_code = 0
 
     def __init__(self):
         """
@@ -144,11 +146,13 @@ class Application(metaclass=ABCMeta):
         """
         pass
 
-    def stop(self):
+    def stop(self, exit_code=0):
         """
         Stop app
+        :param exit_code: int
         :return: void
         """
+        self._exit_code = exit_code
         self._stop_event.set()
 
     def error(self, module_name, exception):
@@ -158,10 +162,13 @@ class Application(metaclass=ABCMeta):
         :param exception: Exception
         :return: void
         """
-        self.log(__name__).error(
-            '%s: %s\n%s', module_name, exception, ''.join(traceback.format_tb(exception.__traceback__)).strip()
-        )
-        self.stop()
+        message = '%s failed: %s'
+        if logging.getLogger().level < logging.INFO:
+            self.log(module_name).exception(message, module_name, exception)
+        else:
+            self.log(module_name).error(message, module_name, exception)
+
+        self.stop(1)
 
     @property
     def running(self):

@@ -26,5 +26,5 @@ setup(
     # Executable files
     scripts=['src/dewyatochkad'],
     # Data files
-    data_files=[('/etc/dewyatochka', ['data/dewyatochka.ini.skel', 'data/conferences.ini.skel'])]
+    data_files=[('/etc/dewyatochka', ['data/dewyatochka.ini', 'data/conferences.ini'])]
 )

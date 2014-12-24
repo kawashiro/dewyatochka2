@@ -313,7 +313,7 @@ class ConferenceManager(application.Service):
             self.leave_conferences()
         except Exception as e:
             self.application.error(__name__, e)
-            raise RuntimeError('Fatal error: Conference manager failed')
+            self.application.log(__name__).critical('Fatal error: Conference manager failed')
         finally:
             # TODO: Check event when all conferences are offline
             time.sleep(1)

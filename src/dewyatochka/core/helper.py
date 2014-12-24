@@ -61,7 +61,7 @@ class HelpersManager(application.Service):
                         logger.debug('Helper %s is running', thread_name)
         except Exception as e:
             self.application.error(__name__, e)
-            raise RuntimeError('Fatal error: Helpers manager failed')
+            self.application.log(__name__).critical('Fatal error: Helpers manager failed')
 
     def _start_helper(self, helper_name):
         """
