@@ -53,22 +53,20 @@ class Application(BaseApplication):
         Daemonize main process
         :return: void
         """
-        import resource
         import signal
 
         pid = os.fork()
         if pid != 0:
             os._exit(0)
+
+        os.setsid()
         pid = os.fork()
         if pid != 0:
             os._exit(0)
 
         signal.signal(signal.SIGTERM, lambda *args: self.stop(2))
 
-        maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
-        if maxfd == resource.RLIM_INFINITY:
-            maxfd = 1024
-        for fd in range(0, maxfd):
+        for fd in sys.stdin.fileno(), sys.stdout.fileno(), sys.stderr.fileno():
             try:
                 os.close(fd)
             except OSError:
@@ -96,7 +94,7 @@ class Application(BaseApplication):
     def _lock_release(self):
         """
         Remove lock if needed
-        :return:
+        :return: void
         """
         if self._lock_file and not self._lock_file.closed:
             fcntl.flock(self._lock_file, fcntl.LOCK_UN)
@@ -128,13 +126,14 @@ class Application(BaseApplication):
                                      action='store_true')
 
             args = args_parser.parse_args(args[1:])
-
-            if not args.nodaemon:
-                self._start_daemon()
+            is_daemon = not args.nodaemon
 
             self._init_config(args.config)
-            self._init_logger(not args.nodaemon)
-            self._lock_acquire()
+            self._init_logger(is_daemon)  # Must be initialized before stdout is closed
+
+            if is_daemon:
+                self._start_daemon()
+                self._lock_acquire()
 
             plugin.load_plugins()
 
