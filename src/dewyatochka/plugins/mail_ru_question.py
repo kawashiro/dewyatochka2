@@ -27,6 +27,12 @@ _log = logging.getLogger(__name__)
 # Lock for _get_question function
 _get_question_lock = threading.Lock()
 
+# otvet.mail.ru API domain
+_QUESTIONS_DOMAIN = 'otvet.mail.ru'
+
+# URI to fetch questions from
+_QUESTIONS_REQUEST_URI = '/api/v2/questlist?n=100&state=A&cat=%s'
+
 # Default questions category
 _DEFAULT_CATEGORY = 'adult'  # TODO: Get random category if possible
 
@@ -49,8 +55,8 @@ def get_question(category):
         if not category_questions:
             _log.info('No questions left, loading new')
 
-            request_uri = '/api/v2/questlist?n=100&state=A&cat=%s' % urlparse.quote_plus(category)
-            response = http.Client('otvet.mail.ru').get(request_uri)
+            request_uri = _QUESTIONS_REQUEST_URI % urlparse.quote_plus(category)
+            response = http.Client(_QUESTIONS_DOMAIN).get(request_uri)
             questions = [question['qtext'] for question in json.loads(response).get('qst', [])]
 
             if questions:
