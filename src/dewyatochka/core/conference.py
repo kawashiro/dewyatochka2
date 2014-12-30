@@ -172,8 +172,8 @@ class ConferenceManager(application.Service):
                 """
                 _manager.application.log(__name__).debug(
                     'Started handler %s.%s',
-                    handler.__module__,
-                    handler.__name__
+                    _handler.__module__,
+                    _handler.__name__
                 )
 
                 try:
@@ -181,16 +181,16 @@ class ConferenceManager(application.Service):
                 except Exception as e:
                     _manager.application.log(__name__).error(
                         'Handler %s.%s failed: %s',
-                        handler.__module__,
-                        handler.__name__,
+                        _handler.__module__,
+                        _handler.__name__,
                         e
                     )
-                    raise e
+                    raise
 
                 _manager.application.log(__name__).debug(
                     'Handler %s.%s returned %s',
-                    handler.__module__,
-                    handler.__name__,
+                    _handler.__module__,
+                    _handler.__name__,
                     repr(_response_message.text)
                 )
                 if _response_message.text is not None:

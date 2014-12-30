@@ -84,7 +84,7 @@ class HelpersManager(application.Service):
                     _helper.__name__,
                     e
                 )
-                raise e
+                raise
         try:
             helper_fn = self._helpers[helper_name]
             threading.Thread(
