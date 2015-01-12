@@ -44,7 +44,7 @@ class HelpersManager(application.Service):
                 logger.debug('Starting helper thread %s', thread_name)
                 self._start_helper(thread_name)
 
-            while self.application.running:
+            while True:
                 check_at = time.time() + _PERSISTENT_HELPERS_CHECK_INTERVAL
                 while time.time() < check_at:
                     if not self.application.running:

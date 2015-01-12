@@ -13,9 +13,13 @@ from collections import namedtuple
 from dewyatochka.core import plugin
 from dewyatochka.core import application
 from dewyatochka.core import xmpp
+from dewyatochka.core.xmpp import S2SConnectionError
 
 # Message to a conference
 Message = namedtuple('Message', ['text', 'target'])
+
+# Interval between conferences state check
+_CONFERENCES_CHECK_INTERVAL = 60
 
 
 class Conference:
@@ -116,7 +120,10 @@ class ConferenceManager(application.Service):
     _xmpp_instance = None
 
     # Configured conferences
-    _conferences_dict = None
+    _all_conferences = None
+
+    # Conference with online presence
+    _alive_conferences = {}
 
     # Message queue to communicate with message handlers
     _message_queue = None
@@ -226,7 +233,21 @@ class ConferenceManager(application.Service):
                     daemon=True
                 ).start()
 
+        def _handle_presence_error(presence):
+            """
+            Handle presence error
+            """
+            conference = presence['from'].bare
+            error = presence['error']['text']
+
+            _manager = self
+            _manager.application.log(__name__).error('Failed to send presence to %s: %s', conference, error)
+            if conference in _manager.conferences:
+                del _manager.conferences[conference]
+
         self.xmpp.set_message_handler(_handle_message)
+        self.xmpp.set_presence_error_handler(_handle_presence_error)
+
         self.xmpp.connection.process()
 
     @property
@@ -262,39 +283,83 @@ class ConferenceManager(application.Service):
         Get configured conferences indexed by conference jid
         :return: dict
         """
-        if not self._conferences_dict:
-            self._conferences_dict = {
+        return self._alive_conferences
+
+    def _enter_conferences(self):
+        """
+        Enter all conferences
+        :return: void
+        """
+        if self._all_conferences is None:
+            self._all_conferences = {
                 section.get('room'): Conference(
                     section.get('room'),
                     section.get('nick'),
                     section.get('prefix')
                 ) for section in self.application.conferences_config
             }
-        return self._conferences_dict
 
-    def enter_conferences(self):
+        for conference in self._all_conferences:
+            self._enter_conference(self._all_conferences[conference])
+
+    def _enter_conference(self, conference):
         """
-        Enter all conferences
+        Enter into a single conference
+        :param conference: Conference
         :return: void
         """
-        self._conferences_dict = None  # To be sure to load fresh config
-        for conference in self.conferences:
-            self.application.log(__name__).info('Entering %s as %s' % (
-                self.conferences[conference].jid,
-                self.conferences[conference].member
-            ))
-            self.xmpp.enter_room(self.conferences[conference].jid, self.conferences[conference].member)
+        self.application.log(__name__).info('Entering %s as %s' % (
+            conference.jid,
+            conference.member
+        ))
+        self.conferences[conference.jid] = conference
+        self.xmpp.enter_room(conference.jid, conference.member)
 
-    def leave_conferences(self):
+    def _leave_conferences(self):
         """
         Leave all conferences
         :return: void
         """
         self.application.log(__name__).info('Leaving all the conferences')
-        for conference in self.conferences:
-            # TODO: Maybe move leave reason to config
-            self.application.log(__name__).info('Leaving %s', conference)
-            self.xmpp.leave_room(self.conferences[conference].jid, self.conferences[conference].member, '')
+        for conference in self.conferences.copy():
+            self._leave_conference(self.conferences[conference])
+        else:
+            self.application.log(__name__).info('No alive conferences left')
+
+    def _leave_conference(self, conference):
+        """
+        Leave a single conference
+        :param conference: Conference
+        :return: void
+        """
+        self.application.log(__name__).info('Leaving %s', conference.jid)
+        self.xmpp.leave_room(conference.jid, conference.member, '')  # TODO: Maybe move leave reason to config
+        del self.conferences[conference.jid]
+
+    def _monitor_conferences_state(self):
+        """
+        Monitor if conferences are alive
+        :return: void
+        """
+        logger = self.application.log(__name__)
+        while True:
+            check_at = time.time() + _CONFERENCES_CHECK_INTERVAL
+            while time.time() < check_at:
+                if not self.application.running:
+                    return
+                time.sleep(1)
+            logger.debug('Performing conferences check')
+            for conference_jid in self._all_conferences:
+                if conference_jid in self.conferences:
+                    # Conference is alive so ping it
+                    try:
+                        self.xmpp.ping_room(conference_jid)
+                    except S2SConnectionError:
+                        logger.error('Conference %s is unavailable (ping check failed)', conference_jid)
+                        del self.conferences[conference_jid]
+                else:
+                    # Conference is dead, trying to reenter it
+                    self._enter_conference(self._all_conferences[conference_jid])
 
     def run(self):
         """
@@ -305,18 +370,20 @@ class ConferenceManager(application.Service):
             self._start_response_sender()
             self._start_messages_handler()
 
-            self.enter_conferences()
+            self._enter_conferences()
 
-            while self.application.running:
-                time.sleep(0.1)
-
-            self.leave_conferences()
-        except Exception as e:
+            self._monitor_conferences_state()
+        except xmpp.XMPPConnectionError as e:
             self.application.error(__name__, e)
             self.application.log(__name__).critical('Fatal error: Conference manager failed')
-        finally:
-            # TODO: Check event when all conferences are offline
-            time.sleep(1)
+        except Exception as e:
+            self.xmpp.connection.disconnect()
+            self.xmpp.connection.set_stop()
+            self.application.error(__name__, e)
+            self.application.log(__name__).critical('Fatal error: Conference manager failed')
+        else:
+            self._leave_conferences()
+            time.sleep(1)  # TODO: Check event when all conferences are offline
             self.xmpp.connection.disconnect()
             self.xmpp.connection.set_stop()
 
