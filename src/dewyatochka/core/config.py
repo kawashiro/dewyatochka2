@@ -6,7 +6,7 @@ Config module
 
 __all__ = ['ConferenceConfig', 'GlobalConfig', 'ConfigError']
 
-from os import path
+from os import path, listdir
 import configparser
 from dewyatochka.core.application import Service
 
@@ -96,6 +96,26 @@ class GlobalConfig(_INIFIleConfig):
 
     # Default path to the log-file
     DEFAULT_LOG_FILE = '/var/log/dewyatochka2/dewyatochkad.log'
+
+    # Extensions configs directory name
+    DEFAULT_EXT_DIR_NAME = 'ext'
+
+    def reload(self, config_file):
+        """
+        Load config data from file
+        :param config_file: Config file path
+        :return: void
+        """
+        super().reload(config_file)
+
+        directory = self.global_section.get(
+            'ext_dir',
+            path.sep.join((path.dirname(config_file), self.DEFAULT_EXT_DIR_NAME))
+        )
+        if path.isdir(directory):
+            files = [file for file in map(lambda f: path.sep.join((directory, f)), listdir(directory))
+                     if path.isfile(file) and file.endswith('.ini')]
+            self._parser.read(files)
 
 
 class ConferenceConfig(_INIFIleConfig):

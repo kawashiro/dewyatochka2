@@ -2,6 +2,8 @@
 setup.py
 data/conferences.ini
 data/dewyatochka.ini
+data/ext/hentai.ini
+data/ext/mail_ru.ini
 src/dewyatochkad
 src/dewyatochka/__init__.py
 src/dewyatochka/daemon.py
@@ -15,6 +17,7 @@ src/dewyatochka/core/plugin.py
 src/dewyatochka/core/xmpp.py
 src/dewyatochka/plugins/__init__.py
 src/dewyatochka/plugins/builtin.py
-src/dewyatochka/plugins/mail_ru_question.py
+src/dewyatochka/plugins/hentai.py
+src/dewyatochka/plugins/mail_ru.py
 src/dewyatochka/utils/__init__.py
 src/dewyatochka/utils/http.py

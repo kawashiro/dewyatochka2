@@ -55,6 +55,7 @@ target/
 
 # Dev config files
 conf/*.ini
+conf/ext/*.ini
 
 # PyCharm
 .idea

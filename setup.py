@@ -26,5 +26,8 @@ setup(
     # Executable files
     scripts=['src/dewyatochkad'],
     # Data files
-    data_files=[('/etc/dewyatochka', ['data/dewyatochka.ini', 'data/conferences.ini'])]
+    data_files=[
+        ('/etc/dewyatochka', ['data/dewyatochka.ini', 'data/conferences.ini']),
+        ('/etc/dewyatochka/ext', ['data/ext/hentai.ini', 'data/ext/mail_ru.ini'])
+    ]
 )
