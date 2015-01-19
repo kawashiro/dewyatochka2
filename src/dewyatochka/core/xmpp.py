@@ -7,7 +7,7 @@ Functions / classes to work with a single xmpp-connection
 __all__ = ['Client', 'DEFAULT_RETRIES', 'DEFAULT_TIMEOUT', 'XMPPConnectionError', 'S2SConnectionError']
 
 import sleekxmpp
-from sleekxmpp.exceptions import IqError
+from sleekxmpp.exceptions import IqError, XMPPError
 import logging
 import time
 import threading
@@ -143,6 +143,8 @@ class Client():
                 # feature-not-implemented error does not mean that connection is broken
                 raise S2SConnectionError(e)
             ping = -1
+        except XMPPError as e:
+            raise S2SConnectionError(e)
 
         return ping
 
