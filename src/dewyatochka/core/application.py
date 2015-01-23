@@ -5,11 +5,10 @@
 Application common module
 """
 
-__all__ = ['Application', 'Service']
+__all__ = ['Application', 'Registry', 'Service']
 
 from abc import ABCMeta, abstractmethod
-import logging
-import threading
+from threading import Event
 
 
 class Application(metaclass=ABCMeta):
@@ -17,134 +16,37 @@ class Application(metaclass=ABCMeta):
     Dewyatochka application instance
     """
 
-    # Registered services
-    _services = {}
-
-    # Stop event instance
-    _stop_event = None
-
-    # Code to exit with
-    _exit_code = 0
-
-    def __init__(self):
+    def __init__(self, registry=None):
         """
         Init app
         """
-        self._stop_event = threading.Event()
-
-    def _add_service(self, name, service):
-        """
-        Add a service to the registry
-        :param service: Service instance
-        :param name: Service name
-        :return: void
-        """
-        self._services[name] = service
-
-    def _get_service(self, name):
-        """
-        Get service by name
-        :param name:
-        :return: service instance
-        """
-        try:
-            return self._services[name]
-        except KeyError:
-            raise RuntimeError('Service "%s" is not registered' % name)
-
-    def set_config(self, config):
-        """
-        Set config service
-        :param config:
-        :return: void
-        """
-        self._add_service('config', config)
-
-    def set_conferences_config(self, config):
-        """
-        Set config service
-        :param config:
-        :return: void
-        """
-        self._add_service('conferences_config', config)
-
-    def set_conference_manager(self, manager):
-        """
-        Get conferences manager
-        :param manager:
-        :return: config
-        """
-        return self._add_service('conference_manager', manager)
-
-    def set_helper_manager(self, manager):
-        """
-        Get helpers manager
-        :param manager:
-        :return: config
-        """
-        return self._add_service('helper_manager', manager)
-
-    def set_log_handler(self, log_handler):
-        """
-        Set logger
-        :param log_handler:
-        :return: void
-        """
-        logger = logging.getLogger()
-        logger.setLevel(self.config.global_section.get('log_level', logging.INFO))
-
-        logger.handlers = []
-        logger.addHandler(log_handler)
+        self._registry = registry or Registry()
+        self._exit_code = 0
+        self._stop_event = Event()
 
     @property
-    def config(self):
+    def registry(self):
         """
-        Get config instance
-        :return: config
+        Get registry instance
+        :return: Registry
         """
-        return self._get_service('config')
-
-    @staticmethod
-    def log(module):
-        """
-        Get loger for module
-        :param module: str
-        :return: config
-        """
-        return logging.getLogger(module)
-
-    @property
-    def conferences_config(self):
-        """
-        Get config instance
-        :return: config
-        """
-        return self._get_service('conferences_config')
-
-    @property
-    def conference_manager(self):
-        """
-        Get conferences manager
-        :return: config
-        """
-        return self._get_service('conference_manager')
-
-    @property
-    def helper_manager(self):
-        """
-        Get helpers manager
-        :return: config
-        """
-        return self._get_service('helper_manager')
+        return self._registry
 
     @abstractmethod
     def run(self, args: list):
         """
         Run application
         :param args: list Console arguments
-        :return:
+        :return: void
         """
         pass
+
+    def wait(self):
+        """
+        Sleep until application is stopped
+        :return: void
+        """
+        self._stop_event.wait()
 
     def stop(self, exit_code=0):
         """
@@ -155,23 +57,23 @@ class Application(metaclass=ABCMeta):
         self._exit_code = exit_code
         self._stop_event.set()
 
-    def error(self, module_name, exception):
+    def fatal_error(self, module_name: str, exception: Exception):
         """
         Handle fatal error
         :param module_name: str
         :param exception: Exception
         :return: void
         """
-        message = '%s failed: %s'
-        if logging.getLogger().level < logging.INFO:
-            self.log(module_name).exception(message, module_name, exception)
-        else:
-            self.log(module_name).error(message, module_name, exception)
+        try:
+            self.registry.log.fatal_error(module_name, exception)
+        except:
+            # Application is shutting down so continue anyway if error logging failed
+            pass
 
         self.stop(1)
 
     @property
-    def running(self):
+    def running(self) -> bool:
         """
         Check if application is not stopped
         :return: bool
@@ -179,26 +81,78 @@ class Application(metaclass=ABCMeta):
         return not self._stop_event.is_set()
 
 
-class Service():
+class Service(metaclass=ABCMeta):
     """
     Abstract service class
     """
-
-    # Application instance
-    _application = None
 
     def __init__(self, application: Application):
         """
         Initialize service & attach an application to it
         :param application: Application
-        :return:
         """
         self._application = application
 
     @property
-    def application(self):
+    def application(self) -> Application:
         """
         Return application instance
         :return: Application
         """
         return self._application
+
+    @property
+    def config(self) -> dict:
+        """
+        Get related config section
+        :return: dict
+        """
+        return self.application.registry.config.section(self.name())
+
+    @classmethod
+    def name(cls) -> str:
+        """
+        Get service unique name
+        :return: str
+        """
+        return '.'.join((cls.__module__, cls.__name__))
+
+
+class Registry():
+    """
+    Registry implementation
+    """
+
+    def __init__(self):
+        """
+        Initialize services storage
+        """
+        self._services = {}
+
+    def add_service(self, service: Service):
+        """
+        Add a service to the registry
+        :param service: Service instance
+        :return: void
+        """
+        self._services[service.name()] = service
+
+    def get_service(self, service) -> Service:
+        """
+        Get service by name
+        :param service: Service class or name
+        :return: Service
+        """
+        name = service if isinstance(service, str) else service.name()
+        try:
+            return self._services[name]
+        except KeyError:
+            raise RuntimeError('Service "%s" is not registered' % name)
+
+    def __getattr__(self, item: str) -> Service:
+        """
+        Get registered service
+        :param item: str
+        :return: Service
+        """
+        return self.get_service(item)
