@@ -9,6 +9,7 @@ __all__ = ['Application', 'Registry', 'Service']
 
 from abc import ABCMeta, abstractmethod
 from threading import Event
+from logging import Logger
 
 
 class Application(metaclass=ABCMeta):
@@ -33,7 +34,7 @@ class Application(metaclass=ABCMeta):
         return self._registry
 
     @abstractmethod
-    def run(self, args: list):
+    def run(self, args: list):  # pragma: no cover
         """
         Run application
         :param args: list Console arguments
@@ -108,6 +109,14 @@ class Service(metaclass=ABCMeta):
         :return: dict
         """
         return self.application.registry.config.section(self.name())
+
+    @property
+    def log(self) -> Logger:
+        """
+        Get related logger instance
+        :return: Logger
+        """
+        return self.application.registry.log(self.name())
 
     @classmethod
     def name(cls) -> str:

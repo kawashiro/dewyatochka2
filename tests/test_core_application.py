@@ -5,7 +5,7 @@ Tests suite for dewyatochka.core.application
 """
 
 import unittest
-from unittest.mock import patch, Mock, PropertyMock
+from unittest.mock import patch, Mock, PropertyMock, MagicMock
 from threading import Event
 from dewyatochka.core.application import *
 from testlib.application import VoidApplication, EmptyService, EmptyNamedService
@@ -78,6 +78,22 @@ class TestApplication(unittest.TestCase):
         stop_method.assert_called_once_with(1)
         registry.log.fatal_error.assert_called_once_with(module, exception)
 
+    @patch.object(VoidApplication, 'stop')
+    def test_fatal_error_log_fail(self, stop_method):
+        """
+        Test app fatal error handling on logging failed
+        """
+        registry = PropertyMock()
+        registry.log.fatal_error = Mock(side_effect=Exception)
+
+        app = VoidApplication(registry)
+        module = 'foo_module'
+        exception = Exception()
+        app.fatal_error(module, exception)
+
+        stop_method.assert_called_once_with(1)
+        registry.log.fatal_error.assert_called_once_with(module, exception)
+
     @patch.object(Event, 'is_set')
     def test_running(self, is_set_method):
         """
@@ -131,6 +147,19 @@ class TestService(unittest.TestCase):
         service = EmptyService(VoidApplication(registry_mock))
         self.assertEqual(service_config, service.config)
         registry_mock.config.section.assert_called_once_with(service_name)
+
+    @patch.object(EmptyService, 'name')
+    def test_log(self, name_method):
+        """
+        Test service config getter
+        """
+        service_name = 'foo_service'
+
+        name_method.side_effect = (service_name,)
+        registry_mock = PropertyMock()
+
+        self.assertIsInstance(EmptyService(VoidApplication(registry_mock)).log, MagicMock)
+        registry_mock.log.assert_called_once_with(service_name)
 
     def test_name(self):
         """

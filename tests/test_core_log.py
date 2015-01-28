@@ -1,106 +1,58 @@
 # coding=utf-8
 
 """
-Tests suite for dewyatochka.core.log
+Tests suite for dewyatochka.core.log.get_logger
 """
 
 import unittest
 import logging
-from unittest.mock import patch, Mock, call, PropertyMock
-from dewyatochka.core.log import Logger
-from testlib.log import *
+from unittest.mock import patch
+from dewyatochka.core.log.output import *
+from dewyatochka.core.config.container import CommonConfig
+from dewyatochka.core.config.source.virtual import Empty as EmptySource
 from testlib.application import VoidApplication
+from dewyatochka.core.log import get_logger
 
 
-class TestLogger(unittest.TestCase):
+class TestGetLogger(unittest.TestCase):
     """
-    dewyatochka.core.log.Logger
-    """
-
-    @patch.object(Logger, 'config')
-    def test_register_handler(self, config_property):
-        """
-        Test log handler registration
-        """
-        config_property.get = Mock(side_effect=(logging.ERROR,))
-
-        logger = Logger(VoidApplication())
-        handler = NullHandler(logger)
-        logger.register_handler(handler)
-
-        root_logger = logging.getLogger()
-        self.assertEqual(logging.ERROR, root_logger.level)
-        self.assertEqual([handler], root_logger.handlers)
-
-        config_property.get.assert_called_once_with('level', logging.INFO)
-
-    @patch('logging.getLogger')
-    def test_fatal_error(self, get_logger):
-        """
-        Test fatal errors logging
-        """
-        module = 'test_module'
-        exception = Exception('Test uncaught exception')
-        message = '%s failed: %s'
-
-        module_logger1 = PropertyMock()
-        module_logger1.level = logging.INFO
-        module_logger2 = PropertyMock()
-        module_logger2.level = logging.DEBUG
-        get_logger.side_effect = (module_logger1, module_logger2)
-
-        logger = Logger(VoidApplication())
-        logger.fatal_error(module, exception)
-        logger.fatal_error(module, exception)
-
-        get_logger.assert_has_calls([call(module), call(module)])
-        module_logger1.critical.assert_called_once_with(message, module, exception)
-        self.assertEqual(0, module_logger1.exception.call_count)
-        module_logger2.critical.assert_called_once_with(message, module, exception)
-        module_logger2.exception.assert_called_once_with(message, module, exception)
-
-    @patch('logging.getLogger')
-    def test_call(self, get_logger):
-        """
-        Test __call__() magic method
-        """
-        module = 'test_module'
-        Logger(VoidApplication())(module)
-        get_logger.assert_called_once_with(module)
-
-    def test_name(self):
-        """
-        Test service name getter
-        """
-        self.assertEqual('log', Logger.name())
-
-
-class TestHandler(unittest.TestCase):
-    """
-    dewyatochka.core.log.Handler
+    dewyatochka.core.log.get_logger
     """
 
-    def test_init(self):
+    @patch.object(logging.Logger, 'info')
+    def test_get_stdout_logger(self, info_method):
         """
-        Test initializer
+        Get stdout logger
         """
-        logger = Logger(VoidApplication())
-        handler = NullHandler(logger)
+        app = VoidApplication()
+        app.registry.add_service(CommonConfig(app).load(EmptySource()))
 
-        self.assertEqual(handler._logger, logger)
-        self.assertEqual('%(asctime)s:%(levelname)s:%(name)s:%(message)s', handler.handler.formatter._fmt)
+        logger = get_logger(app)
+        self.assertIsInstance(logger().handlers[0], STDOUTHandler)
+        info_method.assert_called_once_with('Logging started')
 
-    def test_getattr(self):
+    @patch.object(logging.Logger, 'info')
+    def test_get_file_logger(self, info_method):
         """
-        Test inner handler attribute getter
+        Get stdout logger
         """
-        self.assertIsNotNone(NullHandler(Logger(VoidApplication())).format)
+        app = VoidApplication()
+        app.registry.add_service(CommonConfig(app).load(EmptySource()))
 
-    def test_handler_property(self):
-        """
-        Test inner handler getter
-        """
-        handler = NullHandler(Logger(VoidApplication()))
+        logger = get_logger(app, has_stdout=False)
+        self.assertIsInstance(logger().handlers[0], FileHandler)
+        info_method.assert_called_once_with('Logging started')
 
-        self.assertIsInstance(handler.handler, logging.NullHandler)
-        self.assertEqual(handler.handler, handler.handler)
+    @patch.object(logging.Logger, 'info')
+    def test_get_logger_fail(self, info_method):
+        """
+        Get stdout logger
+        """
+        info_method.side_effect = Exception()
+
+        app = VoidApplication()
+        app.registry.add_service(CommonConfig(app).load(EmptySource()))
+
+        logger = get_logger(app)
+        self.assertIsInstance(logger().handlers[0], NullHandler)
+        info_method.assert_called_once_with('Logging started')

@@ -4,4 +4,4 @@
 Some helper modules for tests
 """
 
-__all__ = ['application', 'log']
+__all__ = ['application']
