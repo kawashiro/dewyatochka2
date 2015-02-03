@@ -8,7 +8,27 @@ import unittest
 from unittest.mock import patch, Mock, PropertyMock, MagicMock
 from threading import Event
 from dewyatochka.core.application import *
-from testlib.application import VoidApplication, EmptyService, EmptyNamedService
+
+
+class _EmptyService(Service):
+    """
+    Empty service for tests
+    """
+    pass
+
+
+class _EmptyNamedService(_EmptyService):
+    """
+    Service with own name
+    """
+
+    @classmethod
+    def name(cls) -> str:
+        """
+        Get service unique name
+        :return: str
+        """
+        return 'test_service'
 
 
 class TestApplication(unittest.TestCase):
@@ -119,7 +139,7 @@ class TestService(unittest.TestCase):
         Test __init__ method
         """
         app = VoidApplication()
-        service = EmptyService(app)
+        service = _EmptyService(app)
 
         self.assertEqual(app, service.application)
 
@@ -128,11 +148,11 @@ class TestService(unittest.TestCase):
         Test application property
         """
         app = VoidApplication()
-        service = EmptyService(app)
+        service = _EmptyService(app)
 
         self.assertEqual(app, service.application)
 
-    @patch.object(EmptyService, 'name')
+    @patch.object(_EmptyService, 'name')
     def test_config(self, name_method):
         """
         Test service config getter
@@ -144,11 +164,11 @@ class TestService(unittest.TestCase):
         registry_mock = PropertyMock()
         registry_mock.config.section = Mock(side_effect=(service_config,))
 
-        service = EmptyService(VoidApplication(registry_mock))
+        service = _EmptyService(VoidApplication(registry_mock))
         self.assertEqual(service_config, service.config)
         registry_mock.config.section.assert_called_once_with(service_name)
 
-    @patch.object(EmptyService, 'name')
+    @patch.object(_EmptyService, 'name')
     def test_log(self, name_method):
         """
         Test service config getter
@@ -158,14 +178,14 @@ class TestService(unittest.TestCase):
         name_method.side_effect = (service_name,)
         registry_mock = PropertyMock()
 
-        self.assertIsInstance(EmptyService(VoidApplication(registry_mock)).log, MagicMock)
+        self.assertIsInstance(_EmptyService(VoidApplication(registry_mock)).log, MagicMock)
         registry_mock.log.assert_called_once_with(service_name)
 
     def test_name(self):
         """
         Test default name property
         """
-        self.assertEqual('testlib.application.EmptyService', EmptyService.name())
+        self.assertEqual('test_core_application._EmptyService', _EmptyService.name())
 
 
 class TestRegistry(unittest.TestCase):
@@ -184,13 +204,13 @@ class TestRegistry(unittest.TestCase):
         """
         Test add_service() / get_service()
         """
-        service = EmptyNamedService(VoidApplication())
+        service = _EmptyNamedService(VoidApplication())
 
         registry = Registry()
         registry.add_service(service)
 
         self.assertEqual(service, registry.get_service('test_service'))
-        self.assertEqual(service, registry.get_service(EmptyNamedService))
+        self.assertEqual(service, registry.get_service(_EmptyNamedService))
         self.assertEqual(service, registry.test_service)
 
     def test_unregistered_service(self):

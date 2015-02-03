@@ -1,0 +1,6 @@
+include INSTALL
+include LICENSE
+include README.md
+include tests.py
+recursive-include pkg *
+recursive-include tests *.py

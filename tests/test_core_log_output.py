@@ -10,7 +10,7 @@ import logging
 from unittest.mock import patch, PropertyMock
 from dewyatochka.core.log.service import LoggingService as Logger
 from dewyatochka.core.log.output import *
-from testlib.application import VoidApplication
+from dewyatochka.core.application import VoidApplication
 
 
 class TestAbstractHandler(unittest.TestCase):

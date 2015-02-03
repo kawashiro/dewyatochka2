@@ -10,7 +10,7 @@ from unittest.mock import patch
 from dewyatochka.core.log.output import *
 from dewyatochka.core.config.container import CommonConfig
 from dewyatochka.core.config.source.virtual import Empty as EmptySource
-from testlib.application import VoidApplication
+from dewyatochka.core.application import VoidApplication
 from dewyatochka.core.log import get_logger
 
 

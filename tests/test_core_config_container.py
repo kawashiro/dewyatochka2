@@ -7,7 +7,7 @@ Tests suite for dewyatochka.core.log.get_logger
 import unittest
 from dewyatochka.core.config.container import *
 from dewyatochka.core.config.source.virtual import Predefined
-from testlib.application import VoidApplication
+from dewyatochka.core.application import VoidApplication
 
 
 class TestConfigContainer(unittest.TestCase):

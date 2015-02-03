@@ -9,7 +9,7 @@ import logging
 from unittest.mock import patch, Mock, call, PropertyMock
 from dewyatochka.core.log.service import LoggingService as Logger
 from dewyatochka.core.log.output import NullHandler
-from testlib.application import VoidApplication
+from dewyatochka.core.application import VoidApplication
 
 
 class TestLogger(unittest.TestCase):

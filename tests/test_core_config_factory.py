@@ -8,7 +8,7 @@ from os import path
 import unittest
 from dewyatochka.core.config.factory import *
 from dewyatochka.core.config.container import *
-from testlib.application import VoidApplication
+from dewyatochka.core.application import VoidApplication
 
 
 class TestFactoryFunctions(unittest.TestCase):

@@ -5,7 +5,7 @@
 Application common module
 """
 
-__all__ = ['Application', 'Registry', 'Service']
+__all__ = ['Application', 'Registry', 'Service', 'VoidApplication']
 
 from abc import ABCMeta, abstractmethod
 from threading import Event
@@ -80,6 +80,20 @@ class Application(metaclass=ABCMeta):
         :return: bool
         """
         return not self._stop_event.is_set()
+
+
+class VoidApplication(Application):  # pragma: no cover
+    """
+    Application with empty run() method generally for test purposes or as a stub
+    """
+
+    def run(self, args: list):
+        """
+        Run application
+        :param args: list Console arguments
+        :return: void
+        """
+        pass
 
 
 class Service(metaclass=ABCMeta):
