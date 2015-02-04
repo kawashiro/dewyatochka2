@@ -24,6 +24,8 @@ setup(
     maintainer_email='nitori@kawashi.ro',
     license='GPL-3',
     platforms=['POSIX'],
+    # Dependencies
+    requires=['sleekxmpp'],
     # Python packages
     package_dir={'': 'src/'},
     packages=['dewyatochka', 'dewyatochka.core', 'dewyatochka.plugins', 'dewyatochka.utils',
