@@ -1,7 +1,5 @@
 # -*- coding: UTF-8
 
-"""
-Dewyatochka tests suite
-"""
+""" Dewyatochka tests suites """
 
 __all__ = []

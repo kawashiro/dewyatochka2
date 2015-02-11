@@ -1,28 +1,27 @@
 # -*- coding: UTF-8
 
-"""
-Exception on config related operations
+""" Exceptions on config related operations
+
+Classes
+=======
+    ConfigError            -- Base config exception class
+    ReadError              -- Error on config parsing
+    SectionRetrievingError -- Error on attempt to access to invalid section
 """
 
 __all__ = ['ConfigError', 'ReadError', 'SectionRetrievingError']
 
 
 class ConfigError(Exception):
-    """
-    Error on invalid config
-    """
+    """ Base config exception class """
     pass
 
 
 class ReadError(ConfigError):
-    """
-    Error on config parsing
-    """
+    """ Error on config parsing """
     pass
 
 
 class SectionRetrievingError(ConfigError):
-    """
-    Error on attempt to access to invalid section
-    """
+    """ Error on attempt to access to invalid section """
     pass

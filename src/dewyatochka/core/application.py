@@ -1,8 +1,13 @@
-
 # -*- coding: UTF-8
 
-"""
-Application common module
+""" Something like "framework" to build all dewyatochka apps on
+
+Classes
+=======
+    Application     -- Abstract application class
+    Registry        -- Registry pattern implementation
+    Service         -- Abstract registrable service
+    VoidApplication -- Empty application, generally for test purposes
 """
 
 __all__ = ['Application', 'Registry', 'Service', 'VoidApplication']
@@ -13,13 +18,15 @@ from logging import Logger
 
 
 class Application(metaclass=ABCMeta):
-    """
-    Dewyatochka application instance
+    """ Abstract application class
+
+    Implements methods common for any application
     """
 
     def __init__(self, registry=None):
-        """
-        Init app
+        """ Init app
+
+        :param Registry registry: External registry instance or create internal one
         """
         self._registry = registry or Registry()
         self._exit_code = 0
@@ -27,43 +34,43 @@ class Application(metaclass=ABCMeta):
 
     @property
     def registry(self):
-        """
-        Get registry instance
-        :return: Registry
+        """ Get registry instance
+
+        :return Registry:
         """
         return self._registry
 
     @abstractmethod
     def run(self, args: list):  # pragma: no cover
-        """
-        Run application
-        :param args: list Console arguments
-        :return: void
+        """ Run application
+
+        :param list args: Console arguments
+        :return None:
         """
         pass
 
     def wait(self):
-        """
-        Sleep until application is stopped
-        :return: void
+        """ Sleep until application is stopped
+
+        :return None:
         """
         self._stop_event.wait()
 
     def stop(self, exit_code=0):
-        """
-        Stop app
-        :param exit_code: int
-        :return: void
+        """ Stop app
+
+        :param int exit_code: Exit code
+        :return None:
         """
         self._exit_code = exit_code
         self._stop_event.set()
 
     def fatal_error(self, module_name: str, exception: Exception):
-        """
-        Handle fatal error
-        :param module_name: str
-        :param exception: Exception
-        :return: void
+        """ Handle fatal error
+
+        :param  str module_name: Module where error has occurred
+        :param Exception exception: Exception instance
+        :return None:
         """
         try:
             self.registry.log.fatal_error(module_name, exception)
@@ -75,96 +82,92 @@ class Application(metaclass=ABCMeta):
 
     @property
     def running(self) -> bool:
-        """
-        Check if application is not stopped
-        :return: bool
+        """ Check if application is not stopped
+
+        :return bool:
         """
         return not self._stop_event.is_set()
 
 
 class VoidApplication(Application):  # pragma: no cover
-    """
-    Application with empty run() method generally for test purposes or as a stub
+    """ Empty application
+
+    Application with empty run() method
+    generally for test purposes or as a stub
     """
 
     def run(self, args: list):
-        """
-        Run application
-        :param args: list Console arguments
-        :return: void
+        """ Do nothing
+
+        :param list args: Ignored
+        :return None:
         """
         pass
 
 
 class Service(metaclass=ABCMeta):
-    """
-    Abstract service class
-    """
+    """ Abstract registrable service """
 
     def __init__(self, application: Application):
-        """
-        Initialize service & attach an application to it
-        :param application: Application
+        """ Initialize service & attach an application to it
+
+        :param Application application:
         """
         self._application = application
 
     @property
     def application(self) -> Application:
-        """
-        Return application instance
-        :return: Application
+        """ Return an application instance
+
+        :return Application:
         """
         return self._application
 
     @property
     def config(self) -> dict:
-        """
-        Get related config section
-        :return: dict
+        """ Get related config section
+
+        :return dict:
         """
         return self.application.registry.config.section(self.name())
 
     @property
     def log(self) -> Logger:
-        """
-        Get related logger instance
-        :return: Logger
+        """ Get related logger instance
+
+        :return Logger:
         """
         return self.application.registry.log(self.name())
 
     @classmethod
     def name(cls) -> str:
-        """
-        Get service unique name
-        :return: str
+        """ Get service unique name
+
+        :return str:
         """
         return '.'.join((cls.__module__, cls.__name__))
 
 
 class Registry():
-    """
-    Registry implementation
-    """
+    """ Registry pattern implementation """
 
     def __init__(self):
-        """
-        Initialize services storage
-        """
+        """ Initialize services storage """
         self._services = {}
 
     def add_service(self, service: Service):
-        """
-        Add a service to the registry
-        :param service: Service instance
-        :return: void
+        """ Add a service to the registry
+
+        :param Service service: Service instance
+        :return None:
         """
         self._services[service.name()] = service
 
     def get_service(self, service) -> Service:
-        """
-        Get service by name
+        """ Get service by name
+
         :param service: Service class or name
-        :return: Service
+        :return Service:
         """
         name = service if isinstance(service, str) else service.name()
         try:
@@ -173,9 +176,9 @@ class Registry():
             raise RuntimeError('Service "%s" is not registered' % name)
 
     def __getattr__(self, item: str) -> Service:
-        """
-        Get registered service
-        :param item: str
-        :return: Service
+        """ Get registered service
+
+        :param str item:
+        :return Service:
         """
         return self.get_service(item)

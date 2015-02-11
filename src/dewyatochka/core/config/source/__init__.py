@@ -1,23 +1,35 @@
 # -*- coding: UTF-8
 
-"""
-Config sources package
+""" Config data sources
+
+Sources are separated by modules to group them
+by a kind of data storage but most of all by dependencies required
+
+Modules
+=======
+    filesystem -- File based config data sources
+    virtual    -- In-memory config data sources
+
+Classes
+=======
+    ConfigSource -- Abstract config data source
 """
 
-__all__ = ['ConfigSource', 'filesystem']
+__all__ = ['ConfigSource', 'filesystem', 'virtual']
 
 from abc import ABCMeta, abstractmethod
 
 
 class ConfigSource(metaclass=ABCMeta):
-    """
-    Config file parser
+    """ Abstract config data source
+
+        For internal use and third-party implementations
     """
 
     @abstractmethod
     def read(self) -> dict:  # pragma: no cover
-        """
-        Read file or directory and return dict-like object {'section': <...>}
-        :return: dict
+        """ Read data and return dict-like object {'section': <...>}
+
+        :return dict:
         """
         pass

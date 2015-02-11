@@ -1,35 +1,44 @@
 # -*- coding: UTF-8
 
-"""
-Filesystem config sources
+""" File based config data sources
+
+Classes
+=======
+    Filesystem -- Abstract filesystem-based data source
+    INIFiles   -- Non-recursive INI-files parser
 """
 
 __all__ = ['Filesystem', 'INIFiles']
 
-from abc import ABCMeta, abstractmethod, abstractproperty
 from os import path, listdir
+from abc import ABCMeta, abstractmethod, abstractproperty
 import configparser
+
 from dewyatochka.core.config.source import ConfigSource
 from dewyatochka.core.config.exception import ReadError
 
 
 class Filesystem(ConfigSource, metaclass=ABCMeta):
-    """
-    Config stored in ini file
+    """ Abstract filesystem-based data source
+
+        Parses and merges data from a single file
+        or all the files found in directory specified
     """
 
     def __init__(self, config_path: str):
-        """
-        Create config parser instance for `path` file or directory
-        :param config_path: str
+        """ Create config parser instance for `path` file or directory
+
+        If `path` is file only this file is to be read
+
+        :param str config_path:
         """
         self._path = path.realpath(config_path)
 
     @property
     def _files(self) -> set:
-        """
-        Get all readable files list
-        :return: list
+        """ Get all readable files set
+
+        :return list:
         """
         if path.isfile(self._path):
             files = [self._path]
@@ -44,38 +53,40 @@ class Filesystem(ConfigSource, metaclass=ABCMeta):
 
     @abstractproperty
     def file_extension(self) -> str:  # pragma: no cover
-        """
-        Extension indicating appropriate config file format
-        :return: str
+        """ Extension indicating appropriate config file format
+
+        :return str:
         """
         pass
 
     @abstractmethod
     def _do_read(self, files: set) -> dict:  # pragma: no cover
-        """
-        Read list of files specified
-        :param files: list
-        :return: dict
+        """ Read and parse set of files specified
+
+        :param set files:
+        :return dict:
         """
         pass
 
     def read(self) -> dict:
-        """
-        Read file or directory and return dict-like object {'section': <...>}
-        :return: dict
+        """ Read data and return dict-like object {'section': <...>}
+
+        :return dict:
         """
         return self._do_read(self._files)
 
 
 class INIFiles(Filesystem):
-    """
-    INI parser
+    """ Non-recursive INI-files parser
+
+        Looks up for the *.ini files and tries to parse
+        them using configparser.ConfigParser
     """
 
     def _do_read(self, files: set) -> dict:
-        """
-        Read list of files specified
-        :param files: list
+        """ Read and parse set of files specified
+
+        :param set files:
         :return: dict
         """
         try:
@@ -88,8 +99,8 @@ class INIFiles(Filesystem):
 
     @property
     def file_extension(self) -> str:
-        """
-        Extension indicating appropriate config file format
-        :return: str
+        """ Extension indicating appropriate config file format
+
+        :return str:
         """
         return '.ini'

@@ -1,25 +1,35 @@
 # -*- coding: UTF-8
 
-"""
-Logging package
+""" Logging implementation
+
+Modules
+=======
+    output  -- Log output handlers implementation
+    service -- Logging app service implementation
+
+Functions
+=========
+    get_logger -- Get configured logger instance
 """
 
 __all__ = ['service', 'output', 'get_logger']
 
 from dewyatochka.core.application import Application
+
 from .service import LoggingService
 from .output import *
+
 
 # Default message on logging start
 _INIT_MESSAGE = 'Logging started'
 
 
 def get_logger(application: Application, has_stdout=True) -> LoggingService:
-    """
-    Get logger instance
-    :param application: Application
-    :param has_stdout: bool
-    :return: LoggingService
+    """ Get configured logger instance
+
+    :param Application application: Application instance to configure logger for
+    :param bool has_stdout: Set to True if application has stdout to attach stdout handler instead of file one
+    :return LoggingService:
     """
     logger = LoggingService(application)
 

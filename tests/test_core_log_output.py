@@ -1,27 +1,23 @@
-# coding=utf-8
+# -*- coding=utf-8
 
-"""
-Tests suite for dewyatochka.core.log.output
-"""
+""" Tests suite for dewyatochka.core.log.output """
 
 import sys
-import unittest
 import logging
+
+import unittest
 from unittest.mock import patch, PropertyMock
+
 from dewyatochka.core.log.service import LoggingService as Logger
 from dewyatochka.core.log.output import *
 from dewyatochka.core.application import VoidApplication
 
 
 class TestAbstractHandler(unittest.TestCase):
-    """
-    dewyatochka.core.log.output.Handler
-    """
+    """ Covers dewyatochka.core.log.output.Handler """
 
     def test_init(self):
-        """
-        Test initializer
-        """
+        """ Test initializer """
         logger = Logger(VoidApplication())
         handler = NullHandler(logger)
 
@@ -29,15 +25,11 @@ class TestAbstractHandler(unittest.TestCase):
         self.assertEqual('%(asctime)s:%(levelname)s:%(name)s:%(message)s', handler.handler.formatter._fmt)
 
     def test_getattr(self):
-        """
-        Test inner handler attribute getter
-        """
+        """ Test inner handler attribute getter """
         self.assertIsNotNone(NullHandler(Logger(VoidApplication())).format)
 
     def test_handler_property(self):
-        """
-        Test inner handler getter
-        """
+        """ Test inner handler getter """
         handler = NullHandler(Logger(VoidApplication()))
 
         self.assertIsInstance(handler.handler, logging.NullHandler)
@@ -45,14 +37,10 @@ class TestAbstractHandler(unittest.TestCase):
 
 
 class TestSTDOUTHandler(unittest.TestCase):
-    """
-    dewyatochka.core.log.output.STDOUTHandler
-    """
+    """ Covers dewyatochka.core.log.output.STDOUTHandler """
 
     def test_create_handler(self):
-        """
-        Test inner handler instantiation
-        """
+        """ Test inner handler instantiation """
         handler = STDOUTHandler(Logger(VoidApplication()))
 
         self.assertIsInstance(handler.handler, logging.StreamHandler)
@@ -60,15 +48,11 @@ class TestSTDOUTHandler(unittest.TestCase):
 
 
 class TestFileHandler(unittest.TestCase):
-    """
-    dewyatochka.core.log.output.FileHandler
-    """
+    """ Covers dewyatochka.core.log.output.FileHandler """
 
     @patch.object(Logger, 'config', new_callable=PropertyMock)
     def test_create_handler(self, config_property):
-        """
-        Test inner handler instantiation
-        """
+        """ Test inner handler instantiation """
         config_property.return_value = {'file': '/file/path.log'}
         handler = FileHandler(Logger(VoidApplication()))
 
@@ -77,9 +61,7 @@ class TestFileHandler(unittest.TestCase):
 
     @patch.object(Logger, 'config', new_callable=PropertyMock)
     def test_create_handler_default(self, config_property):
-        """
-        Test inner handler instantiation with empty config
-        """
+        """ Test inner handler instantiation with empty config """
         config_property.return_value = {}
         handler = FileHandler(Logger(VoidApplication()))
 
@@ -87,12 +69,8 @@ class TestFileHandler(unittest.TestCase):
 
 
 class TestNullHandler(unittest.TestCase):
-    """
-    dewyatochka.core.log.output.STDOUTHandler
-    """
+    """ Covers dewyatochka.core.log.output.STDOUTHandler """
 
     def test_create_handler(self):
-        """
-        Test inner handler instantiation
-        """
+        """ Test inner handler instantiation """
         self.assertIsInstance(NullHandler(Logger(VoidApplication())).handler, logging.NullHandler)

@@ -1,55 +1,50 @@
-# coding=utf-8
+# -*- coding=utf-8
 
-"""
-Tests suite for dewyatochka.core.network.xmpp.client._base
-"""
+""" Tests suite for dewyatochka.core.network.xmpp.client._base """
 
 import unittest
 from unittest.mock import patch
+
 from dewyatochka.core.network.xmpp.client._base import *
 from dewyatochka.core.network.xmpp.entity import *
 from dewyatochka.core.network.xmpp.exception import C2SConnectionError
 
 
 class _ClientStub(Client):
-    """
-    xmpp client stub for abstract client testing
-    """
+    """ xmpp client stub for abstract client testing """
 
     def connect(self):
-        """
-        Establish connection to the server
-        :return: void
+        """ Establish connection to the server
+
+        :return None:
         """
         pass
 
     def disconnect(self, wait=True):
-        """
-        Close connection
-        :param wait: bool - Wait until all received messages are processed
-        :return: void
+        """ Close connection
+
+        :param bool wait: Wait until all received messages are processed
+        :return None:
         """
         pass
 
     def read(self) -> Message:
-        """
-        Read next message from stream
-        :return: Message
+        """ Read next message from stream
+
+        :return Message:
         """
         pass
 
 
 class _CommandStub(Command):
-    """
-    Empty command for testing purposes
-    """
+    """ Empty command for testing purposes """
 
     def __call__(self, *args, **kwargs):
-        """
-        Command is invokable
-        :param args:
-        :param kwargs:
-        :return:
+        """ Command is invokable
+
+        :param tuple args:
+        :param dict kwargs:
+        :return None:
         """
         pass
 
@@ -63,14 +58,10 @@ class _CommandStub(Command):
 
 
 class TestCommand(unittest.TestCase):
-    """
-    dewyatochka.core.network.xmpp.client._base.Command
-    """
+    """ Covers dewyatochka.core.network.xmpp.client._base.Command """
 
     def test_init(self):
-        """
-        Test __init__()
-        """
+        """ Test __init__() """
         client = _ClientStub('', '', '')
         command = _CommandStub(client)
 
@@ -78,14 +69,10 @@ class TestCommand(unittest.TestCase):
 
 
 class TestClient(unittest.TestCase):
-    """
-    dewyatochka.core.network.xmpp.client._base.Client
-    """
+    """ Covers dewyatochka.core.network.xmpp.client._base.Client """
 
     def test_init(self):
-        """
-        Test __init__()
-        """
+        """ Test __init__() """
         login = 'user'
         password = 'pass'
         host = 'example.com'
@@ -99,9 +86,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual({}, client._commands)
 
     def test_command_registration(self):
-        """
-        Test add_command / get_command / __getattr__
-        """
+        """ Test add_command / get_command / __getattr__ """
         client = _ClientStub('', '', '')
         command = _CommandStub(client)
 
@@ -111,17 +96,13 @@ class TestClient(unittest.TestCase):
         self.assertRaises(RuntimeError, client.get_command, 'not_registered')
 
     def test_jid_property(self):
-        """
-        Test JID property
-        """
+        """ Test JID property """
         self.assertEqual(JID.from_string('user@example.com'), _ClientStub('example.com', 'user', '').jid)
 
     @patch.object(_ClientStub, 'connect')
     @patch.object(_ClientStub, 'disconnect')
     def test_context_normal(self, disconnect_method, connect_method):
-        """
-        Test __enter__ / __exit__ without exceptions
-        """
+        """ Test __enter__ / __exit__ without exceptions """
         with _ClientStub('', '', ''):
             connect_method.assert_called_once_with()
 
@@ -129,9 +110,7 @@ class TestClient(unittest.TestCase):
 
     @patch.object(_ClientStub, 'disconnect')
     def test_context_connection_error(self, disconnect_method):
-        """
-        Test __enter__ / __exit__ on client to server connection error
-        """
+        """ Test __enter__ / __exit__ on client to server connection error """
         try:
             with _ClientStub('', '', ''):
                 raise C2SConnectionError()
@@ -142,9 +121,7 @@ class TestClient(unittest.TestCase):
 
     @patch.object(_ClientStub, 'disconnect')
     def test_context_other_error(self, disconnect_method):
-        """
-        Test __enter__ / __exit__ on any other error
-        """
+        """ Test __enter__ / __exit__ on any other error """
         try:
             with _ClientStub('', '', ''):
                 raise Exception()

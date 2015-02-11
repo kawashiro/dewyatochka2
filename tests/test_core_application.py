@@ -1,45 +1,37 @@
-# coding=utf-8
+# -*- coding=utf-8
 
-"""
-Tests suite for dewyatochka.core.application
-"""
+""" Tests suite for dewyatochka.core.application """
+
+from threading import Event
 
 import unittest
 from unittest.mock import patch, Mock, PropertyMock, MagicMock
-from threading import Event
+
 from dewyatochka.core.application import *
 
 
 class _EmptyService(Service):
-    """
-    Empty service for tests
-    """
+    """ Empty service for tests """
     pass
 
 
 class _EmptyNamedService(_EmptyService):
-    """
-    Service with own name
-    """
+    """ Service with own name """
 
     @classmethod
     def name(cls) -> str:
-        """
-        Get service unique name
-        :return: str
+        """ Get service unique name
+
+        :return str:
         """
         return 'test_service'
 
 
 class TestApplication(unittest.TestCase):
-    """
-    dewyatochka.core.application.Application
-    """
+    """ Covers dewyatochka.core.application.Application """
 
     def test_init(self):
-        """
-        Test __init__()
-        """
+        """ Test __init__() """
         app = VoidApplication()
 
         self.assertIsInstance(app._registry, Registry)
@@ -52,17 +44,13 @@ class TestApplication(unittest.TestCase):
         self.assertEqual(test_registry, app._registry)
 
     def test_registry(self):
-        """
-        Test registry getter
-        """
+        """ Test registry getter """
         app = VoidApplication()
         self.assertEqual(app._registry, app.registry)
 
     @patch.object(Event, 'wait')
     def test_wait(self, wait_method):
-        """
-        Test wait method
-        """
+        """ Test wait method """
         app = VoidApplication()
         app._stop_event = Event()
         app.wait()
@@ -70,9 +58,7 @@ class TestApplication(unittest.TestCase):
 
     @patch.object(Event, 'set')
     def test_stop(self, wait_method):
-        """
-        Test application stop event
-        """
+        """ Test application stop event """
         exit_code = 9000
 
         app = VoidApplication()
@@ -84,9 +70,7 @@ class TestApplication(unittest.TestCase):
 
     @patch.object(VoidApplication, 'stop')
     def test_fatal_error(self, stop_method):
-        """
-        Test app fatal error
-        """
+        """ Test app fatal error """
         registry = PropertyMock()
         registry.log.fatal_error = Mock()
 
@@ -100,9 +84,7 @@ class TestApplication(unittest.TestCase):
 
     @patch.object(VoidApplication, 'stop')
     def test_fatal_error_log_fail(self, stop_method):
-        """
-        Test app fatal error handling on logging failed
-        """
+        """ Test app fatal error handling on logging failed """
         registry = PropertyMock()
         registry.log.fatal_error = Mock(side_effect=Exception)
 
@@ -116,9 +98,7 @@ class TestApplication(unittest.TestCase):
 
     @patch.object(Event, 'is_set')
     def test_running(self, is_set_method):
-        """
-        Test `running` property
-        """
+        """ Test `running` property """
         is_set_method.side_effect = True, False
 
         app = VoidApplication()
@@ -130,23 +110,17 @@ class TestApplication(unittest.TestCase):
 
 
 class TestService(unittest.TestCase):
-    """
-    dewyatochka.core.application.Service
-    """
+    """ Covers dewyatochka.core.application.Service """
 
     def test_init(self):
-        """
-        Test __init__ method
-        """
+        """ Test __init__ method """
         app = VoidApplication()
         service = _EmptyService(app)
 
         self.assertEqual(app, service.application)
 
     def test_application(self):
-        """
-        Test application property
-        """
+        """ Test application property """
         app = VoidApplication()
         service = _EmptyService(app)
 
@@ -154,9 +128,7 @@ class TestService(unittest.TestCase):
 
     @patch.object(_EmptyService, 'name')
     def test_config(self, name_method):
-        """
-        Test service config getter
-        """
+        """ Test service config getter """
         service_name = 'foo_service'
         service_config = {'foo': 'bar'}
 
@@ -170,9 +142,7 @@ class TestService(unittest.TestCase):
 
     @patch.object(_EmptyService, 'name')
     def test_log(self, name_method):
-        """
-        Test service config getter
-        """
+        """ Test service config getter """
         service_name = 'foo_service'
 
         name_method.side_effect = (service_name,)
@@ -182,28 +152,20 @@ class TestService(unittest.TestCase):
         registry_mock.log.assert_called_once_with(service_name)
 
     def test_name(self):
-        """
-        Test default name property
-        """
+        """ Test default name property """
         self.assertEqual('test_core_application._EmptyService', _EmptyService.name())
 
 
 class TestRegistry(unittest.TestCase):
-    """
-    dewyatochka.core.application.Registry
-    """
+    """ Covers dewyatochka.core.application.Registry """
 
     def test_init(self):
-        """
-        Test __init__ method
-        """
+        """ Test __init__ method """
         registry = Registry()
         self.assertEqual({}, registry._services)
 
     def test_service_registration(self):
-        """
-        Test add_service() / get_service()
-        """
+        """ Test add_service() / get_service() """
         service = _EmptyNamedService(VoidApplication())
 
         registry = Registry()
@@ -214,8 +176,6 @@ class TestRegistry(unittest.TestCase):
         self.assertEqual(service, registry.test_service)
 
     def test_unregistered_service(self):
-        """
-        Test that RuntimeError is thrown if service is not registered
-        """
+        """ Test that RuntimeError is thrown if service is not registered """
         registry = Registry()
         self.assertRaises(RuntimeError, registry.get_service, 'foo')

@@ -1,15 +1,22 @@
 # -*- coding: UTF-8
 
-"""
-sleekxmpp lib based client
+""" sleekxmpp lib based client
+
+Classes
+=======
+    Client      -- Client basic implementation
+    MUCCommand  -- Multi-user chat commands
+    PingCommand -- XMPP ping
 """
 
 __all__ = ['Client', 'MUCCommand', 'PingCommand']
 
 import threading
 import queue
+
 import sleekxmpp
 from sleekxmpp import exceptions as sleekexception
+
 from . import _base
 from dewyatochka.core.network.xmpp.entity import *
 from dewyatochka.core.network.xmpp.exception import *
@@ -26,10 +33,10 @@ _EVENT_DISCONNECTED = 'disconnected'
 
 
 def _convert_message(raw_message: dict) -> ChatMessage:
-    """
-    Convert message to a Message instance
-    :param raw_message: dict
-    :return: ChatMessage
+    """ Convert message to a Message instance
+
+    :param dict raw_message:
+    :return ChatMessage:
     """
     return ChatMessage(JID.from_string(raw_message['from'].bare),
                        JID.from_string(raw_message['to'].bare),
@@ -37,18 +44,17 @@ def _convert_message(raw_message: dict) -> ChatMessage:
 
 
 class Client(_base.Client):
-    """
-    sleekxmpp lib based client
-    """
+    """ Client basic implementation """
 
     def __init__(self, host: str, login: str, password: str, port=5222, location=''):
-        """
-        Initialize xmpp connection instance
-        :param host: str
-        :param login: str
-        :param password: str
-        :param port: int
-        :param location: str
+        """ Initialize XMPP client instance
+
+        :param str host: XMPP server host
+        :param str login: User login
+        :param str password: User password
+        :param int port: XMPP server port, default 5222
+        :param str location: XMPP resource, default ''
+        :return Client:
         """
         super().__init__(host, login, password, port, location)
 
@@ -58,10 +64,10 @@ class Client(_base.Client):
         self._message_queue = queue.Queue()
 
     def disconnect(self, wait=True):
-        """
-        Close connection
-        :param wait: bool - Wait until all received messages are processed
-        :return: void
+        """ Close connection
+
+        :param bool wait: Wait until all received messages are processed
+        :return None:
         """
         if not self._connected:
             raise ClientDisconnectedError('XMPP client is not connected to disconnect it')
@@ -76,9 +82,9 @@ class Client(_base.Client):
             self._sleekxmpp.set_stop()
 
     def read(self) -> Message:
-        """
-        Read next message from stream
-        :return: Message
+        """ Read next message from stream
+
+        :return Message:
         """
         try:
             message = self._message_queue.get()
@@ -90,9 +96,9 @@ class Client(_base.Client):
         return message
 
     def connect(self):
-        """
-        Establish connection to the server
-        :return: void
+        """ Establish connection to the server
+
+        :return None:
         """
         with self._connection_lock:
             if self._connected:
@@ -107,9 +113,9 @@ class Client(_base.Client):
 
     @property
     def _sleekxmpp(self) -> sleekxmpp.ClientXMPP:
-        """
-        Get sleekxmpp client instance
-        :return: sleekxmpp.ClientXMPP
+        """ Create new sleekxmpp instance or return an already instantiated one
+
+        :return sleekxmpp.ClientXMPP:
         """
         if self.__sleekxmpp is None:
             self.__sleekxmpp = sleekxmpp.ClientXMPP(str(self._jid), self._password)
@@ -122,10 +128,10 @@ class Client(_base.Client):
         return self.__sleekxmpp
 
     def _queue_message(self, message: dict):
-        """
-        Unify message format and put it into messages queue
-        :param message: dict
-        :return: void
+        """ Unify message format and put it into messages queue
+
+        :param dict message:
+        :return None:
         """
         if message['type'] == MessageError.MESSAGE_TYPE_ERROR:
             self._message_queue.put(
@@ -137,17 +143,17 @@ class Client(_base.Client):
             self._message_queue.put(_convert_message(message))
 
     def _queue_presence_error(self, presence: dict):
-        """
-        Put presence error into messages queue
-        :param presence: dict
-        :return: void
+        """ Put presence error into messages queue
+
+        :param dict presence:
+        :return None:
         """
         self._message_queue.put(S2SConnectionError(presence['error']['text']))
 
     def _queue_connection_error(self):
-        """
-        Put connection error into messages queue
-        :return: void
+        """ Put connection error into messages queue
+
+        :return None:
         """
         self._connection_lock.acquire()
 
@@ -159,9 +165,9 @@ class Client(_base.Client):
 
     @property
     def connection(self) -> sleekxmpp.ClientXMPP:
-        """
-        Get raw xmpp connection
-        :return: sleekxmpp.ClientXMPP
+        """ Get raw xmpp connection
+
+        :return sleekxmpp.ClientXMPP:
         """
         if not self._connected:
             raise ClientDisconnectedError('XMPP connection is not established')
@@ -170,75 +176,80 @@ class Client(_base.Client):
 
 
 class MUCCommand(_base.Command):
-    """
-    Chat command
-    """
+    """ Multi-user chat commands """
 
     def send(self, message: str, receiver: JID):
-        """
-        Send message to a groupchat
-        :param message: str
-        :param receiver: JID
-        :return: void
+        """ Send message to a groupchat
+
+        :param str message: Chat message text
+        :param JID receiver: Groupchat JID
+        :return None:
         """
         self._client.connection.send_message(receiver.jid, message, mtype='groupchat')
 
     def enter(self, conference: JID, nick=None):
-        """
-        Enter into a conference
-        :param conference: JID
-        :param nick: str
-        :return: void
+        """ Enter into a conference
+
+        :param JID conference: Groupchat JID
+        :param nick: Nick to use in the chat. If none connection JID is to be used
+        :return None:
         """
         self._client.connection.plugin[_PLUGIN_MUC].joinMUC(conference.jid, nick or str(self._client.jid))
 
     def leave(self, conference: JID, nick=None, reason=''):
-        """
-        Leave a conference
-        :param conference: JID
-        :param nick: str
-        :param reason: str
-        :return: void
+        """ Leave a conference
+
+        :param JID conference: Groupchat JID
+        :param str nick: Nick used in the chat. If none connection JID is to be used
+        :param str reason: Leave message, default ''
+        :return None:
         """
         self._client.connection.plugin[_PLUGIN_MUC].leaveMUC(conference.jid, nick or str(self._client.jid), msg=reason)
 
     @property
     def name(self) -> str:
-        """
-        Command unique name
-        :return: str
+        """ Command unique name
+
+        Command is to be attached as client's attribute
+        named as the command is.
+
+        :return str:
         """
         return 'chat'
 
     def __call__(self, message: str, receiver: JID):
-        """
-        Send chat message by default
-        :param message: str
-        :param receiver: JID
-        :return: void
+        """ Send chat message on command call
+
+        :param str message: Chat message text
+        :param JID receiver: Groupchat JID
+        :return None:
         """
         self.send(message, receiver)
 
 
 class PingCommand(_base.Command):
-    """
-    c2s and s2s connections ping
+    """ XMPP ping
+
+    Used for C2S and S2S ping to check if any connection is alive
     """
 
     @property
     def name(self) -> str:
-        """
-        Command unique name
-        :return: str
+        """ Command unique name
+
+        Command is to be attached as client's attribute
+        named as the command is.
+
+        :return str:
         """
         return 'ping'
 
     def _do_ping(self, destination=None, timeout=None) -> int:
-        """
-        Ping destination by jid
-        :param destination: JID or None
-        :param timeout: int
-        :return: int
+        """ Ping destination by jid
+
+        :param JID destination: Destination JID or None to check C2S connection
+        :param int timeout: Time to wait for a response, in seconds
+        :return int:
         """
         try:
             destination_str = destination.jid if destination else None
@@ -256,10 +267,10 @@ class PingCommand(_base.Command):
         return ping
 
     def __call__(self, destination=None, timeout=None) -> int:
-        """
-        Ping something
-        :param destination: JID or None to ping own server
-        :param timeout: int
-        :return int: int
+        """ Ping destination by jid
+
+        :param JID destination: Destination JID or None to check C2S connection
+        :param int timeout: Time to wait for a response, in seconds
+        :return int:
         """
         return self._do_ping(destination, timeout)

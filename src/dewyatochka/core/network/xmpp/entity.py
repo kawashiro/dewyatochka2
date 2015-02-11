@@ -1,23 +1,26 @@
 # -*- coding: UTF-8
 
-"""
-XMPP messages
+""" XMPP entities; mostly simple container classes
+
+Classes
+=======
+    JID         -- JID params container
+    Message     -- Common message params container
+    ChatMessage -- Chat text message params container
 """
 
 __all__ = ['JID', 'Message', 'ChatMessage']
 
 
 class JID():
-    """
-    JID params container
-    """
+    """ JID params container """
 
     def __init__(self, login: str, server: str, resource=''):
-        """
-        Create new JID params container
-        :param login: str
-        :param server: str
-        :param resource: str
+        """ Create new JID params container
+
+        :param str login:
+        :param str server:
+        :param str resource:
         """
         self._login = login
         self._server = server
@@ -26,57 +29,57 @@ class JID():
 
     @property
     def login(self) -> str:
-        """
-        Get login
-        :return: str
+        """ Get login
+
+        :return str:
         """
         return self._login
 
     @property
     def server(self) -> str:
-        """
-        Get server
-        :return: str
+        """ Get server
+
+        :return str:
         """
         return self._server
 
     @property
     def resource(self) -> str:
-        """
-        Get resource
-        :return: str
+        """ Get resource
+
+        :return str:
         """
         return self._resource
 
     @property
     def jid(self) -> str:
-        """
-        Get JID
-        :return: str
+        """ Get full JID
+
+        :return str:
         """
         return self._jid
 
     def __str__(self) -> str:
-        """
-        Convert JID to string
-        :return: str
+        """ Convert JID object to string
+
+        :return str:
         """
         return self.jid
 
     def __eq__(self, other):
-        """
-        Check if JIDs are equal
+        """ Check if JIDs are equal
+
         :param JID other:
-        :return: bool
+        :return bool:
         """
         return str(self) == str(other)
 
     @classmethod
     def from_string(cls, jid: str):
-        """
-        Convert from string
-        :param jid: str
-        :return: JID
+        """ Convert from string
+
+        :param str jid: str('somebody@example.com/resource')
+        :return JID:
         """
         parts = jid.split('/')
         login, server = parts[0].split('@')
@@ -85,60 +88,58 @@ class JID():
 
 
 class Message():
-    """
-    Common message
-    """
+    """ Common message params container """
 
     def __init__(self, sender: JID, receiver: JID):
-        """
-        Create message instance
+        """ Create message instance
+
+        :param JID sender:
+        :param JID receiver:
         """
         self._sender = sender
         self._receiver = receiver
 
     @property
     def sender(self) -> JID:
-        """
-        Get sender
-        :return: JID
+        """ Get sender
+
+        :return JID:
         """
         return self._sender
 
     @property
     def receiver(self) -> JID:
-        """
-        Get receiver
-        :return: JID
+        """ Get receiver
+
+        :return JID:
         """
         return self._receiver
 
 
 class ChatMessage(Message):
-    """
-    Chat text message
-    """
+    """ Chat text message params container """
 
     def __init__(self, sender: JID, receiver: JID, text: str):
-        """
-        Initialize general chat message container
-        :param sender: JID
-        :param receiver: JID
-        :param text: str
+        """ Create message instance
+
+        :param JID sender:
+        :param JID receiver:
+        :param str text:
         """
         super().__init__(sender, receiver)
         self._text = text
 
     @property
     def text(self) -> str:
-        """
-        Get message text
-        :return: str
+        """ Get message text
+
+        :return str:
         """
         return self._text
 
     def __str__(self) -> str:
-        """
-        Convert to string
-        :return: str
+        """ Convert to string
+
+        :return str:
         """
         return self.text

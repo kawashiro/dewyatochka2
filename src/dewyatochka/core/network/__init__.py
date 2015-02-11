@@ -1,7 +1,10 @@
 # -*- coding: UTF-8
 
-"""
-Network protocols implementations
+""" Implementation of application-level network protocols
+
+Packages
+========
+    xmpp -- XMPP protocol implementation
 """
 
 __all__ = ['xmpp']

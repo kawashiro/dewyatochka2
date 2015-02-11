@@ -1,7 +1,12 @@
 # -*- coding: UTF-8
 
-"""
-Dewyatochka plugins home directory
+"""Package used for plugins auto loading
 
-Put your crappy plugin here to load them automatically
+Each python module in this package is loaded automatically
+on application startup so any third-party plugin must create
+an own module here and define all necessary entry points
+
+Has no members by default
 """
+
+__all__ = []

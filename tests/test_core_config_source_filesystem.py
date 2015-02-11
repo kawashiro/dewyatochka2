@@ -1,11 +1,11 @@
-# coding=utf-8
+# -*- coding=utf-8
 
-"""
-Tests suite for dewyatochka.core.log.get_logger
-"""
+""" Tests suite for dewyatochka.core.log.get_logger """
 
 from os import path
+
 import unittest
+
 from dewyatochka.core.config.source.filesystem import *
 from dewyatochka.core.config.exception import ReadError
 
@@ -15,43 +15,35 @@ _CONFIG_FILES_ROOT = path.dirname(__file__) + '/files/config'
 
 
 class _VoidFilesystemSource(Filesystem):
-    """
-    Filesystem abstract methods stubs
-    """
+    """ Filesystem abstract methods stubs """
 
     def _do_read(self, files: list) -> dict:
-        """
-        Read list of files specified
-        :param files: list
-        :return: dict
+        """ Read and parse set of files specified
+
+        :param set files:
+        :return dict:
         """
         return {}
 
     @property
     def file_extension(self) -> str:
-        """
-        Extension indicating appropriate config file format
-        :return: str
+        """ Extension indicating appropriate config file format
+
+        :return str:
         """
         return '.ini'
 
 
 class TestFilesystem(unittest.TestCase):
-    """
-    dewyatochka.core.config.source.filesystem.Filesystem
-    """
+    """ Covers dewyatochka.core.config.source.filesystem.Filesystem """
 
     def test_init(self):
-        """
-        Test __init__()
-        """
+        """ Test __init__() """
         config_source = _VoidFilesystemSource(_CONFIG_FILES_ROOT)
         self.assertEqual(_CONFIG_FILES_ROOT, config_source._path)
 
     def test_files(self):
-        """
-        Test directory scan
-        """
+        """ Test directory scan """
         file = _CONFIG_FILES_ROOT + '/ini_file.ini'
         self.assertEqual([file], _VoidFilesystemSource(file)._files)
 
@@ -63,14 +55,10 @@ class TestFilesystem(unittest.TestCase):
 
 
 class TestINIFiles(unittest.TestCase):
-    """
-    dewyatochka.core.config.source.filesystem.INIFiles
-    """
+    """ Covers dewyatochka.core.config.source.filesystem.INIFiles """
 
     def test_do_read(self):
-        """
-        Test configs parsing
-        """
+        """ Test configs parsing """
         config = INIFiles(_CONFIG_FILES_ROOT + '/ini_file.ini').read()
         self.assertEqual({'section1': {'foo': 'bar'}, 'DEFAULT': {}},
                          {section: dict(config[section]) for section in config})
@@ -83,7 +71,5 @@ class TestINIFiles(unittest.TestCase):
         self.assertRaises(ReadError, corrupted_source.read)
 
     def test_file_extension(self):
-        """
-        Test file_extension property
-        """
+        """ Test file_extension property """
         self.assertEqual('.ini', INIFiles('void').file_extension)

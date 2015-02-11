@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8
 
-"""
-Run dewyatochka tests
-"""
+""" Run dewyatochka tests """
 
 import sys
 import os

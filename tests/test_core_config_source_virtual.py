@@ -1,33 +1,24 @@
-# coding=utf-8
+# -*- coding=utf-8
 
-"""
-Tests suite for dewyatochka.core.log.get_logger
-"""
+""" Tests suite for dewyatochka.core.log.get_logger """
 
 import unittest
+
 from dewyatochka.core.config.source.virtual import *
 
 
 class TestPredefined(unittest.TestCase):
-    """
-    dewyatochka.core.config.source.virtual.Predefined
-    """
+    """ Covers dewyatochka.core.config.source.virtual.Predefined """
 
     def test_read(self):
-        """
-        Test config reading
-        """
+        """ Test config reading """
         config = {'foo': {'bar': 'baz'}}
         self.assertEqual(config, Predefined(config).read())
 
 
 class TestEmpty(unittest.TestCase):
-    """
-    dewyatochka.core.config.source.virtual.Empty
-    """
+    """ Covers dewyatochka.core.config.source.virtual.Empty """
 
     def test_read(self):
-        """
-        Test config reading
-        """
+        """ Test config reading """
         self.assertEqual({}, Empty().read())

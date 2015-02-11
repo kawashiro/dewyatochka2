@@ -1,30 +1,27 @@
-# coding=utf-8
+# -*- coding=utf-8
 
-"""
-Tests suite for dewyatochka.core.network.xmpp.client.sleekxmpp
-"""
+""" Tests suite for dewyatochka.core.network.xmpp.client.sleekxmpp """
 
-import unittest
 import _thread
 import queue
+
+import unittest
 from unittest.mock import patch, MagicMock, ANY, call
+
 from sleekxmpp import jid as sleekjid
 from sleekxmpp import ClientXMPP
 from sleekxmpp import exceptions
+
 from dewyatochka.core.network.xmpp.client.sleekxmpp import *
 from dewyatochka.core.network.xmpp.entity import *
 from dewyatochka.core.network.xmpp.exception import *
 
 
 class TestClient(unittest.TestCase):
-    """
-    dewyatochka.core.network.xmpp.client.sleekxmpp.Client
-    """
+    """ Covers dewyatochka.core.network.xmpp.client.sleekxmpp.Client """
 
     def test_init(self):
-        """
-        Test __init__()
-        """
+        """ Test __init__() """
         client = Client('', '', '')
 
         self.assertFalse(client._connected)
@@ -33,9 +30,7 @@ class TestClient(unittest.TestCase):
 
     @patch.object(Client, '_sleekxmpp')
     def test_disconnect(self, sleekxmpp_mock):
-        """
-        Test disconnection
-        """
+        """ Test disconnection """
         client = Client('', '', '')
         client._connected = True
         client._message_queue = MagicMock()
@@ -58,9 +53,7 @@ class TestClient(unittest.TestCase):
 
     @patch.object(Client, '_sleekxmpp')
     def test_disconnect_no_wait(self, sleekxmpp_mock):
-        """
-        Test disconnection
-        """
+        """ Test disconnection """
         client = Client('', '', '')
         client._connected = True
         client._message_queue = MagicMock()
@@ -72,15 +65,11 @@ class TestClient(unittest.TestCase):
         sleekxmpp_mock.set_stop.assert_called_once_with()
 
     def test_disconnect_disconnected(self):
-        """
-        Test exception on disconnecting disconnected client
-        """
+        """ Test exception on disconnecting disconnected client """
         self.assertRaises(ClientDisconnectedError, Client('', '', '').disconnect)
 
     def test_read(self):
-        """
-        Test reading from queue
-        """
+        """ Test reading from queue """
         client = Client('', '', '')
         client._message_queue.put({'hello': 'world'})
         client._message_queue.put(Exception('Something wrong'))
@@ -92,9 +81,7 @@ class TestClient(unittest.TestCase):
 
     @patch.object(Client, '_sleekxmpp')
     def test_connect(self, sleekxmpp_mock):
-        """
-        Test connection establishing
-        """
+        """ Test connection establishing """
         client = Client('host', '', '')
 
         client.connect()
@@ -106,18 +93,14 @@ class TestClient(unittest.TestCase):
 
     @patch.object(Client, '_sleekxmpp')
     def test_connect_fail(self, sleekxmpp_mock):
-        """
-        Test exception on connection failed
-        """
+        """ Test exception on connection failed """
         client = Client('', '', '')
         sleekxmpp_mock.connect.side_effect = (False,)
 
         self.assertRaises(C2SConnectionError, client.connect)
 
     def test_sleekxmpp_instantiation(self):
-        """
-        Test creating sleekxmpp instance
-        """
+        """ Test creating sleekxmpp instance """
         client = Client('host', 'login', 'password')
 
         sleekxmpp = client._sleekxmpp
@@ -131,9 +114,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(sleekxmpp, client._sleekxmpp)
 
     def test_queue_message(self):
-        """
-        Test adding raw message to queue
-        """
+        """ Test adding raw message to queue """
         client = Client('', '', '')
 
         message_ok = {
@@ -159,18 +140,14 @@ class TestClient(unittest.TestCase):
         self.assertRaises(MessageError, client.read)
 
     def test_queue_presence_error(self):
-        """
-        Test queueing presence error
-        """
+        """ Test queueing presence error """
         client = Client('', '', '')
 
         client._queue_presence_error({'error': {'text': 'Something wrong'}})
         self.assertRaises(S2SConnectionError, client.read)
 
     def test_queue_connection_error(self):
-        """
-        Test on slekxmpp client self-disconnect
-        """
+        """ Test on slekxmpp client self-disconnect """
         client = Client('', '', '')
         client._connected = True
 
@@ -179,18 +156,14 @@ class TestClient(unittest.TestCase):
         self.assertFalse(client._connected)
 
     def test_queue_connection_error_not_connected(self):
-        """
-        Test abnormal _queue_connection_error call
-        """
+        """ Test abnormal _queue_connection_error call """
         client = Client('', '', '')
 
         client._queue_connection_error()
         self.assertEquals(0, client._message_queue.unfinished_tasks)
 
     def test_connection(self):
-        """
-        Test connection property
-        """
+        """ Test connection property """
         client = Client('host', 'login', 'password')
         self.assertRaises(ClientDisconnectedError, lambda: client.connection)
 
@@ -199,15 +172,11 @@ class TestClient(unittest.TestCase):
 
 
 class TestMUCCommand(unittest.TestCase):
-    """
-    dewyatochka.core.network.xmpp.client.sleekxmpp.MUCCommand
-    """
+    """ Covers dewyatochka.core.network.xmpp.client.sleekxmpp.MUCCommand """
 
     @patch.object(Client, 'connection')
     def test_send(self, connection_mock):
-        """
-        Test MUC message send
-        """
+        """ Test MUC message send """
         command = MUCCommand(Client('host', 'login', 'password'))
         receiver = JID.from_string('receiver@example.com')
 
@@ -216,9 +185,7 @@ class TestMUCCommand(unittest.TestCase):
 
     @patch.object(Client, 'connection')
     def test_enter(self, connection_mock):
-        """
-        Test MUC message send
-        """
+        """ Test MUC message send """
         command = MUCCommand(Client('host', 'login', 'password'))
         conference = JID.from_string('chat@conference.example.com')
 
@@ -232,9 +199,7 @@ class TestMUCCommand(unittest.TestCase):
 
     @patch.object(Client, 'connection')
     def test_leave(self, connection_mock):
-        """
-        Test MUC message send
-        """
+        """ Test MUC message send """
         command = MUCCommand(Client('host', 'login', 'password'))
         conference = JID.from_string('chat@conference.example.com')
 
@@ -249,22 +214,16 @@ class TestMUCCommand(unittest.TestCase):
         ])
 
     def test_name(self):
-        """
-        Test name property
-        """
+        """ Test name property """
         self.assertEqual('chat', MUCCommand(Client('', '', '')).name)
 
 
 class TestPingCommand(unittest.TestCase):
-    """
-    dewyatochka.core.network.xmpp.client.sleekxmpp.PingCommand
-    """
+    """ Covers dewyatochka.core.network.xmpp.client.sleekxmpp.PingCommand """
 
     @patch.object(Client, 'connection')
     def test_ping(self, connection_mock):
-        """
-        Test ping
-        """
+        """ Test ping """
         command = PingCommand(Client('host', 'login', 'password'))
         destination = JID.from_string('chat@conference.example.com')
         connection_mock.plugin['xep_0199'].ping.side_effect = (1, 2, 3)
@@ -279,9 +238,7 @@ class TestPingCommand(unittest.TestCase):
 
     @patch.object(Client, 'connection')
     def test_ping_not_supported(self, connection_mock):
-        """
-        Behaviour if remote service does not support ping
-        """
+        """ Behaviour if remote service does not support ping """
         command = PingCommand(Client('host', 'login', 'password'))
         connection_mock.plugin['xep_0199'].ping.side_effect = exceptions.IqError(
             {'error': {'condition': 'feature-not-implemented', 'text': '', 'type': ''}}
@@ -291,9 +248,7 @@ class TestPingCommand(unittest.TestCase):
 
     @patch.object(Client, 'connection')
     def test_ping_iq_error(self, connection_mock):
-        """
-        Behaviour on any iq error
-        """
+        """ Behaviour on any iq error """
         command = PingCommand(Client('host', 'login', 'password'))
         destination = JID.from_string('chat@conference.example.com')
         connection_mock.plugin['xep_0199'].ping.side_effect = exceptions.IqError(
@@ -305,9 +260,7 @@ class TestPingCommand(unittest.TestCase):
 
     @patch.object(Client, 'connection')
     def test_ping_xmpp_error(self, connection_mock):
-        """
-        Behaviour on any xmpp error
-        """
+        """ Behaviour on any xmpp error """
         command = PingCommand(Client('host', 'login', 'password'))
         destination = JID.from_string('chat@conference.example.com')
         connection_mock.plugin['xep_0199'].ping.side_effect = exceptions.XMPPError()
@@ -316,7 +269,5 @@ class TestPingCommand(unittest.TestCase):
         self.assertRaises(C2SConnectionError, command)
 
     def test_name(self):
-        """
-        Test name property
-        """
+        """ Test name property """
         self.assertEqual('ping', PingCommand(Client('', '', '')).name)

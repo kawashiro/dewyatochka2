@@ -1,12 +1,12 @@
-# coding=utf-8
+# -*- coding=utf-8
 
-"""
-Tests suite for dewyatochka.core.log.get_logger
-"""
+""" Tests suite for dewyatochka.core.log.get_logger """
+
+import logging
 
 import unittest
-import logging
 from unittest.mock import patch
+
 from dewyatochka.core.log.output import *
 from dewyatochka.core.config.container import CommonConfig
 from dewyatochka.core.config.source.virtual import Empty as EmptySource
@@ -15,15 +15,11 @@ from dewyatochka.core.log import get_logger
 
 
 class TestGetLogger(unittest.TestCase):
-    """
-    dewyatochka.core.log.get_logger
-    """
+    """ Covers dewyatochka.core.log.get_logger """
 
     @patch.object(logging.Logger, 'info')
     def test_get_stdout_logger(self, info_method):
-        """
-        Get stdout logger
-        """
+        """ Get stdout logger """
         app = VoidApplication()
         app.registry.add_service(CommonConfig(app).load(EmptySource()))
 
@@ -33,9 +29,7 @@ class TestGetLogger(unittest.TestCase):
 
     @patch.object(logging.Logger, 'info')
     def test_get_file_logger(self, info_method):
-        """
-        Get stdout logger
-        """
+        """ Get stdout logger """
         app = VoidApplication()
         app.registry.add_service(CommonConfig(app).load(EmptySource()))
 
@@ -45,9 +39,7 @@ class TestGetLogger(unittest.TestCase):
 
     @patch.object(logging.Logger, 'info')
     def test_get_logger_fail(self, info_method):
-        """
-        Get stdout logger
-        """
+        """ Get stdout logger """
         info_method.side_effect = Exception()
 
         app = VoidApplication()

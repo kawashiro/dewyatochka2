@@ -1,27 +1,23 @@
-# coding=utf-8
+# -*- coding=utf-8
 
-"""
-Tests suite for dewyatochka.core.log
-"""
+""" Tests suite for dewyatochka.core.log """
+
+import logging
 
 import unittest
-import logging
 from unittest.mock import patch, Mock, call, PropertyMock
+
 from dewyatochka.core.log.service import LoggingService as Logger
 from dewyatochka.core.log.output import NullHandler
 from dewyatochka.core.application import VoidApplication
 
 
 class TestLogger(unittest.TestCase):
-    """
-    dewyatochka.core.log.service.LoggingService
-    """
+    """ Covers dewyatochka.core.log.service.LoggingService """
 
     @patch.object(Logger, 'config')
     def test_register_handler(self, config_property):
-        """
-        Test log handler registration
-        """
+        """ Test log handler registration """
         config_property.get = Mock(side_effect=(logging.ERROR,))
 
         logger = Logger(VoidApplication())
@@ -36,9 +32,7 @@ class TestLogger(unittest.TestCase):
 
     @patch('logging.getLogger')
     def test_fatal_error(self, get_logger):
-        """
-        Test fatal errors logging
-        """
+        """ Test fatal errors logging """
         module = 'test_module'
         exception = Exception('Test uncaught exception')
         message = '%s failed: %s'
@@ -61,15 +55,11 @@ class TestLogger(unittest.TestCase):
 
     @patch('logging.getLogger')
     def test_call(self, get_logger):
-        """
-        Test __call__() magic method
-        """
+        """ Test __call__() magic method """
         module = 'test_module'
         Logger(VoidApplication())(module)
         get_logger.assert_called_once_with(module)
 
     def test_name(self):
-        """
-        Test service name getter
-        """
+        """ Test service name getter """
         self.assertEqual('log', Logger.name())

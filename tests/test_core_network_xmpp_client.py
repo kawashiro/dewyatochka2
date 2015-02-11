@@ -1,22 +1,17 @@
-# coding=utf-8
+# -*- coding=utf-8
 
-"""
-Tests suite for dewyatochka.core.network.xmpp.client
-"""
+""" Tests suite for dewyatochka.core.network.xmpp.client """
 
 import unittest
+
 from dewyatochka.core.network.xmpp.client import get_client, sleekxmpp
 
 
 class TestGetClient(unittest.TestCase):
-    """
-    dewyatochka.core.network.xmpp.client.get_client
-    """
+    """ Covers dewyatochka.core.network.xmpp.client.get_client """
 
     def test_get_sleekxmpp_client(self):
-        """
-        Test instantiating sleekxmpp based client
-        """
+        """ Test instantiating sleekxmpp based client """
         client = get_client('host', 'login', 'password', 1234, 'foo')
 
         self.assertIsInstance(client, sleekxmpp.Client)

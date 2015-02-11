@@ -1,7 +1,16 @@
 # -*- coding: UTF-8
 
-"""
-Blocking xmpp-client
+""" Miscellaneous xmpp clients
+
+Intended to have more than one implementation
+
+Modules
+=======
+    sleekxmpp -- sleekxmpp lib based client
+
+Functions
+=========
+    get_client -- Get configured client instance
 """
 
 __all__ = ['get_client', 'sleekxmpp']
@@ -10,14 +19,16 @@ from ._base import Client
 
 
 def get_client(host: str, login: str, password: str, port=5222, location='') -> Client:
-    """
-    Get xmpp client instance
-    :param host: str
-    :param login: str
-    :param password: str
-    :param port: str
-    :param location: str
-    :return:
+    """ Get configured client instance
+
+    Try to instantiate client that is satisfied with libs installed
+
+    :param str host: XMPP server host
+    :param str login: User login
+    :param str password: User password
+    :param int port: XMPP server port, default 5222
+    :param str location: XMPP resource, default ''
+    :return Client:
     """
     from . import sleekxmpp  # Only sleekxmpp-based client is supported now
 

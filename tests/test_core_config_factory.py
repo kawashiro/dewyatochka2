@@ -1,26 +1,21 @@
-# coding=utf-8
+# -*- coding=utf-8
 
-"""
-Tests suite for dewyatochka.core.log.get_logger
-"""
+""" Tests suite for dewyatochka.core.log.get_logger """
 
 from os import path
+
 import unittest
+
 from dewyatochka.core.config.factory import *
 from dewyatochka.core.config.container import *
 from dewyatochka.core.application import VoidApplication
 
 
 class TestFactoryFunctions(unittest.TestCase):
-    """
-    dewyatochka.core.config.factory
-    """
+    """ Covers dewyatochka.core.config.factory """
 
     def setUp(self):
-        """
-        Initialize test cases
-        :return: void
-        """
+        """ Initialize test cases """
         self._expected_types = (
             (get_common_config, CommonConfig),
             (get_conferences_config, ConferencesConfig),
@@ -28,9 +23,7 @@ class TestFactoryFunctions(unittest.TestCase):
         )
 
     def test_factory_functions(self):
-        """
-        Test factories
-        """
+        """ Test factories """
         application = VoidApplication()
         custom_path = path.dirname(__file__) + '/files/config/ini_file.ini'
 
