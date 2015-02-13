@@ -160,7 +160,7 @@ class TestClient(unittest.TestCase):
         client = Client('', '', '')
 
         client._queue_connection_error()
-        self.assertEquals(0, client._message_queue.unfinished_tasks)
+        self.assertEqual(0, client._message_queue.unfinished_tasks)
 
     def test_connection(self):
         """ Test connection property """

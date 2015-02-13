@@ -70,9 +70,9 @@ class Client(_base.Client):
         :return None:
         """
         if not self._connected:
-            raise ClientDisconnectedError('XMPP client is not connected to disconnect it')
+            raise ClientDisconnectedError()
 
-        self._message_queue.put(ClientDisconnectedError('XMPP client is shutting down now'))
+        self._message_queue.put(ClientDisconnectedError())
         if wait:
             self._message_queue.join()
 
@@ -170,7 +170,7 @@ class Client(_base.Client):
         :return sleekxmpp.ClientXMPP:
         """
         if not self._connected:
-            raise ClientDisconnectedError('XMPP connection is not established')
+            raise ClientDisconnectedError()
 
         return self._sleekxmpp
 

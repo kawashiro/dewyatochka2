@@ -81,6 +81,7 @@ class JID():
         :param str jid: str('somebody@example.com/resource')
         :return JID:
         """
+        # TODO: Perform some minimal validation
         parts = jid.split('/')
         login, server = parts[0].split('@')
 

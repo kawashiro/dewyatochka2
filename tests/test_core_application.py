@@ -165,7 +165,7 @@ class TestRegistry(unittest.TestCase):
         self.assertEqual({}, registry._services)
 
     def test_service_registration(self):
-        """ Test add_service() / get_service() """
+        """ Test add_service() / get_service() / add_service_alias() """
         service = _EmptyNamedService(VoidApplication())
 
         registry = Registry()
@@ -174,6 +174,11 @@ class TestRegistry(unittest.TestCase):
         self.assertEqual(service, registry.get_service('test_service'))
         self.assertEqual(service, registry.get_service(_EmptyNamedService))
         self.assertEqual(service, registry.test_service)
+
+        registry.add_service_alias('test_service', 'test_service2')
+        self.assertEqual(registry.test_service, registry.test_service2)
+
+        self.assertRaises(RuntimeError, registry.add_service, _EmptyNamedService(VoidApplication()))
 
     def test_unregistered_service(self):
         """ Test that RuntimeError is thrown if service is not registered """

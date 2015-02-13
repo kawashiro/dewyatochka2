@@ -105,7 +105,7 @@ class VoidApplication(Application):  # pragma: no cover
         pass
 
 
-class Service(metaclass=ABCMeta):
+class Service():
     """ Abstract registrable service """
 
     def __init__(self, application: Application):
@@ -155,13 +155,36 @@ class Registry():
         """ Initialize services storage """
         self._services = {}
 
+    def __add_service(self, name: str, service: Service):
+        """ Assign a service to name
+
+        :param str name:
+        :param Service service:
+        :return None:
+        """
+        if name in self._services.keys():
+            raise RuntimeError('Service "%s" is already registered' % name)
+
+        self._services[name] = service
+
     def add_service(self, service: Service):
         """ Add a service to the registry
 
         :param Service service: Service instance
         :return None:
         """
-        self._services[service.name()] = service
+        self.__add_service(service.name(), service)
+
+    def add_service_alias(self, original: str, alias: str):
+        """ Add an alias to the service
+
+        Service may be accessible by two different attributes after that.
+
+        :param str original: Original name of the registered service
+        :param str alias: Alias to be added
+        :return None:
+        """
+        self.__add_service(alias, self.get_service(original))
 
     def get_service(self, service) -> Service:
         """ Get service by name
