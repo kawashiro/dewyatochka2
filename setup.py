@@ -5,7 +5,7 @@
 
 import sys
 import os
-from distutils.core import setup  # , Extension
+from distutils.core import setup, Extension
 
 # Some dirty hack to define version in one place
 sys.path.append(os.path.realpath(os.path.dirname(__file__)) + '/src')
@@ -31,14 +31,20 @@ setup(
               'dewyatochka.core',
               'dewyatochka.core.config',
               'dewyatochka.core.config.source',
+              'dewyatochka.core.daemon',
               'dewyatochka.core.log',
               'dewyatochka.core.network',
               'dewyatochka.core.network.xmpp',
               'dewyatochka.core.network.xmpp.client',
+              'dewyatochka.core.plugin',
+              'dewyatochka.core.plugin.helper_sys',
+              'dewyatochka.core.plugin.loader',
+              'dewyatochka.core.plugin.message_sys',
+              'dewyatochka.core.plugin.message_sys.matcher',
               'dewyatochka.plugins',
               'dewyatochka.utils'],
     # Python extensions
-    #ext_modules=[Extension('dewyatochka.binary', ['src/ext/binarymodule/binarymodule.c'])],
+    ext_modules=[Extension('dewyatochka.core.daemon._daemon', ['src/ext/daemon/module.c', 'src/ext/daemon/detach.c'])],
     # Executable files
     scripts=['src/dewyatochkad'],
     # Data files
