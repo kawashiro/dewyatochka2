@@ -25,10 +25,14 @@ class TestJID(unittest.TestCase):
         self.assertEqual(resource, jid.resource)
         self.assertEqual(jid_str, jid.jid)
         self.assertEqual(jid_str, str(jid))
+        self.assertIsInstance(hash(jid), int)
 
         jid_without_resource = JID(login, server)
         self.assertEqual(jid_str.split('/')[0], jid_without_resource.jid)
         self.assertEqual('', jid_without_resource.resource)
+        self.assertEqual(jid_without_resource, jid_without_resource.bare)
+        self.assertEqual(jid_without_resource, jid.bare)
+        self.assertNotEqual(hash(jid), hash(jid_without_resource))
 
     def test_eq(self):
         """ Test two JIDs comparison """

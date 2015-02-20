@@ -46,7 +46,10 @@ class TestService(unittest.TestCase):
     @patch.object(Service, 'log')
     def test_plugins_loading(self, logger_mock):
         """ Test loading plugins """
-        entries = [PluginEntry(None, None), PluginEntry(None, None), PluginEntry(None, None), PluginEntry(None, None)]
+        def _cb(**_):
+            pass
+
+        entries = [PluginEntry(_cb, None), PluginEntry(_cb, None), PluginEntry(_cb, None), PluginEntry(_cb, None)]
 
         loader1 = Mock()
         loader1.load.side_effect = [entries[:2]]
@@ -69,9 +72,12 @@ class TestService(unittest.TestCase):
 
     @patch.object(Service, 'log')
     def test_plugins_loading_fail(self, logger_mock):
-        """ Test loading plugins """
+        """ Test loading plugins (fail) """
+        def _cb(**_):
+            pass
+
         loader = Mock()
-        loader.load.side_effect = [[PluginEntry(None, None)]]
+        loader.load.side_effect = [[PluginEntry(_cb, None)]]
 
         wrapper = Mock()
         wrapper.wrap.side_effect = RuntimeError()
@@ -118,6 +124,9 @@ class TestWrapper(unittest.TestCase):
             def name(cls) -> str:
                 return 'log'
 
+        def _cb(**_):
+            pass
+
         app = VoidApplication()
         app.registry.add_service(_FooService(app))
         app.registry.add_service(_BarService(app))
@@ -125,7 +134,7 @@ class TestWrapper(unittest.TestCase):
         app.registry.add_service(_LogService(app))
 
         service = _DummyService(app)
-        entry = PluginEntry(None, {'services': ['foo', 'bar']})
+        entry = PluginEntry(_cb, {'services': ['foo', 'bar']})
 
         wrapper = Wrapper(service)
         env = wrapper.wrap(entry)
@@ -133,17 +142,17 @@ class TestWrapper(unittest.TestCase):
         self.assertEqual({'foo', 'ext_config', 'config', 'log', 'bar'}, set(env._registry._services.keys()))
         self.assertIsInstance(env._registry.foo, _FooService)
         self.assertIsInstance(env._registry.bar, _BarService)
-        self.assertIsInstance(env._registry.log, _LogService)
+        self.assertIsInstance(env._registry.log, PluginLogService)
         self.assertIsInstance(env._registry.ext_config, _ExtConfigService)
         self.assertEqual(env._registry.ext_config, env._registry.config)
 
-        entry_empty1 = PluginEntry(None, {'services': None})
-        entry_empty2 = PluginEntry(None, {})
+        entry_empty1 = PluginEntry(_cb, {'services': None})
+        entry_empty2 = PluginEntry(_cb, {})
 
         env_empty1 = wrapper.wrap(entry_empty1)
         env_empty2 = wrapper.wrap(entry_empty2)
         self.assertEqual({'ext_config', 'config', 'log'}, set(env_empty1._registry._services.keys()))
         self.assertEqual({'ext_config', 'config', 'log'}, set(env_empty2._registry._services.keys()))
 
-        entry_invalid = PluginEntry(None, {'services': ['foo', 'bar', 'baz']})
+        entry_invalid = PluginEntry(_cb, {'services': ['foo', 'bar', 'baz']})
         self.assertRaises(RuntimeError, wrapper.wrap, entry_invalid)

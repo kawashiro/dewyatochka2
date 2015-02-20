@@ -6,7 +6,7 @@ import _thread
 import queue
 
 import unittest
-from unittest.mock import patch, MagicMock, ANY, call
+from unittest.mock import patch, Mock, MagicMock, ANY, call
 
 from sleekxmpp import jid as sleekjid
 from sleekxmpp import ClientXMPP
@@ -142,8 +142,10 @@ class TestClient(unittest.TestCase):
     def test_queue_presence_error(self):
         """ Test queueing presence error """
         client = Client('', '', '')
+        jid = Mock()
+        jid.bare = 'foo@example.com'
 
-        client._queue_presence_error({'error': {'text': 'Something wrong'}})
+        client._queue_presence_error({'error': {'text': 'Something wrong'}, 'from': jid})
         self.assertRaises(S2SConnectionError, client.read)
 
     def test_queue_connection_error(self):

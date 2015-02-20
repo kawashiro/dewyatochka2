@@ -104,9 +104,9 @@ class TestClient(unittest.TestCase):
     def test_context_normal(self, disconnect_method, connect_method):
         """ Test __enter__ / __exit__ without exceptions """
         with _ClientStub('', '', ''):
-            connect_method.assert_called_once_with()
+            self.assertEqual(0, connect_method.call_count)
 
-        disconnect_method.assert_called_once_with()
+        disconnect_method.assert_called_once_with(wait=True)
 
     @patch.object(_ClientStub, 'disconnect')
     def test_context_connection_error(self, disconnect_method):
@@ -128,4 +128,4 @@ class TestClient(unittest.TestCase):
         except Exception:
             pass
 
-        disconnect_method.assert_called_once_with()
+        disconnect_method.assert_called_once_with(wait=False)

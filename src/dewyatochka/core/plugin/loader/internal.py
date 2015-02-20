@@ -22,6 +22,7 @@ from dewyatochka import plugins  # Be careful to remove this import
 from dewyatochka.core.plugin.base import Loader as BaseLoader
 from dewyatochka.core.plugin.base import PluginEntry
 from dewyatochka.core.plugin.base import Service
+from dewyatochka.core.config.exception import SectionRetrievingError
 
 
 # Entry points dict grouped by entry point type
@@ -85,10 +86,17 @@ class Loader(BaseLoader):
                     continue  # pragma: no cover
 
                 try:
+                    conf_name = load_name.split(self.__PKG_SEP)[-1]
+                    service.application.registry.ext_config.section(conf_name, require=True)
+                except SectionRetrievingError:
+                    service.application.registry.log(__name__).warning('Plugin %s is disabled', load_name)
+                    continue
+
+                try:
                     importlib.import_module(load_name)
-                    service.log.info('Loaded plugin: %s', load_name)
+                    service.application.registry.log(__name__).info('Loaded plugin: %s', load_name)
                 except Exception as e:
-                    service.log.exception('Failed to load module %s: %s', load_name, e)
+                    service.application.registry.log(__name__).error('Failed to load module %s: %s', load_name, e)
 
             _ready = True
 

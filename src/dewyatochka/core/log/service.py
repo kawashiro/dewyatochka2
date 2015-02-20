@@ -11,11 +11,19 @@ __all__ = ['LoggingService']
 
 import logging
 
-from dewyatochka.core.application import Service
+from dewyatochka.core.application import Application, Service
 
 
 class LoggingService(Service):
     """ Logging app service """
+
+    def __init__(self, application: Application):
+        """ Initialize service & attach an application to it
+
+        :param Application application:
+        """
+        super().__init__(application)
+        self._global_level = logging.NOTSET
 
     def register_handler(self, handler):
         """ Register global handler for compatibility with third-party libs
@@ -25,6 +33,7 @@ class LoggingService(Service):
         """
         logger = logging.getLogger()
         logger.setLevel(self.config.get('level', logging.INFO))
+        self._global_level = logger.level
 
         logger.handlers = []
         logger.addHandler(handler)
@@ -36,12 +45,12 @@ class LoggingService(Service):
         :param Exception exception: Exception instance
         :return None:
         """
-        message = '%s failed: %s'
         logger = self(module_name)
-        logger.critical(message, module_name, exception)
 
-        if logger.level < logging.INFO:
-            logger.exception(message, module_name, exception)
+        if self._global_level == logging.DEBUG:
+            logger.exception(str(exception))
+        else:
+            logger.critical(str(exception))
 
     @classmethod
     def name(cls) -> str:

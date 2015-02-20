@@ -4,15 +4,15 @@
 
 import unittest
 
-from dewyatochka.core.network.xmpp.client import get_client, sleekxmpp
+from dewyatochka.core.network.xmpp.client import create, sleekxmpp
 
 
-class TestGetClient(unittest.TestCase):
-    """ Covers dewyatochka.core.network.xmpp.client.get_client """
+class TestCreate(unittest.TestCase):
+    """ Covers dewyatochka.core.network.xmpp.client.create """
 
     def test_get_sleekxmpp_client(self):
         """ Test instantiating sleekxmpp based client """
-        client = get_client('host', 'login', 'password', 1234, 'foo')
+        client = create('host', 'login', 'password', 1234, 'foo')
 
         self.assertIsInstance(client, sleekxmpp.Client)
         self.assertIsInstance(client.ping, sleekxmpp.PingCommand)

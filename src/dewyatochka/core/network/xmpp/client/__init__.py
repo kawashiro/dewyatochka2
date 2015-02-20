@@ -10,15 +10,15 @@ Modules
 
 Functions
 =========
-    get_client -- Get configured client instance
+    create -- Get configured client instance
 """
 
-__all__ = ['get_client', 'sleekxmpp']
+__all__ = ['create', 'sleekxmpp']
 
 from ._base import Client
 
 
-def get_client(host: str, login: str, password: str, port=5222, location='') -> Client:
+def create(host: str, login: str, password: str, port=5222, location='') -> Client:
     """ Get configured client instance
 
     Try to instantiate client that is satisfied with libs installed

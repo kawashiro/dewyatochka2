@@ -14,6 +14,7 @@ __all__ = ['ConfigContainer', 'CommonConfig', 'ConferencesConfig', 'ExtensionsCo
 
 from dewyatochka.core.application import Application, Service
 from dewyatochka.core.config.source import ConfigSource
+from dewyatochka.core.config.exception import SectionRetrievingError
 
 
 class ConfigContainer(Service):
@@ -40,15 +41,18 @@ class ConfigContainer(Service):
         self._data = config_parser.read()
         return self
 
-    def section(self, section: str) -> dict:
+    def section(self, section: str, require=False) -> dict:
         """ Get config section
 
         :param str section: Section name
+        :param bool require: Raise an exception if section is not found
         :return dict:
         """
         try:
             return self._data[section]
         except KeyError:
+            if require:
+                raise SectionRetrievingError('Config section %s is not defined' % section)
             return {}
 
     @classmethod
@@ -59,13 +63,12 @@ class ConfigContainer(Service):
         """
         return 'config'
 
-    def __iter__(self) -> dict:
+    def __iter__(self):
         """ Return sections iterator
 
-        :return dict:
+        :return iterator:
         """
-        #TODO: Remove or fix it
-        return self._data
+        return iter(self._data)
 
 
 class CommonConfig(ConfigContainer):

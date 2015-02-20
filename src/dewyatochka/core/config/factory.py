@@ -53,21 +53,29 @@ def get_common_config(application: Application, path=None) -> CommonConfig:
     return _get_file_config_instance(CommonConfig, application, path or COMMON_CONFIG_DEFAULT_PATH)
 
 
-def get_conferences_config(application: Application, path=None) -> ConferencesConfig:
+def get_conferences_config(application: Application) -> ConferencesConfig:
     """ Get conferences config container instance
 
     :param Application application: Application instance
-    :param str path: Path to config location, None to use default one
     :return ConferencesConfig:
     """
-    return _get_file_config_instance(ConferencesConfig, application, path or CONFERENCES_CONFIG_DEFAULT_PATH)
+    try:
+        path = application.registry.config.global_section['conferences']
+    except:
+        path = CONFERENCES_CONFIG_DEFAULT_PATH
+
+    return _get_file_config_instance(ConferencesConfig, application, path)
 
 
-def get_extensions_config(application: Application, path=None) -> ExtensionsConfig:
+def get_extensions_config(application: Application) -> ExtensionsConfig:
     """ Get extensions config container instance
 
     :param Application application: Application instance
-    :param str path: Path to config location, None to use default one
     :return ExtensionsConfig:
     """
-    return _get_file_config_instance(ExtensionsConfig, application, path or EXTENSIONS_CONFIG_DEFAULT_PATH)
+    try:
+        path = application.registry.config.global_section['extensions']
+    except:
+        path = EXTENSIONS_CONFIG_DEFAULT_PATH
+
+    return _get_file_config_instance(ExtensionsConfig, application, path)

@@ -15,7 +15,7 @@ __all__ = ['Client', 'Command']
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 from dewyatochka.core.network.xmpp.entity import *
-from dewyatochka.core.network.xmpp.exception import C2SConnectionError
+from dewyatochka.core.network.xmpp.exception import C2SConnectionError, ClientDisconnectedError
 
 
 class Command(metaclass=ABCMeta):
@@ -133,11 +133,10 @@ class Client(metaclass=ABCMeta):
         return self.get_command(item)
 
     def __enter__(self):
-        """ Open connection on entering in with statement
+        """ Entering in with statement
 
         :return Client:
         """
-        self.connect()
         return self
 
     def __exit__(self, *args) -> bool:
@@ -146,7 +145,12 @@ class Client(metaclass=ABCMeta):
         :param tuple args:
         :return bool:
         """
+        exc_instance = args[1]
+
+        if isinstance(exc_instance, ClientDisconnectedError):
+            return True
+
         if not isinstance(args[1], C2SConnectionError):
-            self.disconnect()
+            self.disconnect(wait=args[1] is None)
 
         return False

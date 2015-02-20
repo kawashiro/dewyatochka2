@@ -95,7 +95,7 @@ class INIFiles(Filesystem):
         except configparser.Error as e:
             raise ReadError(e)
 
-        return parser
+        return {section: parser[section] for section in parser.sections()}
 
     @property
     def file_extension(self) -> str:

@@ -2,8 +2,7 @@ include INSTALL
 include LICENSE
 include README.md
 include tests.py
-recursive-include src/ext *.c
-recursive-include src/ext *.h
+recursive-include src/ext *
 recursive-include pkg *
 recursive-include tests *
 recursive-exclude tests *.pyc

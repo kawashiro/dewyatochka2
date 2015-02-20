@@ -12,10 +12,11 @@ Sub-packages
     log     -- Logging implementation
     network -- Implementation of application-level network protocols
     plugin  -- Plugins loading system
+    daemon  -- Dewyatochka daemon implementation package
 
 Modules
 =======
     application -- Something like "framework" to build all dewyatochka apps on
 """
 
-__all__ = ['application', 'config', 'log', 'network', 'plugin']
+__all__ = ['application', 'config', 'daemon', 'log', 'network', 'plugin']

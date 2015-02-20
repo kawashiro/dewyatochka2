@@ -2,6 +2,7 @@
 
 """ Tests suite for dewyatochka.core.application """
 
+import time
 from threading import Event
 
 import unittest
@@ -108,6 +109,19 @@ class TestApplication(unittest.TestCase):
         self.assertTrue(app.running)
         self.assertEqual(2, is_set_method.call_count)
 
+    def test_sleep(self):
+        """ Test stop waiting with timeout """
+        app = VoidApplication()
+
+        start = int(time.time())
+        app.sleep(1)
+        self.assertEqual(start + 1, int(time.time()))
+
+        app.stop()
+        start = int(time.time())
+        app.sleep(1)
+        self.assertEqual(start, int(time.time()))
+
 
 class TestService(unittest.TestCase):
     """ Covers dewyatochka.core.application.Service """
@@ -149,7 +163,7 @@ class TestService(unittest.TestCase):
         registry_mock = PropertyMock()
 
         self.assertIsInstance(_EmptyService(VoidApplication(registry_mock)).log, MagicMock)
-        registry_mock.log.assert_called_once_with(service_name)
+        registry_mock.log.assert_called_once_with(__name__)
 
     def test_name(self):
         """ Test default name property """

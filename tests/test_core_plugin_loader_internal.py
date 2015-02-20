@@ -52,4 +52,4 @@ class TestLoader(unittest.TestCase):
         self.assertEqual(3, importlib_mock.call_count)
         importlib_mock.assert_has_calls([call('dewyatochka.plugins.package'),
                                          call('dewyatochka.plugins.with_exception'),
-                                         call('dewyatochka.plugins.module')])
+                                         call('dewyatochka.plugins.module')], any_order=True)

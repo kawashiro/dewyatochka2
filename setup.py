@@ -28,6 +28,9 @@ setup(
     package_dir={'': 'src/'},
     packages=['dewyatochka',
               'dewyatochka.applications',
+              'dewyatochka.applications.daemon',
+              'dewyatochka.applications.daemon._process',
+              'dewyatochka.applications.daemon._process.conference',
               'dewyatochka.core',
               'dewyatochka.core.config',
               'dewyatochka.core.config.source',
@@ -44,7 +47,7 @@ setup(
               'dewyatochka.plugins',
               'dewyatochka.utils'],
     # Python extensions
-    ext_modules=[Extension('dewyatochka.core.daemon._daemon', ['src/ext/daemon/module.c', 'src/ext/daemon/detach.c'])],
+    ext_modules=[Extension('dewyatochka.core.daemon._utils', ['src/ext/daemon/utilsmodule.c', ])],
     # Executable files
     scripts=['src/dewyatochkad'],
     # Data files

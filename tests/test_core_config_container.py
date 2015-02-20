@@ -14,14 +14,14 @@ class TestConfigContainer(unittest.TestCase):
 
     def test_init(self):
         """ Test __init__() """
-        self.assertEqual({}, ConfigContainer(VoidApplication()).__iter__())
+        self.assertEqual({}, ConfigContainer(VoidApplication())._data)
 
     def test_load_section(self):
         """ Test loading data from config source and fetching one section """
         config = {'foo': {'bar': 'baz'}}
         container = ConfigContainer(VoidApplication()).load(Predefined(config))
 
-        self.assertEqual(config, container.__iter__())
+        self.assertEqual(config, {k: container.section(k) for k in container})
         self.assertEqual(config['foo'], container.section('foo'))
         self.assertEqual({}, container.section('null'))
 

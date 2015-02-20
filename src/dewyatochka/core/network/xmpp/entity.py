@@ -26,6 +26,7 @@ class JID():
         self._server = server
         self._resource = resource
         self._jid = '{}@{}{}'.format(login, server, ('/%s' % resource) if resource else '')
+        self._bare = JID(login, server) if resource else self
 
     @property
     def login(self) -> str:
@@ -52,6 +53,14 @@ class JID():
         return self._resource
 
     @property
+    def bare(self):
+        """ Get bare JID instance
+
+        :return JID:
+        """
+        return self._bare
+
+    @property
     def jid(self) -> str:
         """ Get full JID
 
@@ -66,13 +75,20 @@ class JID():
         """
         return self.jid
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """ Check if JIDs are equal
 
         :param JID other:
         :return bool:
         """
         return str(self) == str(other)
+
+    def __hash__(self) -> int:
+        """ Calculate unique hash
+
+        :return int:
+        """
+        return hash('jid:///%s' % self)
 
     @classmethod
     def from_string(cls, jid: str):
@@ -81,11 +97,15 @@ class JID():
         :param str jid: str('somebody@example.com/resource')
         :return JID:
         """
-        # TODO: Perform some minimal validation
-        parts = jid.split('/')
-        login, server = parts[0].split('@')
+        try:
+            parts = jid.split('/')
+            login, server = parts[0].split('@')
+            if len(parts) > 2:
+                raise ValueError()
 
-        return cls(login, server, parts[1] if len(parts) > 1 else '')
+            return cls(login, server, parts[1] if len(parts) > 1 else '')
+        except (ValueError, AttributeError):
+            raise ValueError('Invalid JID (%s)' % repr(jid))
 
 
 class Message():

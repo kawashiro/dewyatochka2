@@ -38,8 +38,8 @@ def _convert_message(raw_message: dict) -> ChatMessage:
     :param dict raw_message:
     :return ChatMessage:
     """
-    return ChatMessage(JID.from_string(raw_message['from'].bare),
-                       JID.from_string(raw_message['to'].bare),
+    return ChatMessage(JID.from_string(raw_message['from'].full),
+                       JID.from_string(raw_message['to'].full),
                        raw_message['body'])
 
 
@@ -86,12 +86,11 @@ class Client(_base.Client):
 
         :return Message:
         """
-        try:
-            message = self._message_queue.get()
-            if isinstance(message, Exception):
-                raise message
-        finally:
-            self._message_queue.task_done()
+        message = self._message_queue.get()
+        self._message_queue.task_done()
+
+        if isinstance(message, Exception):
+            raise message
 
         return message
 
@@ -148,20 +147,17 @@ class Client(_base.Client):
         :param dict presence:
         :return None:
         """
-        self._message_queue.put(S2SConnectionError(presence['error']['text']))
+        remote_member = JID.from_string(presence['from'].bare)
+        self._message_queue.put(S2SConnectionError(presence['error']['text'], remote=remote_member))
 
-    def _queue_connection_error(self):
+    def _queue_connection_error(self, _=None):
         """ Put connection error into messages queue
 
         :return None:
         """
-        self._connection_lock.acquire()
-
         if self._connected:
             self._connected = False
             self._message_queue.put(C2SConnectionError('Connection broken'))
-
-        self._connection_lock.release()
 
     @property
     def connection(self) -> sleekxmpp.ClientXMPP:
@@ -173,6 +169,17 @@ class Client(_base.Client):
             raise ClientDisconnectedError()
 
         return self._sleekxmpp
+
+    def __exit__(self, *args) -> bool:
+        """ Close connection on exit if needed
+
+        :param tuple args:
+        :return bool:
+        """
+        if self._connected:
+            return super().__exit__(*args)
+
+        return False
 
 
 class MUCCommand(_base.Command):
@@ -259,10 +266,10 @@ class PingCommand(_base.Command):
         except sleekexception.IqError as e:
             if e.condition != MessageError.CONDITION_NOT_IMPLEMENTED:
                 # feature-not-implemented error does not mean that connection is broken
-                raise C2SConnectionError(e) if destination is None else S2SConnectionError(e)
+                raise C2SConnectionError(e) if destination is None else S2SConnectionError(e, remote=destination)
             ping = -1
         except sleekexception.XMPPError as e:
-            raise C2SConnectionError(e) if destination is None else S2SConnectionError(e)
+            raise C2SConnectionError(e) if destination is None else S2SConnectionError(e, remote=destination)
 
         return ping
 

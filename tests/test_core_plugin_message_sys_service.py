@@ -26,11 +26,15 @@ class TestEnvironment(unittest.TestCase):
         message = ChatMessage(JID.from_string('jid1@example.com'), JID.from_string('jid1@example.com'), 'text')
         additional_args = {'foo': 'bar'}
 
-        env = Environment(plugin_fn, registry, matcher)
-        env.invoke(message, **additional_args)
-        env.invoke(message, **additional_args)
+        env = Environment(plugin_fn, registry, None, matcher)
+        env._output_wrappers[str(message.sender.bare)] = Output(None, None)
+        env.invoke(message=message, **additional_args)
+        env.invoke(message=message, **additional_args)
 
-        plugin_fn.assert_called_once_with(message=message, registry=registry, foo='bar')
+        plugin_fn.assert_called_once_with(inp=message,
+                                          outp=env._output_wrappers[str(message.sender.bare)],
+                                          registry=registry,
+                                          foo='bar')
         matcher.match.assert_has_calls([call(message), call(message)])
 
 

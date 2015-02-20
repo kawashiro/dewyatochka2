@@ -27,4 +27,4 @@ Sub-packages
 
 __version__ = '0.0.1'
 
-__all__ = ['applications', 'core', 'plugins', 'daemon']
+__all__ = ['applications', 'core', 'plugins', 'utils']

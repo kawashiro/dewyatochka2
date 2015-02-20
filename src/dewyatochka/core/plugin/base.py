@@ -4,10 +4,11 @@
 
 Classes
 =======
-    Environment -- Minimal plugin environment
-    Service     -- Plugins container service
-    Loader      -- Abstract plugins loader
-    Wrapper     -- Wraps a plugin into environment
+    Environment      -- Minimal plugin environment
+    Service          -- Plugins container service
+    Loader           -- Abstract plugins loader
+    Wrapper          -- Wraps a plugin into environment
+    PluginLogService -- Named logger for plugin
 
 Attributes
 ==========
@@ -15,7 +16,7 @@ Attributes
         and attributes which plugin has been registered with
 """
 
-__all__ = ['Environment', 'Service', 'Loader', 'Wrapper', 'PluginEntry']
+__all__ = ['Environment', 'Service', 'Loader', 'Wrapper', 'PluginEntry', 'PluginLogService']
 
 from collections import namedtuple
 from abc import ABCMeta, abstractmethod, abstractproperty
@@ -53,13 +54,33 @@ class Environment():
         """
         self._plugin(registry=self._registry, **kwargs)
 
-    def __call__(self, **kwargs):
+    @property
+    def name(self) -> str:
+        """ Get unique name
+
+        :return str:
+        """
+        return '{}[{}.{}]'.format(self.__module__, self._plugin.__module__, self._plugin.__name__)
+
+    def __str__(self) -> str:
+        """ Convert to string (=name)
+
+        :return str:
+        """
+        return self.name
+
+    def __call__(self, *, logger=None, **kwargs):
         """ Let it be invokable too (as a plugin is)
 
+        :param logging.Logger logger:
         :param dict kwargs:
         :return None:
         """
-        self.invoke(**kwargs)
+        try:
+            self.invoke(**kwargs)
+        except Exception as e:
+            if logger is not None:
+                logger.error('Plugin %s failed: %s', self, e)
 
 
 class Service(AppService, metaclass=ABCMeta):
@@ -89,7 +110,10 @@ class Service(AppService, metaclass=ABCMeta):
                 try:
                     self._plugins.append(wrapper.wrap(entry))
                 except Exception as e:
-                    self.log.error('Failed to register plugin %s: %s', repr(entry.plugin), e)
+                    self.log.error('Failed to register plugin %s.%s: %s',
+                                   entry.plugin.__module__,
+                                   entry.plugin.__name__,
+                                   e)
 
         self.log.info('Loaded %d plugins', len(self._plugins))
 
@@ -159,7 +183,7 @@ class Wrapper():
         plugin_registry.add_service(self._service.application.registry.ext_config)
         plugin_registry.add_service_alias('ext_config', 'config')
 
-        plugin_registry.add_service(self._service.application.registry.log)
+        plugin_registry.add_service(PluginLogService(self._service.application, entry.plugin))
 
         return plugin_registry
 
@@ -170,3 +194,32 @@ class Wrapper():
         :return Environment:
         """
         return Environment(entry.plugin, self._get_registry(entry))
+
+
+class PluginLogService(AppService):
+    """ Named logger for plugin """
+
+    def __init__(self, application: Application, owner: callable):
+        """ Initialize service & attach an application to it
+
+        :param Application application:
+        :param callable owner:
+        """
+        super().__init__(application)
+        self._logger_name = '.'.join((owner.__module__, owner.__name__))
+
+    def __getattr__(self, item):
+        """ Get inner logger attribute
+
+        :param str item:
+        :returns: Depending on value
+        """
+        return getattr(self.application.registry.log(self._logger_name), item)
+
+    @classmethod
+    def name(cls) -> str:
+        """ Get service unique name
+
+        :return str:
+        """
+        return 'log'

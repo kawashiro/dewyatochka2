@@ -40,6 +40,16 @@ class Application(metaclass=ABCMeta):
         """
         return self._registry
 
+    def depend(self, dependent_service):
+        """ Add a dependent service to a registry
+
+        :param type dependent_service: Subclass of Service
+        :return None:
+        """
+        if isinstance(dependent_service, type):
+            dependent_service = dependent_service(self)
+        self.registry.add_service(dependent_service)
+
     @abstractmethod
     def run(self, args: list):  # pragma: no cover
         """ Run application
@@ -55,6 +65,14 @@ class Application(metaclass=ABCMeta):
         :return None:
         """
         self._stop_event.wait()
+
+    def sleep(self, time: int):
+        """ Sleep `time` sec. or until application is stopped
+
+        :param in time: Seconds to sleep
+        :return None:
+        """
+        self._stop_event.wait(time)
 
     def stop(self, exit_code=0):
         """ Stop app
@@ -137,7 +155,7 @@ class Service():
 
         :return Logger:
         """
-        return self.application.registry.log(self.name())
+        return self.application.registry.log(self.__module__)
 
     @classmethod
     def name(cls) -> str:

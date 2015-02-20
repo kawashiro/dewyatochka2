@@ -60,11 +60,11 @@ class TestINIFiles(unittest.TestCase):
     def test_do_read(self):
         """ Test configs parsing """
         config = INIFiles(_CONFIG_FILES_ROOT + '/ini_file.ini').read()
-        self.assertEqual({'section1': {'foo': 'bar'}, 'DEFAULT': {}},
+        self.assertEqual({'section1': {'foo': 'bar'}},
                          {section: dict(config[section]) for section in config})
 
         config = INIFiles(_CONFIG_FILES_ROOT + '/ini_directory/').read()
-        self.assertEqual({'section1': {'foo': 'bar'}, 'section2': {'bar': 'baz'}, 'DEFAULT': {}},
+        self.assertEqual({'section1': {'foo': 'bar'}, 'section2': {'bar': 'baz'}},
                          {section: dict(config[section]) for section in config})
 
         corrupted_source = INIFiles(_CONFIG_FILES_ROOT + '/corrupted_ini_file.ini')

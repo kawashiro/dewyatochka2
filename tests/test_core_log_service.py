@@ -44,14 +44,16 @@ class TestLogger(unittest.TestCase):
         get_logger.side_effect = (module_logger1, module_logger2)
 
         logger = Logger(VoidApplication())
+        logger._global_level = logging.INFO
         logger.fatal_error(module, exception)
+        logger._global_level = logging.DEBUG
         logger.fatal_error(module, exception)
 
         get_logger.assert_has_calls([call(module), call(module)])
-        module_logger1.critical.assert_called_once_with(message, module, exception)
+        module_logger1.critical.assert_called_once_with(str(exception))
         self.assertEqual(0, module_logger1.exception.call_count)
-        module_logger2.critical.assert_called_once_with(message, module, exception)
-        module_logger2.exception.assert_called_once_with(message, module, exception)
+        self.assertEqual(0, module_logger2.critical.call_count)
+        module_logger2.exception.assert_called_once_with(str(exception))
 
     @patch('logging.getLogger')
     def test_call(self, get_logger):
