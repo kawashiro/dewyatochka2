@@ -21,10 +21,9 @@ Sub-packages
 ============
     core         -- Core package, contains all the packages needed dewyatochka to work
     plugins      -- Originally empty package used for builtin and third-party plugins auto loading
-    utils        -- Miscellaneous useful modules to use in extensions but not required by core
     applications -- High-level applications implementation
 """
 
 __version__ = '0.0.1'
 
-__all__ = ['applications', 'core', 'plugins', 'utils']
+__all__ = ['applications', 'core', 'plugins']
