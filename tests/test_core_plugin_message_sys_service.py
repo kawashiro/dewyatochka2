@@ -37,6 +37,35 @@ class TestEnvironment(unittest.TestCase):
                                           foo='bar')
         matcher.match.assert_has_calls([call(message), call(message)])
 
+        self.assertRaises(TypeError, env.invoke)
+
+    def test_get_output_wrapper(self):
+        """ Test output wrapper instantiation """
+        xmpp_client = Mock()
+        plugin_fn = Mock()
+        registry = Registry()
+        matcher = Mock()
+        destination = JID.from_string('foo@bar/baz')
+        env = Environment(plugin_fn, registry, xmpp_client, matcher)
+
+        wrapper = env._get_output_wrapper(destination)
+        self.assertEqual(destination.bare.jid, wrapper._conference.jid)
+        self.assertEqual(xmpp_client, wrapper._xmpp_client)
+        self.assertEqual(wrapper, env._get_output_wrapper(destination))
+
+
+class TestOutput(unittest.TestCase):
+    """ Covers dewyatochka.core.plugin.message_sys.service.Output """
+
+    def test_say(self):
+        """ Test say() method """
+        xmpp_client = Mock()
+        destination = JID.from_string('foo@bar/baz')
+
+        out = Output(xmpp_client, destination)
+        out.say('hello')
+        xmpp_client.chat.assert_called_once_with('hello', destination.bare)
+
 
 class TestService(unittest.TestCase):
     """ Covers dewyatochka.core.plugin.message_sys.service.Service """

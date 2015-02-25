@@ -20,7 +20,8 @@ class TestMatcher(unittest.TestCase):
         jid_other = JID.from_string('other@example.com/other')
         jid_other_sys = JID.from_string('other@example.com')
         conf_config = ConferencesConfig(VoidApplication())
-        conf_config.load(Predefined({'c': {'room': 'self@example.com', 'nick': 'nick'}}))
+        conf_config.load(Predefined({'c': {'room': 'self@example.com', 'nick': 'nick'},
+                                     'd': {'room': 'self@ex@mple.com', 'nick': None}}))
 
         chat_message = ChatMessage(jid_other, jid_self, 'Normal chat message')
         own_message = ChatMessage(jid_self, jid_self, 'Own message')

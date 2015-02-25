@@ -172,6 +172,20 @@ class TestClient(unittest.TestCase):
         client._connected = True
         self.assertIsInstance(client.connection, ClientXMPP)
 
+    def test_exit(self):
+        """ Test _connected flag affection on behaviour on __exit__() """
+        def _error(client_):
+            with client_:
+                raise ClientDisconnectedError()
+
+        client = Client('host', 'login', 'password')
+        self.assertRaises(ClientDisconnectedError, _error, client)
+
+        client._connected = True
+        with client:
+            # Suppress error
+            raise ClientDisconnectedError()
+
 
 class TestMUCCommand(unittest.TestCase):
     """ Covers dewyatochka.core.network.xmpp.client.sleekxmpp.MUCCommand """

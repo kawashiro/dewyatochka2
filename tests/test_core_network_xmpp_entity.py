@@ -49,6 +49,9 @@ class TestJID(unittest.TestCase):
         jid = JID.from_string(jid_str)
         self.assertEqual(jid_str, str(jid))
 
+        self.assertRaises(ValueError, JID.from_string, '@@@')
+        self.assertRaises(ValueError, JID.from_string, 'foo@bar/b/a/z')
+
 
 class TestMessage(unittest.TestCase):
     """ Covers dewyatochka.core.network.xmpp.entity.Message """

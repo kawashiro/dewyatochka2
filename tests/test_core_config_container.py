@@ -5,6 +5,7 @@
 import unittest
 
 from dewyatochka.core.config.container import *
+from dewyatochka.core.config.exception import SectionRetrievingError
 from dewyatochka.core.config.source.virtual import Predefined
 from dewyatochka.core.application import VoidApplication
 
@@ -24,6 +25,7 @@ class TestConfigContainer(unittest.TestCase):
         self.assertEqual(config, {k: container.section(k) for k in container})
         self.assertEqual(config['foo'], container.section('foo'))
         self.assertEqual({}, container.section('null'))
+        self.assertRaises(SectionRetrievingError, container.section, 'null', True)
 
     def test_get_name(self):
         """ Test service name getter """

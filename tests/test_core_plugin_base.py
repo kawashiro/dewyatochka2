@@ -34,6 +34,19 @@ class TestEnvironment(unittest.TestCase):
         Environment(plugin, registry)(**kwargs)
         plugin.assert_called_once_with(registry=registry, **kwargs)
 
+        ex_plugin = Mock(side_effect=Exception('Error'))
+        logger = Mock()
+        env = Environment(ex_plugin, registry)
+        env()
+        env(logger=logger)
+        self.assertEqual(1, logger.error.call_count)
+
+    def test_name(self):
+        """ test name getter """
+        plugin = Mock()
+        plugin.__name__ = 'foo'
+        self.assertEqual('dewyatochka.core.plugin.base[unittest.mock.foo]', str(Environment(plugin, Mock())))
+
 
 class TestService(unittest.TestCase):
     """ Covers dewyatochka.core.plugin.base.Service """
@@ -156,3 +169,21 @@ class TestWrapper(unittest.TestCase):
 
         entry_invalid = PluginEntry(_cb, {'services': ['foo', 'bar', 'baz']})
         self.assertRaises(RuntimeError, wrapper.wrap, entry_invalid)
+
+
+class TestPluginLogService(unittest.TestCase):
+    """ Covers dewyatochka.core.plugin.base.PluginLogService """
+
+    def test_attr_get(self):
+        """ Test inner logger getter """
+        def _fn():
+            pass
+        log = Mock()
+        app = Mock()
+        app.registry.log.side_effect = (log,)
+
+        logger = PluginLogService(app, _fn)
+        logger.info('foo')
+
+        app.registry.log.assert_called_once_with('test_core_plugin_base._fn')
+        log.info.assert_called_once_with('foo')

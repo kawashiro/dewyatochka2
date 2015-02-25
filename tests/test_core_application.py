@@ -122,6 +122,16 @@ class TestApplication(unittest.TestCase):
         app.sleep(1)
         self.assertEqual(start, int(time.time()))
 
+    def test_depend(self):
+        """ Test depend() method """
+        app = VoidApplication()
+        app.depend(_EmptyNamedService)
+        self.assertIsInstance(app.registry.test_service, _EmptyNamedService)
+
+        app = VoidApplication()
+        app.depend(_EmptyNamedService(app))
+        self.assertIsInstance(app.registry.test_service, _EmptyNamedService)
+
 
 class TestService(unittest.TestCase):
     """ Covers dewyatochka.core.application.Service """

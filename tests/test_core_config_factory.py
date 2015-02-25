@@ -5,7 +5,7 @@
 from os import path
 
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch, call
 
 from dewyatochka.core.config.factory import *
 from dewyatochka.core.config.container import *
@@ -35,3 +35,16 @@ class TestFactoryFunctions(unittest.TestCase):
             self.assertIsInstance(factory(application), container_class)
 
         self.assertIsInstance(get_common_config(application, custom_path), CommonConfig)
+
+    @patch('dewyatochka.core.config.factory._get_file_config_instance')
+    def test_default_paths(self, factory_mock):
+        """ Test assigning default config paths """
+        app = VoidApplication()
+
+        get_common_config(app)
+        get_conferences_config(app)
+        get_extensions_config(app)
+
+        factory_mock.assert_has_calls([call(CommonConfig, app, COMMON_CONFIG_DEFAULT_PATH),
+                                       call(ConferencesConfig, app, CONFERENCES_CONFIG_DEFAULT_PATH),
+                                       call(ExtensionsConfig, app, EXTENSIONS_CONFIG_DEFAULT_PATH)])

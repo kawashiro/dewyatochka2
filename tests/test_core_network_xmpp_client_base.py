@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from dewyatochka.core.network.xmpp.client._base import *
 from dewyatochka.core.network.xmpp.entity import *
-from dewyatochka.core.network.xmpp.exception import C2SConnectionError
+from dewyatochka.core.network.xmpp.exception import C2SConnectionError, ClientDisconnectedError
 
 
 class _ClientStub(Client):
@@ -129,3 +129,11 @@ class TestClient(unittest.TestCase):
             pass
 
         disconnect_method.assert_called_once_with(wait=False)
+
+    @patch.object(_ClientStub, 'disconnect')
+    def test_context_disconnected_error(self, disconnect_method):
+        """ Test __enter__ / __exit__ on ClientDisconnectedError """
+        with _ClientStub('', '', ''):
+            raise ClientDisconnectedError()
+
+        self.assertEqual(0, disconnect_method.call_count)
