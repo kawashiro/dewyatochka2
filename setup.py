@@ -23,7 +23,7 @@ setup(
     license='GPL-3',
     platforms=['POSIX'],
     # Dependencies
-    requires=['sleekxmpp'],
+    requires=['sleekxmpp', 'pyquery'],
     # Python packages
     package_dir={'': 'src/'},
     packages=['dewyatochka',

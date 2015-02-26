@@ -5,7 +5,10 @@
 Packages
 ========
     xmpp -- XMPP protocol implementation
-    http -- Simplified stupid HTTP-clients
+
+Modules
+=======
+    http -- Simplified stupid HTTP-client
 """
 
 __all__ = ['xmpp', 'http']

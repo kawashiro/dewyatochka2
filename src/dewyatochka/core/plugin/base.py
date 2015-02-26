@@ -23,6 +23,8 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 
 from dewyatochka.core.application import Registry, Application
 from dewyatochka.core.application import Service as AppService
+from dewyatochka.core.config.container import ConfigContainer
+from dewyatochka.core.config.source .virtual import Predefined
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 
 
@@ -180,8 +182,10 @@ class Wrapper():
                         'Failed to get add dependency %s for plugin %s: %s' % (repr(service), repr(entry.plugin), e)
                     )
 
-        plugin_registry.add_service(self._service.application.registry.ext_config)
-        plugin_registry.add_service_alias('ext_config', 'config')
+        plugin_conf_section = entry.plugin.__module__.split('.')[-1]
+        config_container = ConfigContainer(self._service.application)
+        config_container.load(Predefined(self._service.application.registry.ext_config.section(plugin_conf_section)))
+        plugin_registry.add_service(config_container)
 
         plugin_registry.add_service(PluginLogService(self._service.application, entry.plugin))
 

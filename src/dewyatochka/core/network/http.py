@@ -4,10 +4,16 @@
 
 Classes
 =======
-    Client -- Client implementation
+    WebClient -- Simple high-level HTTP-client for browsing
+
+Attributes
+==========
+    TYPE_HTML -- text/html
+    TYPE_JSON -- application/json
+    TYPE_TEXT -- text/plain
 """
 
-__all__ = ['Client']
+__all__ = ['WebClient']
 
 from http.client import HTTPConnection, HTTPSConnection
 from urllib.parse import urlencode
@@ -15,6 +21,24 @@ import json
 from html.parser import HTMLParser
 
 from dewyatochka import __version__
+
+try:
+    from pyquery import PyQuery
+
+except ImportError:
+    class PyQuery():
+        """ Just a stub """
+        def __init__(self, html):
+            self._html = html
+
+        def __call__(self, *_):
+            """ Runtime error on selector assign attempt """
+            raise RuntimeError('PyQuery is not installed')
+
+        def __str__(self) -> str:
+            """ Allow to fetch raw html as a fallback """
+            return self._html
+
 
 # Default user agent to use
 _DEFAULT_USER_AGENT = 'Dewyatochka/%s' % __version__
@@ -72,20 +96,23 @@ def _json_parser(content: bytes, headers: dict):
     return json.loads(content.decode(encoding), encoding)
 
 
-def _html_parser(content, headers: dict):
-    """ str -> dunno
+def _html_parser(content, headers: dict) -> PyQuery:
+    """ str -> PyQuery parser or a stub
 
     :param str content:
     :param dict headers:
-    :returns: dunno
+    :return PyQuery:
     """
     class _HTMLParser(HTMLParser):
         """ Private html parser implementation """
 
         __html_encoding = None
 
-        def handle_starttag(self, tag, attrs):
-            """ Handle start tag """
+        def handle_starttag(self, tag: str, attrs: list):
+            """ Handle start tag
+            :param str tag: Tag name
+            :param list attrs: Attributes
+            """
             if self.__html_encoding or tag.lower() != 'meta':
                 return  # FIXME: Completely break when encoding is found
 
@@ -96,8 +123,10 @@ def _html_parser(content, headers: dict):
             self.__html_encoding = _parse_content_type_enc(attrs_dict.get('content', ''))
 
         @property
-        def encoding(self):
-            """ Get parsed encoding value """
+        def encoding(self) -> str:
+            """ Get parsed encoding value
+            :return str:
+            """
             return self.__html_encoding
 
     # Try to get encoding from headers, use 1-byte encoding by default
@@ -110,8 +139,7 @@ def _html_parser(content, headers: dict):
     if html_parser.encoding and html_parser.encoding != http_encoding:
         str_content = content.decode(html_parser.encoding)
 
-    # TODO: Return DOM parser if possible
-    return str_content
+    return PyQuery(str_content)
 
 
 def _get_parser(content_type: str) -> callable:
@@ -127,7 +155,7 @@ def _get_parser(content_type: str) -> callable:
     }.get(content_type, lambda c, *_: c)
 
 
-class Client:
+class WebClient:
     """ Simple high-level HTTP-client for browsing """
 
     def __init__(self, host, port=None, https=False):

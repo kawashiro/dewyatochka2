@@ -131,6 +131,8 @@ class TestWrapper(unittest.TestCase):
             @classmethod
             def name(cls) -> str:
                 return 'ext_config'
+            def section(self, _):
+                return {}
 
         class _LogService(AppService):
             @classmethod
@@ -152,20 +154,18 @@ class TestWrapper(unittest.TestCase):
         wrapper = Wrapper(service)
         env = wrapper.wrap(entry)
 
-        self.assertEqual({'foo', 'ext_config', 'config', 'log', 'bar'}, set(env._registry._services.keys()))
+        self.assertEqual({'foo', 'config', 'log', 'bar'}, set(env._registry._services.keys()))
         self.assertIsInstance(env._registry.foo, _FooService)
         self.assertIsInstance(env._registry.bar, _BarService)
         self.assertIsInstance(env._registry.log, PluginLogService)
-        self.assertIsInstance(env._registry.ext_config, _ExtConfigService)
-        self.assertEqual(env._registry.ext_config, env._registry.config)
 
         entry_empty1 = PluginEntry(_cb, {'services': None})
         entry_empty2 = PluginEntry(_cb, {})
 
         env_empty1 = wrapper.wrap(entry_empty1)
         env_empty2 = wrapper.wrap(entry_empty2)
-        self.assertEqual({'ext_config', 'config', 'log'}, set(env_empty1._registry._services.keys()))
-        self.assertEqual({'ext_config', 'config', 'log'}, set(env_empty2._registry._services.keys()))
+        self.assertEqual({'config', 'log'}, set(env_empty1._registry._services.keys()))
+        self.assertEqual({'config', 'log'}, set(env_empty2._registry._services.keys()))
 
         entry_invalid = PluginEntry(_cb, {'services': ['foo', 'bar', 'baz']})
         self.assertRaises(RuntimeError, wrapper.wrap, entry_invalid)
