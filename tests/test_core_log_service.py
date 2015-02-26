@@ -18,7 +18,7 @@ class TestLogger(unittest.TestCase):
     @patch.object(Logger, 'config')
     def test_register_handler(self, config_property):
         """ Test log handler registration """
-        config_property.get = Mock(side_effect=(logging.ERROR,))
+        config_property.get = Mock(side_effect=(logging.ERROR, logging.ERROR))
 
         logger = Logger(VoidApplication())
         handler = NullHandler(logger)
@@ -28,7 +28,7 @@ class TestLogger(unittest.TestCase):
         self.assertEqual(logging.ERROR, root_logger.level)
         self.assertEqual([handler], root_logger.handlers)
 
-        config_property.get.assert_called_once_with('level', logging.INFO)
+        config_property.get.assert_has_calls([call('level', 'INFO'), call('level', 'INFO')])
 
     @patch('logging.getLogger')
     def test_fatal_error(self, get_logger):

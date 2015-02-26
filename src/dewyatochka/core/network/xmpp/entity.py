@@ -4,12 +4,14 @@
 
 Classes
 =======
-    JID         -- JID params container
-    Message     -- Common message params container
-    ChatMessage -- Chat text message params container
+    JID          -- JID params container
+    Message      -- Common message params container
+    ChatMessage  -- Chat text message params container
+    ChatPresence -- Groupchat member presence change notification
+    ChatSubject  -- Groupchat subject change notification
 """
 
-__all__ = ['JID', 'Message', 'ChatMessage']
+__all__ = ['JID', 'Message', 'ChatMessage', 'ChatPresence', 'ChatSubject']
 
 
 class JID():
@@ -164,3 +166,64 @@ class ChatMessage(Message):
         :return str:
         """
         return self.text
+
+
+class ChatSubject(ChatMessage):
+    """ Groupchat subject change notification """
+
+    @property
+    def subject(self) -> str:
+        """ Get new subject
+
+        :return str:
+        """
+        return self.text
+
+
+class ChatPresence(Message):
+    """ Groupchat member presence change notification """
+
+    def __init__(self, sender: JID, receiver: JID, p_type: str, status: str, role: str):
+        """ Create message instance
+
+        :param JID sender:
+        :param JID receiver:
+        :param str p_type:
+        :param str status:
+        :param str role:
+        """
+        super().__init__(sender, receiver)
+        self._type = p_type
+        self._status = status
+        self._role = role
+
+    @property
+    def type(self) -> str:
+        """ Get presence type (online / offline / etc)
+
+        :return str:
+        """
+        return self._type
+
+    @property
+    def status(self) -> str:
+        """ Get user status
+
+        :return str:
+        """
+        return self._status
+
+    @property
+    def role(self) -> str:
+        """ Get user role
+
+        :return str:
+        """
+        return self._role
+
+    def __str__(self) -> str:
+        """ Convert to str
+
+        :return str:
+        """
+        return '{} {} is now {} ({})'.format(self.role.capitalize(), self.sender.resource, self.type, self.status)

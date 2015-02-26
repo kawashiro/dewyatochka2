@@ -32,7 +32,7 @@ class LoggingService(Service):
         :return None:
         """
         logger = logging.getLogger()
-        logger.setLevel(self.config.get('level', logging.INFO))
+        logger.setLevel(self.logging_level)
         self._global_level = logger.level
 
         logger.handlers = []
@@ -51,6 +51,14 @@ class LoggingService(Service):
             logger.exception(str(exception))
         else:
             logger.critical(str(exception))
+
+    @property
+    def logging_level(self) -> int:
+        """ Get logging level
+
+        :return int:
+        """
+        return self.config.get('level', 'INFO')
 
     @classmethod
     def name(cls) -> str:

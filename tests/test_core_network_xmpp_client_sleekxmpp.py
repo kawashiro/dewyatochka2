@@ -38,8 +38,7 @@ class TestClient(unittest.TestCase):
 
         client.disconnect()
 
-        sleekxmpp_mock.disconnect.assert_called_once_with()
-        sleekxmpp_mock.set_stop.assert_called_once_with()
+        sleekxmpp_mock.disconnect.assert_called_once_with(send_close=True)
 
         client._connection_lock.__enter__.assert_called_once_with()
         client._connection_lock.__exit__.assert_called_once_with(None, None, None)
@@ -48,8 +47,7 @@ class TestClient(unittest.TestCase):
         client._message_queue.put.assert_called_once_with(ANY)
         self.assertIsInstance(client._message_queue.put.call_args[0][0], ClientDisconnectedError)
 
-        sleekxmpp_mock.disconnect.assert_called_once_with()
-        sleekxmpp_mock.set_stop.assert_called_once_with()
+        sleekxmpp_mock.disconnect.assert_called_once_with(send_close=True)
 
     @patch.object(Client, '_sleekxmpp')
     def test_disconnect_no_wait(self, sleekxmpp_mock):
@@ -61,8 +59,7 @@ class TestClient(unittest.TestCase):
         client.disconnect(wait=False)
         self.assertEqual(0, client._message_queue.join.call_count)
 
-        sleekxmpp_mock.disconnect.assert_called_once_with()
-        sleekxmpp_mock.set_stop.assert_called_once_with()
+        sleekxmpp_mock.disconnect.assert_called_once_with(send_close=False)
 
     def test_disconnect_disconnected(self):
         """ Test exception on disconnecting disconnected client """
@@ -113,32 +110,6 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(sleekxmpp, client._sleekxmpp)
 
-    def test_queue_message(self):
-        """ Test adding raw message to queue """
-        client = Client('', '', '')
-
-        message_ok = {
-            'type': '',
-            'from': sleekjid.JID('sender@example.com'),
-            'to': sleekjid.JID('receiver@example.com'),
-            'body': 'Hello, world'
-        }
-        client._queue_message(message_ok)
-        out_message = client.read()
-        self.assertEqual(message_ok['from'].bare, out_message.sender.jid)
-        self.assertEqual(message_ok['to'].bare, out_message.receiver.jid)
-        self.assertEqual(message_ok['body'], str(out_message))
-
-        message_error = {
-            'type': 'error',
-            'error': {
-                'code': 9000,
-                'text': 'Something wrong'
-            }
-        }
-        client._queue_message(message_error)
-        self.assertRaises(MessageError, client.read)
-
     def test_queue_presence_error(self):
         """ Test queueing presence error """
         client = Client('', '', '')
@@ -148,7 +119,8 @@ class TestClient(unittest.TestCase):
         client._queue_presence_error({'error': {'text': 'Something wrong'}, 'from': jid})
         self.assertRaises(S2SConnectionError, client.read)
 
-    def test_queue_connection_error(self):
+    @patch.object(Client, '_sleekxmpp')
+    def test_queue_connection_error(self, sleekxmpp_mock):
         """ Test on slekxmpp client self-disconnect """
         client = Client('', '', '')
         client._connected = True
@@ -156,6 +128,7 @@ class TestClient(unittest.TestCase):
         client._queue_connection_error()
         self.assertRaises(C2SConnectionError, client.read)
         self.assertFalse(client._connected)
+        sleekxmpp_mock.disconnect.assert_called_once_with(send_close=False)
 
     def test_queue_connection_error_not_connected(self):
         """ Test abnormal _queue_connection_error call """
@@ -185,6 +158,25 @@ class TestClient(unittest.TestCase):
         with client:
             # Suppress error
             raise ClientDisconnectedError()
+
+    def test_do_c2s_connection_check(self):
+        """ Test internal ping check """
+        ping_cmd = Mock(side_effect=(0, C2SConnectionError()))
+        ping_cmd.name = 'ping'
+
+        client = Client('host', 'login', 'password')
+
+        client._do_c2s_connection_check()  # Disconnected, nothing
+        self.assertTrue(client._message_queue.empty())
+        client._connected = True
+        client._do_c2s_connection_check()  # No cmd registered, still nothing
+        self.assertTrue(client._message_queue.empty())
+        client.add_command(ping_cmd)
+        client._do_c2s_connection_check()  # No exception, queue empty
+        self.assertTrue(client._message_queue.empty())
+        client._do_c2s_connection_check()  # Exception, read() raises
+        self.assertRaises(C2SConnectionError, client.read)
+
 
 
 class TestMUCCommand(unittest.TestCase):

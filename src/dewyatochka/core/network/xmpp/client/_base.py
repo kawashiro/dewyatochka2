@@ -100,10 +100,11 @@ class Client(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def disconnect(self, wait=True):  # pragma: no cover
+    def disconnect(self, wait=True, notify=True):  # pragma: no cover
         """ Close connection
 
         :param bool wait: Wait until all received messages are processed
+        :param bool notify: Notify reader about disconnection
         :return None:
         """
         pass

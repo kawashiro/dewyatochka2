@@ -16,6 +16,9 @@ import queue
 
 import sleekxmpp
 from sleekxmpp import exceptions as sleekexception
+from sleekxmpp.xmlstream.stanzabase import ElementBase
+from sleekxmpp.stanza.message import Message as SMessage
+from sleekxmpp.stanza.presence import Presence
 
 from . import _base
 from dewyatochka.core.network.xmpp.entity import *
@@ -30,17 +33,37 @@ _PLUGIN_MUC = 'xep_0045'
 _EVENT_MESSAGE = 'message'
 _EVENT_PRESENCE_ERROR = 'presence_error'
 _EVENT_DISCONNECTED = 'disconnected'
+_EVENT_GC_SUBJECT = 'groupchat_subject'
+_EVENT_GC_PRESENCE = 'groupchat_presence'
 
 
-def _convert_message(raw_message: dict) -> ChatMessage:
+# C2S connection check params
+_TASK_C2S_CHECK_NAME = 'c2s_connection_check'
+_TASK_C2S_CHECK_INTERVAL = 60
+
+
+def _convert_message(raw_message: ElementBase) -> ChatMessage:
     """ Convert message to a Message instance
 
-    :param dict raw_message:
+    :param ElementBase raw_message:
     :return ChatMessage:
     """
-    return ChatMessage(JID.from_string(raw_message['from'].full),
-                       JID.from_string(raw_message['to'].full),
-                       raw_message['body'])
+    if isinstance(raw_message, SMessage) and raw_message['type'] == 'groupchat':
+        if raw_message['body']:
+            return ChatMessage(JID.from_string(raw_message['from'].full),
+                               JID.from_string(raw_message['to'].full),
+                               raw_message['body'])
+        elif raw_message['subject']:
+            return ChatSubject(JID.from_string(raw_message['from'].full),
+                               JID.from_string(raw_message['to'].full),
+                               raw_message['subject'])
+    elif isinstance(raw_message, Presence):
+        return ChatPresence(JID.from_string(raw_message['from'].full),
+                            JID.from_string(raw_message['to'].full),
+                            raw_message['type'],
+                            raw_message['status'],
+                            raw_message['muc']['role'])
+    raise ValueError('Not acceptable message: %s' % raw_message)
 
 
 class Client(_base.Client):
@@ -63,23 +86,25 @@ class Client(_base.Client):
         self._connection_lock = threading.Lock()
         self._message_queue = queue.Queue()
 
-    def disconnect(self, wait=True):
+    def disconnect(self, wait=True, notify=True):
         """ Close connection
 
         :param bool wait: Wait until all received messages are processed
+        :param bool notify: Notify reader about disconnection
         :return None:
         """
         if not self._connected:
             raise ClientDisconnectedError()
 
-        self._message_queue.put(ClientDisconnectedError())
+        if notify:
+            self._message_queue.put(ClientDisconnectedError())
+
         if wait:
             self._message_queue.join()
 
         with self._connection_lock:
             self._connected = False
-            self._sleekxmpp.disconnect()
-            self._sleekxmpp.set_stop()
+            self._sleekxmpp.disconnect(send_close=wait)
 
     def read(self) -> Message:
         """ Read next message from stream
@@ -107,8 +132,8 @@ class Client(_base.Client):
             if not self._connected:
                 raise C2SConnectionError('Failed to connect to %s:%s' % self._server)
 
-            self._sleekxmpp.process()
             self._sleekxmpp.send_presence()
+            self._sleekxmpp.process()
 
     @property
     def _sleekxmpp(self) -> sleekxmpp.ClientXMPP:
@@ -121,12 +146,16 @@ class Client(_base.Client):
             self.__sleekxmpp.register_plugin(_PLUGIN_MUC)
             self.__sleekxmpp.register_plugin(_PLUGIN_PING)
             self.__sleekxmpp.add_event_handler(_EVENT_MESSAGE, self._queue_message)
+            self.__sleekxmpp.add_event_handler(_EVENT_GC_SUBJECT, self._queue_message)
+            self.__sleekxmpp.add_event_handler(_EVENT_GC_PRESENCE, self._queue_message)
             self.__sleekxmpp.add_event_handler(_EVENT_PRESENCE_ERROR, self._queue_presence_error)
             self.__sleekxmpp.add_event_handler(_EVENT_DISCONNECTED, self._queue_connection_error)
+            self.__sleekxmpp.schedule(_TASK_C2S_CHECK_NAME, _TASK_C2S_CHECK_INTERVAL,
+                                      self._do_c2s_connection_check, repeat=True)
 
         return self.__sleekxmpp
 
-    def _queue_message(self, message: dict):
+    def _queue_message(self, message: ElementBase):
         """ Unify message format and put it into messages queue
 
         :param dict message:
@@ -156,8 +185,22 @@ class Client(_base.Client):
         :return None:
         """
         if self._connected:
-            self._connected = False
+            self.disconnect(wait=False, notify=False)
             self._message_queue.put(C2SConnectionError('Connection broken'))
+
+    def _do_c2s_connection_check(self):
+        """ Check C2S connection if possible
+
+        :return None:
+        """
+        try:
+            if self._connected and not self._connection_lock.locked():
+                self.ping()
+        except C2SConnectionError:
+            self._queue_connection_error()
+        except RuntimeError:
+            # Command is not supported, do nothing
+            pass
 
     @property
     def connection(self) -> sleekxmpp.ClientXMPP:

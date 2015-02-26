@@ -17,7 +17,7 @@ from .service import PLUGIN_TYPE_COMMAND, PLUGIN_TYPE_MESSAGE
 _reserved_commands = set()
 
 
-def chat_message(fn=None, *, services=None, regular=True, system=False, own=False) -> callable:
+def chat_message(fn=None, *, services=None, regular=False, system=False, own=False) -> callable:
     """ Decorator to mark function as message handler entry point
 
     :param callable fn: Function if decorator is invoked directly
@@ -27,8 +27,9 @@ def chat_message(fn=None, *, services=None, regular=True, system=False, own=Fals
     :param bool own: Register this handler for own messages
     :return callable:
     """
-    entry_point_fn = entry_point(PLUGIN_TYPE_MESSAGE, services=services, regular=regular, system=system, own=own)
-    return entry_point_fn(fn) if fn is not None else entry_point_fn
+    return entry_point(PLUGIN_TYPE_MESSAGE, services=services, regular=True, system=False, own=False)(fn) \
+        if fn is not None else \
+        entry_point(PLUGIN_TYPE_MESSAGE, services=services, regular=regular, system=system, own=own)
 
 
 def chat_command(command, *, services=None) -> callable:

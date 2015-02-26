@@ -44,6 +44,7 @@ class HelpersManager(Service):
         :return None:
         """
         if self._thread.is_alive():
+            self.log.debug('Waiting for thread "%s"', self._thread.name)
             self._thread.join()
 
     def _run(self):

@@ -25,6 +25,9 @@ from dewyatochka.core.network.xmpp.exception import *
 # Seconds to wait between multiple connections attempts
 _XMPP_RECONNECT_INTERVAL = 30
 
+# Conferences check interval
+_XMPP_CHECK_INTERVAL = 60
+
 # Max time interval when conference or server is offline
 _XMPP_OFFLINE_TIME_LIMIT = 86400
 
@@ -58,8 +61,13 @@ class _PresenceHelper():
         self._reconnect_queue = []
 
         self._reconnect_thread = threading.Thread(
-            name=self._connection_manager.name() + '[PresenceHelper]',
+            name=self._connection_manager.name() + '[PresenceHelper[Reenter]]',
             target=self._do_reconnect,
+            daemon=True
+        )
+        self._ping_thread = threading.Thread(
+            name=self._connection_manager.name() + '[PresenceHelper[Ping]]',
+            target=self._do_s2s_ping,
             daemon=True
         )
         self._running = False
@@ -70,6 +78,7 @@ class _PresenceHelper():
         :return None:
         """
         self._reconnect_thread.start()
+        self._ping_thread.start()
         self._running = True
 
     def stop(self):
@@ -114,12 +123,15 @@ class _PresenceHelper():
             else:
                 log.debug('Discarded to leave conference %s while it is not marked as alive', str(conference))
 
-    def enter_all(self):
+    def enter_all(self, force=False):
         """ Enter into all the configured conferences
 
+        :param bool force: Force re-enter
         :return None:
         """
         self.__assert_started()
+        if force:
+            self._alive_conferences.clear()
         for conference in self._configured_conferences:
             self.enter(conference)
 
@@ -138,6 +150,10 @@ class _PresenceHelper():
         :param JID conference: Conference jid with nick
         :return None:
         """
+        self._connection_manager.log.error(
+            'Server-to-server connection to %s seems to be broken, scheduling reconnect', conference
+        )
+
         try:
             self._alive_conferences.remove(conference)
         except KeyError:
@@ -179,14 +195,49 @@ class _PresenceHelper():
                 postponed = []
                 while app.running and self._running and self._reconnect_queue:
                     task = self._reconnect_queue.pop(0)
-                    if task.died_at + _XMPP_RECONNECT_INTERVAL < time.time():
-                        self.enter(task.conference)
-                    else:
-                        postponed.append(task)
+                    try:
+                        if task.died_at + _XMPP_RECONNECT_INTERVAL < time.time():
+                            self.enter(task.conference)
+                        else:
+                            postponed.append(task)
+                    except XMPPError as e:
+                        self._connection_manager.log.error('Failed to enter into %s as %s: %s (reenter postponed)',
+                                                           task.conference.bare, task.conference.resource, e)
+                        postponed.append(self.__ReconnectTask(task.conference, time.time()))
 
                 if postponed:
                     self._reconnect_queue.extend(postponed)
                 app.sleep(1)
+        except Exception as e:
+            self._connection_manager.application.fatal_error(__name__, e)
+
+    def _do_s2s_ping(self):
+        """ Ping conferences
+
+        :return None:
+        """
+        try:
+            log = self._connection_manager.log
+            app = self._connection_manager.application
+            app.sleep(_XMPP_CHECK_INTERVAL)
+
+            while True:
+                for conference in self._alive_conferences.copy():
+                    if not app.running or not self._running:
+                        break
+
+                    try:
+                        log.debug('Ping %s', conference)
+                        pt = self._connection_manager.client.ping(conference)
+                        log.debug('Ping %s succeeded (%f)', conference, pt)
+
+                    except S2SConnectionError:
+                        self.schedule_reenter(conference)
+
+                    except Exception as e:
+                        log.warn('Failed to ping %s: %s', conference, e)
+
+                app.sleep(_XMPP_CHECK_INTERVAL)
         except Exception as e:
             self._connection_manager.application.fatal_error(__name__, e)
 
@@ -255,8 +306,10 @@ class ConnectionManager(Service):
             try:
                 attempts += 1
                 self.client.connect()
+                self._presence_helper.enter_all(force=True)
             except C2SConnectionError as e:
-                self.log.error('%s (reconnect attempt #%d)', e, attempts)
+                self.log.error('%s (attempt #%d), sleeping %d seconds before the next attempt',
+                               e, attempts, _XMPP_RECONNECT_INTERVAL)
                 self.application.sleep(_XMPP_RECONNECT_INTERVAL)
             else:
                 success = True
@@ -289,14 +342,15 @@ class ConnectionManager(Service):
         except ClientDisconnectedError:
             raise
 
+        except MessageError as e:
+            self.log.error(e)
+
         except C2SConnectionError as e:
             self.log.error(e)
             if not self._reconnect():
                 raise
 
         except S2SConnectionError as e:
-            self.log.error('Server-to-server connection to %s seems to be broken (%s), scheduling reconnect',
-                           e.remote, e)
             self._presence_helper.schedule_reenter(e.remote)
 
         return None

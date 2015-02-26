@@ -58,7 +58,7 @@ class Matcher():
         :param Message message:
         :return bool:
         """
-        return isinstance(message, ChatMessage) and not message.sender.resource
+        return not isinstance(message, ChatMessage) or not message.sender.resource
 
     def __is_own(self, message: Message) -> bool:
         """ Check if message is an own one

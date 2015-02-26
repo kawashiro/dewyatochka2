@@ -86,6 +86,7 @@ class Bot(Service):
         """
         for thread in self._reader_thread, self._monitor_thread:
             if thread.is_alive():
+                self.log.debug('Waiting for thread "%s"', thread.name)
                 thread.join()
 
     @classmethod

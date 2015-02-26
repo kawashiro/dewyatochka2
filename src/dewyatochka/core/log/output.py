@@ -35,7 +35,10 @@ class Handler(metaclass=ABCMeta):
         self._logger = logger
         self._handler = None
 
-        self.handler.setFormatter(logging.Formatter('%(asctime)s:' + logging.BASIC_FORMAT))
+        log_format = '%(asctime)s :: %(levelname)-8s :: %(name)s :: %(message)s' \
+                     if logger.logging_level == 'DEBUG' else \
+                     '%(asctime)s :: %(levelname)-8s :: %(message)s'
+        self.handler.setFormatter(logging.Formatter(log_format))
 
     def __getattr__(self, item):
         """ Inherit inner handler methods/properties
