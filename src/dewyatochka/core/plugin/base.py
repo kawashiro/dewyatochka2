@@ -4,11 +4,12 @@
 
 Classes
 =======
-    Environment      -- Minimal plugin environment
-    Service          -- Plugins container service
-    Loader           -- Abstract plugins loader
-    Wrapper          -- Wraps a plugin into environment
-    PluginLogService -- Named logger for plugin
+    Environment         -- Minimal plugin environment
+    Service             -- Plugins container service
+    Loader              -- Abstract plugins loader
+    Wrapper             -- Wraps a plugin into environment
+    PluginLogService    -- Named logger for plugin
+    PluginConfigService -- Dict-like config container for plugin
 
 Attributes
 ==========
@@ -16,15 +17,13 @@ Attributes
         and attributes which plugin has been registered with
 """
 
-__all__ = ['Environment', 'Service', 'Loader', 'Wrapper', 'PluginEntry', 'PluginLogService']
+__all__ = ['Environment', 'Service', 'Loader', 'Wrapper', 'PluginEntry', 'PluginLogService', 'PluginConfigService']
 
 from collections import namedtuple
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 from dewyatochka.core.application import Registry, Application
 from dewyatochka.core.application import Service as AppService
-from dewyatochka.core.config.container import ConfigContainer
-from dewyatochka.core.config.source .virtual import Predefined
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 
 
@@ -117,7 +116,7 @@ class Service(AppService, metaclass=ABCMeta):
                                    entry.plugin.__name__,
                                    e)
 
-        self.log.info('Loaded %d plugins', len(self._plugins))
+        self.log.info('Loaded %d %s plugins', len(self._plugins), self.name())
 
     @abstractproperty
     def accepts(self) -> list:  # pragma: no cover
@@ -183,8 +182,8 @@ class Wrapper():
                     )
 
         plugin_conf_section = entry.plugin.__module__.split('.')[-1]
-        config_container = ConfigContainer(self._service.application)
-        config_container.load(Predefined(self._service.application.registry.ext_config.section(plugin_conf_section)))
+        plugin_conf_data = self._service.application.registry.ext_config.section(plugin_conf_section)
+        config_container = PluginConfigService(self._service.application, plugin_conf_data)
         plugin_registry.add_service(config_container)
 
         plugin_registry.add_service(PluginLogService(self._service.application, entry.plugin))
@@ -227,3 +226,40 @@ class PluginLogService(AppService):
         :return str:
         """
         return 'log'
+
+
+class PluginConfigService(AppService):
+    """ Dict-like config container for plugin """
+
+    def __init__(self, application: Application, data: dict):
+        """ Init service
+
+        :param Application application:
+        :param dict data:
+        """
+        super().__init__(application)
+        self._data = data
+
+    def __getitem__(self, item):
+        """ Get dict item
+
+        :param hashable item:
+        :returns: Various
+        """
+        return self._data[item]
+
+    def __getattr__(self, item: str):
+        """ Get dict attribute
+
+        :param str item:
+        :returns: Various
+        """
+        return getattr(self._data, item)
+
+    @classmethod
+    def name(cls) -> str:
+        """ Get service unique name
+
+        :return str:
+        """
+        return 'config'

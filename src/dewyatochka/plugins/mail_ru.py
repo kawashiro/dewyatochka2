@@ -10,7 +10,7 @@ import threading
 from collections import defaultdict
 
 from dewyatochka.core import plugin
-from dewyatochka.core.network.http import WebClient
+from dewyatochka.core.utils.http import WebClient
 
 
 # Cached questions lists by categories

@@ -22,7 +22,7 @@ from dewyatochka.core.config.factory import COMMON_CONFIG_DEFAULT_PATH
 from dewyatochka.core.plugin.message_sys import service as m_service
 from dewyatochka.core.plugin.helper_sys import service as h_service
 from dewyatochka.core.plugin.base import Wrapper as BaseWrapper
-from dewyatochka.core.plugin.loader import internal
+from dewyatochka.core.plugin.loader import LoaderService
 
 from ._process.conference.connection import ConnectionManager
 from ._process.conference.bot import Bot
@@ -70,6 +70,7 @@ class DaemonApp(Application):
             self.depend(get_conferences_config(self))
             self.depend(get_extensions_config(self))
 
+            self.depend(LoaderService)
             self.depend(m_service.Service)
             self.depend(h_service.Service)
 
@@ -81,7 +82,7 @@ class DaemonApp(Application):
                 daemon.detach(lambda *_: self.stop(_EXIT_CODE_OK))
                 daemon.acquire_lock(self.registry.config.global_section.get('lock'))
 
-            plugins_loaders = [internal.Loader()]
+            plugins_loaders = self.registry.plugins.loaders
             self.registry.chat.load(plugins_loaders, m_service.Wrapper(self.registry.chat))
             self.registry.helper.load(plugins_loaders, BaseWrapper(self.registry.helper))
 
@@ -109,6 +110,10 @@ class DaemonApp(Application):
                 daemon.release_lock()
             except daemon.ProcessNotLockedError:
                 pass
+            # Say bye-bye ^-^
+            try:
+                self.registry.log(__name__).info('Bye-bye~')
+            except:
+                pass
             # Shut down
-            self.registry.log(__name__).info('Bye-bye~')
             sys.exit(self._exit_code)

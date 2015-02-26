@@ -25,6 +25,9 @@ from dewyatochka.core.plugin.base import Service
 from dewyatochka.core.config.exception import SectionRetrievingError
 
 
+# Modules to load anyway
+_BUILTIN = ('dewyatochka.core.utils.chat',)
+
 # Entry points dict grouped by entry point type
 _entry_points = defaultdict(lambda: [])
 
@@ -40,9 +43,11 @@ def entry_point(entry_point_type, **kwargs) -> callable:
     :return callable:
     """
     def _decorator(fn):
+        fn_obj = fn() if isinstance(fn, type) else fn
+        fn_obj.__name__ = fn.__name__ if hasattr(fn, '__name__') else fn_obj.__class__
         params = kwargs.copy()
         params['type'] = entry_point_type
-        _entry_points[entry_point_type].append(PluginEntry(fn, params))
+        _entry_points[entry_point_type].append(PluginEntry(fn_obj, params))
         return fn
 
     return _decorator
@@ -66,6 +71,34 @@ class Loader(BaseLoader):
     # Python plugins auto loading path
     __PLUGINS_PATH = os.path.dirname(plugins.__file__)
 
+    def _get_optional_modules(self, service: Service) -> list:
+        """ Load optional plugin modules
+
+        :param Service service: Reference to a service initiated load
+        :return list:
+        """
+        modules = []
+        for file in os.listdir(self.__PLUGINS_PATH):
+            file_path = os.sep.join([self.__PLUGINS_PATH, file])
+
+            if self.__is_module(file_path):
+                load_name = self.__PKG_SEP.join([plugins.__name__, file[:-len(self.__MODULE_EXT)]])
+            elif self.__is_package(file_path):
+                load_name = self.__PKG_SEP.join([plugins.__name__, file])
+            else:
+                continue  # pragma: no cover
+
+            try:
+                conf_name = load_name.split(self.__PKG_SEP)[-1]
+                service.application.registry.ext_config.section(conf_name, require=True)
+            except SectionRetrievingError:
+                service.application.registry.log(__name__).warning('Plugin %s is disabled', load_name)
+                continue
+
+            modules.append(load_name)
+
+        return modules
+
     def load(self, service: Service) -> list:
         """ Load and return plugins
 
@@ -75,26 +108,12 @@ class Loader(BaseLoader):
         global _ready
 
         if not _ready:
-            for file in os.listdir(self.__PLUGINS_PATH):
-                file_path = os.sep.join([self.__PLUGINS_PATH, file])
-
-                if self.__is_module(file_path):
-                    load_name = self.__PKG_SEP.join([plugins.__name__, file[:-len(self.__MODULE_EXT)]])
-                elif self.__is_package(file_path):
-                    load_name = self.__PKG_SEP.join([plugins.__name__, file])
-                else:
-                    continue  # pragma: no cover
-
-                try:
-                    conf_name = load_name.split(self.__PKG_SEP)[-1]
-                    service.application.registry.ext_config.section(conf_name, require=True)
-                except SectionRetrievingError:
-                    service.application.registry.log(__name__).warning('Plugin %s is disabled', load_name)
-                    continue
-
+            modules = list(_BUILTIN)
+            modules.extend(self._get_optional_modules(service))
+            for load_name in modules:
                 try:
                     importlib.import_module(load_name)
-                    service.application.registry.log(__name__).info('Loaded plugin: %s', load_name)
+                    service.application.registry.log(__name__).info('Loaded plugins from %s', load_name)
                 except Exception as e:
                     service.application.registry.log(__name__).error('Failed to load module %s: %s', load_name, e)
 

@@ -41,18 +41,6 @@ class ConfigContainer(Service):
         self._data = config_parser.read()
         return self
 
-    def get(self, section: str, default=None):
-        """ Get value with default
-
-        :param str section: Section name
-        :param default:
-        :returns:
-        """
-        try:
-            return self.section(section, require=True)
-        except SectionRetrievingError:
-            return default
-
     def section(self, section: str, require=False) -> dict:
         """ Get config section
 

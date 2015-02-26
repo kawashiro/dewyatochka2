@@ -161,10 +161,11 @@ class Output():
         self._xmpp_client = xmpp_client
         self._conference = conference
 
-    def say(self, text: str):
+    def say(self, text: str, *args):
         """ Say something
 
         :param str text: Message content
+        :param tuple args: Args for message format
         :return None:
         """
-        self._xmpp_client.chat(text, self._conference.bare)
+        self._xmpp_client.chat(text % args, self._conference.bare)

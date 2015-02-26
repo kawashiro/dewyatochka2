@@ -4,10 +4,11 @@
 
 Classes
 =======
-    Application     -- Abstract application class
-    Registry        -- Registry pattern implementation
-    Service         -- Abstract registrable service
-    VoidApplication -- Empty application, generally for test purposes
+    Application           -- Abstract application class
+    Registry              -- Registry pattern implementation
+    Service               -- Abstract registrable service
+    VoidApplication       -- Empty application, generally for test purposes
+    UndefinedServiceError -- Error on unknown service
 """
 
 __all__ = ['Application', 'Registry', 'Service', 'VoidApplication']
@@ -15,6 +16,11 @@ __all__ = ['Application', 'Registry', 'Service', 'VoidApplication']
 from abc import ABCMeta, abstractmethod
 from threading import Event
 from logging import Logger
+
+
+class UndefinedServiceError(RuntimeError):
+    """ Error on unknown service """
+    pass
 
 
 class Application(metaclass=ABCMeta):
@@ -94,7 +100,8 @@ class Application(metaclass=ABCMeta):
             self.registry.log.fatal_error(module_name, exception)
         except:
             # Application is shutting down so continue anyway if error logging failed
-            pass
+            # and try at least to echo what really happened
+            print('Error at %s: %s' % (module_name, exception))
 
         self.stop(1)
 
@@ -214,7 +221,7 @@ class Registry():
         try:
             return self._services[name]
         except KeyError:
-            raise RuntimeError('Service "%s" is not registered' % name)
+            raise UndefinedServiceError('Service "%s" is not registered' % name)
 
     def __getattr__(self, item: str) -> Service:
         """ Get registered service

@@ -1,5 +1,10 @@
 # -*- coding: UTF-8
 
-""" Miscellaneous useful modules """
+""" Miscellaneous useful modules
 
-__all__ = []
+Modules
+=======
+    http -- Simplified stupid HTTP-client
+"""
+
+__all__ = ['http']
