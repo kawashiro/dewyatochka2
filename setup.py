@@ -8,7 +8,7 @@ import os
 from distutils.core import setup, Extension
 
 # Some dirty hack to define version in one place
-sys.path.append(os.path.realpath(os.path.dirname(__file__)) + '/src')
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__)) + '/src')
 from dewyatochka import __version__
 
 setup(
@@ -24,6 +24,10 @@ setup(
     platforms=['POSIX'],
     # Dependencies
     requires=['sleekxmpp', 'pyquery'],
+    extras_require={
+        'html': ['pyquery'],
+        'ssl': ['pyasn1_modules']
+    },
     # Python packages
     package_dir={'': 'src/'},
     packages=['dewyatochka',
@@ -44,10 +48,10 @@ setup(
               'dewyatochka.core.plugin.loader',
               'dewyatochka.core.plugin.message_sys',
               'dewyatochka.core.plugin.message_sys.matcher',
-              'dewyatochka.plugins',
-              'dewyatochka.utils'],
+              'dewyatochka.core.utils',
+              'dewyatochka.plugins'],
     # Python extensions
-    ext_modules=[Extension('dewyatochka.core.daemon._utils', ['src/ext/daemon/utilsmodule.c', ])],
+    ext_modules=[Extension('dewyatochka.core.daemon._utils', ['src/ext/daemon/utilsmodule.c'])],
     # Executable files
     scripts=['src/dewyatochkad'],
     # Data files

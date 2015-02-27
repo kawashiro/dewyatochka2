@@ -17,7 +17,9 @@ LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS=""
 
-DEPEND=">=dev-python/sleekxmpp-1.3[${PYTHON_USEDEP}]"
+DEPEND=">=dev-python/sleekxmpp-1.3[${PYTHON_USEDEP}]
+        >=dev-python/pyquery-1.2[${PYTHON_USEDEP}]
+        dev-python/pyasn1-modules[${PYTHON_USEDEP}]"
 
 src_install()
 {
