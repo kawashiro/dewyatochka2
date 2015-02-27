@@ -4,6 +4,7 @@
 
 __all__ = []
 
+import time
 import logging
 import random
 import threading
@@ -11,6 +12,7 @@ from collections import defaultdict
 
 from dewyatochka.core import plugin
 from dewyatochka.core.utils.http import WebClient
+from dewyatochka.core.utils import chat
 
 
 # Cached questions lists by categories
@@ -29,10 +31,13 @@ _QUESTIONS_REQUEST_URI = '/api/v2/questlist'
 _QUESTIONS_PER_QUERY = 100
 
 # Default questions category
-_DEFAULT_CATEGORY = 'adult'  # TODO: Get random category if possible
+_DEFAULT_CATEGORY = 'adult'
+
+# Max silence allowed by default
+_DEFAULT_SILENCE_INTERVAL = 10800  # 3 hours
 
 
-def get_question(category: str, log) -> str:
+def _get_question(category: str, log) -> str:
     """ Get question by category
 
     :param str category: Category label
@@ -72,4 +77,29 @@ def talk_command_handler(outp, registry, **_):
     :return None:
     """
     category = registry.config.get('category', _DEFAULT_CATEGORY)
-    outp.say(get_question(category, registry.log))
+    outp.say(_get_question(category, registry.log))
+
+
+@plugin.helper(services=['xmpp'])
+def occasional_question(registry):
+    """ Ask a question if conference is too silent
+
+    :param registry:
+    :return None:
+    """
+    category = registry.config.get('category', _DEFAULT_CATEGORY)
+    silence_interval = int(registry.config.get('silence_interval', _DEFAULT_SILENCE_INTERVAL))
+    log = registry.log
+
+    while True:
+        time.sleep(60)
+
+        log.debug('Checking conferences state')
+        for conference in registry.xmpp.alive_conferences:
+            last_message_ts = chat.get_activity_info(conference).last_message
+
+            if last_message_ts + silence_interval < time.time():
+                log.info('Conference %s is too silent (last msg.: %d), waking up', conference.bare, last_message_ts)
+                registry.xmpp.client.chat(_get_question(category, log), conference.bare)
+            else:
+                log.debug('Conference %s postponed (last msg.: %d)', conference.bare, last_message_ts)

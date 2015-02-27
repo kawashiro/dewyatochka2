@@ -37,6 +37,8 @@ class TestLoader(unittest.TestCase):
             if name.endswith('exception'):
                 raise ImportError()
 
+        builtins_count = len(internal._BUILTIN)
+
         importlib_mock.side_effect = _importlib_stub
 
         plugins_pkg_mock.__file__ = path.sep.join(
@@ -51,15 +53,17 @@ class TestLoader(unittest.TestCase):
         no_conf_service.application.registry.ext_config.section.side_effect = SectionRetrievingError
 
         internal.Loader().load(no_conf_service)
-        self.assertEqual(0, importlib_mock.call_count)
+        self.assertEqual(builtins_count, importlib_mock.call_count)
 
         internal._ready = False
         internal.Loader().load(service)
         internal.Loader().load(service)
 
-        self.assertEqual(2, importlib_mock.call_count)
+        self.assertEqual(2 + builtins_count * 2, importlib_mock.call_count)
         importlib_mock.assert_has_calls([call('dewyatochka.plugins.package'),
                                          call('dewyatochka.plugins.module')], any_order=True)
+        for _builtin in internal._BUILTIN:
+            importlib_mock.assert_has_calls([call(_builtin)])
 
         internal._ready = False
         importlib_mock.side_effect = Exception

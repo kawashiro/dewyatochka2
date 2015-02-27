@@ -171,6 +171,14 @@ class _PresenceHelper():
         return conference in self._alive_conferences
 
     @property
+    def alive_conferences(self) -> frozenset:
+        """ Get alive conferences set
+
+        :return frozenset:
+        """
+        return frozenset(self._alive_conferences)
+
+    @property
     def _configured_conferences(self) -> set:
         """ Return a set of configured conferences
 
@@ -392,6 +400,14 @@ class ConnectionManager(Service):
             self.client.disconnect()
         except ClientDisconnectedError:
             pass
+
+    @property
+    def alive_conferences(self) -> frozenset:
+        """ Get alive conferences
+
+        :return frozenset:
+        """
+        return self._presence_helper.alive_conferences
 
     @classmethod
     def name(cls) -> str:

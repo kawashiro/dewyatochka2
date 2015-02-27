@@ -13,6 +13,7 @@ Classes
 
 __all__ = ['Application', 'Registry', 'Service', 'VoidApplication']
 
+import sys
 from abc import ABCMeta, abstractmethod
 from threading import Event
 from logging import Logger
@@ -101,7 +102,7 @@ class Application(metaclass=ABCMeta):
         except:
             # Application is shutting down so continue anyway if error logging failed
             # and try at least to echo what really happened
-            print('Error at %s: %s' % (module_name, exception))
+            print('Error at %s: %s' % (module_name, exception), file=sys.stderr)
 
         self.stop(1)
 

@@ -3,6 +3,7 @@
 """ Tests suite for dewyatochka.core.application """
 
 import time
+import sys
 from threading import Event
 
 import unittest
@@ -83,8 +84,9 @@ class TestApplication(unittest.TestCase):
         stop_method.assert_called_once_with(1)
         registry.log.fatal_error.assert_called_once_with(module, exception)
 
+    @patch('sys.stderr')
     @patch.object(VoidApplication, 'stop')
-    def test_fatal_error_log_fail(self, stop_method):
+    def test_fatal_error_log_fail(self, stop_method, *_):
         """ Test app fatal error handling on logging failed """
         registry = PropertyMock()
         registry.log.fatal_error = Mock(side_effect=Exception)
