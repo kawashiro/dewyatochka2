@@ -9,10 +9,11 @@ Modules
 
 Functions
 =========
-    get_logger -- Get configured logger instance
+    get_logger      -- Get configured logger instance
+    get_null_logger -- Get null logger
 """
 
-__all__ = ['service', 'output', 'get_logger']
+__all__ = ['service', 'output', 'get_logger', 'get_null_logger']
 
 from dewyatochka.core.application import Application
 
@@ -39,5 +40,17 @@ def get_logger(application: Application, has_stdout=True) -> LoggingService:
     except:
         # Something wrong with default log handler using null as a fallback
         logger.register_handler(NullHandler(logger))
+
+    return logger
+
+
+def get_null_logger(application: Application) -> LoggingService:
+    """ Get null logger
+
+    :param Application application: App instance
+    :return LoggingService:
+    """
+    logger = LoggingService(application)
+    logger.register_handler(NullHandler(logger))
 
     return logger

@@ -48,12 +48,13 @@ setup(
               'dewyatochka.core.plugin.loader',
               'dewyatochka.core.plugin.message_sys',
               'dewyatochka.core.plugin.message_sys.matcher',
+              'dewyatochka.core.plugin.ctl_sys',
               'dewyatochka.core.utils',
               'dewyatochka.plugins'],
     # Python extensions
     ext_modules=[Extension('dewyatochka.core.daemon._utils', ['src/ext/daemon/utilsmodule.c'])],
     # Executable files
-    scripts=['src/dewyatochkad'],
+    scripts=['src/dewyatochkad', 'src/dewyatochkactl'],
     # Data files
     data_files=[
         ('/etc/dewyatochka', ['data/etc/dewyatochka.ini', 'data/etc/conferences.ini']),

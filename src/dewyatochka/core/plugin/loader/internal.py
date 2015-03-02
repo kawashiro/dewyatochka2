@@ -26,7 +26,8 @@ from dewyatochka.core.config.exception import SectionRetrievingError
 
 
 # Modules to load anyway
-_BUILTIN = ('dewyatochka.core.utils.chat',)
+_BUILTIN = ('dewyatochka.core.utils.chat',
+            'dewyatochka.core.utils.ctl')
 
 # Entry points dict grouped by entry point type
 _entry_points = defaultdict(lambda: [])

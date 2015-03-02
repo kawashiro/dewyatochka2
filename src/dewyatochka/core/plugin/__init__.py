@@ -9,6 +9,7 @@ Packages
     loader      -- Plugins loaders package
     message_sys -- Message plugins sub-system
     helper_sys  -- Helper plugins sub-system
+    ctl_sys     -- Plugins for dewyatochkactl utility
 
 Modules
 =======
@@ -22,8 +23,9 @@ Functions
     chat_command -- Decorator for chat command plugin
 """
 
-__all__ = ['loader', 'message_sys', 'helper_sys', 'base', 'exceptions',
-           'helper', 'chat_message', 'chat_command']
+__all__ = ['loader', 'message_sys', 'helper_sys', 'ctl_sys', 'base', 'exceptions',
+           'helper', 'chat_message', 'chat_command', 'ctl']
 
 from .helper_sys.py_entry import *
 from .message_sys.py_entry import *
+from .ctl_sys.py_entry import *
