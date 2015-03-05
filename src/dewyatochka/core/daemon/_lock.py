@@ -19,9 +19,6 @@ import os
 import fcntl
 
 
-# Path to the lock-file if none is specified
-_DEFAULT_LOCK_FILE_PATH = '/var/run/dewyatochka2/dewyatochkad.pid'
-
 # Global lock file handler
 _lock_file_obj = None
 
@@ -36,7 +33,7 @@ class ProcessNotLockedError(RuntimeError):
     pass
 
 
-def acquire_lock(lock_file=None):
+def acquire_lock(lock_file):
     """ Create a lock-file
 
     :param str lock_file: Path to a lock-file
@@ -47,7 +44,6 @@ def acquire_lock(lock_file=None):
     if _lock_file_obj is not None:
         raise ProcessLockedError('Current process is already locked')
 
-    lock_file = lock_file or _DEFAULT_LOCK_FILE_PATH
     if os.path.isfile(lock_file):
         raise ProcessLockedError('Another process is already running')
 

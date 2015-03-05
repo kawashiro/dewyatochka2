@@ -26,7 +26,8 @@ setup(
     requires=['sleekxmpp', 'pyquery'],
     extras_require={
         'html': ['pyquery'],
-        'ssl': ['pyasn1_modules']
+        'ssl': ['pyasn1_modules'],
+        'db': ['sqlalchemy']
     },
     # Python packages
     package_dir={'': 'src/'},
@@ -58,6 +59,7 @@ setup(
     # Data files
     data_files=[
         ('/etc/dewyatochka', ['data/etc/dewyatochka.ini', 'data/etc/conferences.ini']),
-        ('/etc/dewyatochka/ext', ['data/etc/ext/hentai.ini', 'data/etc/ext/mail_ru.ini'])
+        ('/etc/dewyatochka/ext', ['data/etc/ext/hentai.ini', 'data/etc/ext/mail_ru.ini']),
+        ('/var/lib/dewyatochka', ['data/var-lib/.FAKE'])
     ]
 )

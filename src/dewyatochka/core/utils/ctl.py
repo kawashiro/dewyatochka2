@@ -1,17 +1,8 @@
 # -*- coding: UTF-8
 
-""" Provides some utils for ctl utility
+""" Provides some utils for ctl utility """
 
-Classes
-=======
-    ActivityInfo -- Conference activity info structure
-
-Functions
-=========
-    get_activity_info -- Get conference activity info by JID
-"""
-
-__all__ = ['ActivityInfo', 'get_activity_info']
+__all__ = []
 
 from dewyatochka.core.application import Registry
 from dewyatochka.core.plugin import ctl
@@ -50,7 +41,8 @@ class CommandsList():
         commands = self._get_commands(registry)
         cmd_len = max(map(lambda s: len(s), commands.keys())) + 1
 
-        print('Accessible commands:')
-        print('====================')
+        registry.log.info('====================')
+        registry.log.info('Accessible commands:')
+        registry.log.info('====================')
         for command in commands:
-            print('%s: %s' % (command.ljust(cmd_len), commands[command]))
+            registry.log.info('%s: %s' % (command.ljust(cmd_len), commands[command]))

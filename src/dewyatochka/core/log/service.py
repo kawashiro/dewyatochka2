@@ -5,13 +5,68 @@
 Classes
 =======
     LoggingService -- Logging app service
+    LoggerWrapper  -- Extended logging.Logger
+
+Attributes
+==========
+    LEVEL_PROGRESS      -- Special level no for progress messages
+    LEVEL_NAME_PROGRESS -- Special level no for progress messages (text repr.)
 """
 
-__all__ = ['LoggingService']
+__all__ = ['LoggingService', 'LoggerWrapper', 'LEVEL_PROGRESS', 'LEVEL_NAME_PROGRESS']
 
 import logging
 
 from dewyatochka.core.application import Application, Service
+
+
+# Special level no for progress messages
+LEVEL_PROGRESS = 25
+LEVEL_NAME_PROGRESS = 'PROGRESS'
+
+
+class LoggerWrapper():
+    """ Extended logging.Logger """
+
+    # Already instantiated loggers by name
+    __instances = {}
+
+    def __init__(self, inner_logger: logging.Logger):
+        """ Specify inner logger instance
+
+        :param logging.Logger inner_logger:
+        """
+        self._logger = inner_logger
+
+    def __getattr__(self, item: str):
+        """ Get not overloaded attribute
+
+        :param str item:
+        :returns:
+        """
+        return getattr(self._logger, item)
+
+    def progress(self, template, *args, **kwargs):
+        """ Echo some process progress info
+
+        :param str template: Message format
+        :param tuple args: Message args
+        :param dict kwargs: Message kw args
+        :return None:
+        """
+        self._logger.log(LEVEL_PROGRESS, template, *args, **kwargs)
+
+    def __new__(cls, inner_logger: logging.Logger):
+        """ Get new instance
+
+        :param type cls:
+        :param logging.Logger inner_logger:
+        :return LoggerWrapper:
+        """
+        if inner_logger.name not in cls.__instances:
+            cls.__instances[inner_logger.name] = super().__new__(cls)
+
+        return cls.__instances[inner_logger.name]
 
 
 class LoggingService(Service):
@@ -28,7 +83,7 @@ class LoggingService(Service):
     def register_handler(self, handler):
         """ Register global handler for compatibility with third-party libs
 
-        :param Handler handler: Instance of dewyatochka.core.log.output.Handler
+        :param handler: Instance of dewyatochka.core.log.output.Handler
         :return None:
         """
         logger = logging.getLogger()
@@ -58,7 +113,11 @@ class LoggingService(Service):
 
         :return int:
         """
-        return self.config.get('level', 'INFO')
+        try:
+            return self.config['level']
+        except:
+            pass
+        return 'INFO'
 
     @classmethod
     def name(cls) -> str:
@@ -68,10 +127,10 @@ class LoggingService(Service):
         """
         return 'log'
 
-    def __call__(self, name=None) -> logging.Logger:
+    def __call__(self, name=None) -> LoggerWrapper:
         """ Get global logger instance by name
 
         :param str name: Module name to display in log
-        :return logging.Logger:
+        :return LoggerWrapper:
         """
-        return logging.getLogger(name)
+        return LoggerWrapper(logging.getLogger(name))

@@ -13,10 +13,14 @@ Classes
 __all__ = ['Handler', 'STDOUTHandler', 'FileHandler', 'NullHandler']
 
 import sys
-from abc import ABCMeta, abstractmethod
 import logging
+import fcntl
+import termios
+import struct
+from abc import ABCMeta, abstractmethod
+from threading import Lock
 
-from dewyatochka.core.log.service import LoggingService
+from .service import LEVEL_PROGRESS, LEVEL_NAME_PROGRESS
 
 
 class Handler(metaclass=ABCMeta):
@@ -27,18 +31,15 @@ class Handler(metaclass=ABCMeta):
     for any output stream
     """
 
-    def __init__(self, logger: LoggingService):
+    def __init__(self, log_format: str):
         """ Set logging service
 
-        :param LoggingService logger:
+        :param str log_format:
         """
-        self._logger = logger
         self._handler = None
-
-        log_format = '%(asctime)s :: %(levelname)-8s :: %(name)s :: %(message)s' \
-                     if logger.logging_level == 'DEBUG' else \
-                     '%(asctime)s :: %(levelname)-8s :: %(message)s'
         self.handler.setFormatter(logging.Formatter(log_format))
+
+        self._lock = Lock()
 
     def __getattr__(self, item):
         """ Inherit inner handler methods/properties
@@ -48,7 +49,60 @@ class Handler(metaclass=ABCMeta):
         return getattr(self.handler, item)
 
     @property
-    def handler(self) -> logging.Handler:
+    def __in_cr_mode(self) -> bool:
+        """ Check if logger is in \r mode now
+
+        :return bool:
+        """
+        return self.handler.terminator == '\r'
+
+    def __enable_cr_mode(self):
+        """ Enable \r mode
+
+        :return None:
+        """
+        self.handler.terminator = '\r'
+
+    def __disable_cr_mode(self):
+        """ Return to \n mode
+
+        :return None:
+        """
+        self.handler.terminator = '\n'
+
+    @property
+    def __terminal_width(self) -> int:
+        """ Get terminal width
+
+        :return int:
+        """
+        winsize = fcntl.ioctl(self.handler.stream.fileno(), termios.TIOCGWINSZ, struct.pack('HH', 0, 0))
+        return struct.unpack('HH', winsize)[1]
+
+    def handle(self, record: logging.LogRecord):
+        """ Do whatever it takes to actually log the specified logging record.
+
+        :param logging.LogRecord record: Log record instance to emit
+        :return None:
+        """
+        with self._lock:
+            if record.levelno == LEVEL_PROGRESS:
+                record.levelname = LEVEL_NAME_PROGRESS
+                self.__enable_cr_mode()
+                try:
+                    padding = ' ' * (self.__terminal_width - len(self.handler.format(record)))
+                except:
+                    padding = ''
+                record.msg += padding
+
+            elif self.__in_cr_mode:
+                self.__disable_cr_mode()
+                self.handler.stream.write(self.handler.terminator)
+
+            self.handler.handle(record)
+
+    @property
+    def handler(self) -> logging.StreamHandler:
         """ Get inner handler instance
 
         :return logging.Handler:
@@ -59,7 +113,7 @@ class Handler(metaclass=ABCMeta):
         return self._handler
 
     @abstractmethod
-    def _create_handler(self) -> logging.Handler:  # pragma: no cover
+    def _create_handler(self) -> logging.StreamHandler:  # pragma: no cover
         """ Create new inner handler instance
 
         :return logging.Handler:
@@ -81,22 +135,27 @@ class STDOUTHandler(Handler):
 class FileHandler(Handler):
     """ Text file output handler """
 
-    # Default path to the log file
-    DEFAULT_FILE = '/var/log/dewyatochka2/dewyatochkad.log'
+    def __init__(self, log_format: str, file_path: str):
+        """ Set logging service
 
-    def _create_handler(self) -> logging.Handler:
+        :param str log_format:
+        :param str file_path:
+        """
+        super().__init__(log_format)
+        self._file = file_path
+
+    def _create_handler(self) -> logging.StreamHandler:
         """ Create new inner handler instance
 
         :return logging.Handler:
         """
-        log_file = self._logger.config.get('file', self.DEFAULT_FILE)
-        return logging.FileHandler(log_file, delay=True)
+        return logging.FileHandler(self._file, delay=True)
 
 
 class NullHandler(Handler):
     """ Empty handler (stub) """
 
-    def _create_handler(self) -> logging.Handler:
+    def _create_handler(self) -> logging.StreamHandler:
         """ Create new inner handler instance
 
         :return logging.Handler:

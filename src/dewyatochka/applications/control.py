@@ -15,7 +15,7 @@ import argparse
 from dewyatochka.core.application import Application as BaseApplication
 from dewyatochka.core.config import get_common_config, get_extensions_config
 from dewyatochka.core.config.factory import COMMON_CONFIG_DEFAULT_PATH
-from dewyatochka.core.log import get_logger, get_null_logger
+from dewyatochka.core.log import get_console_logger
 from dewyatochka.core.plugin.loader import LoaderService
 from dewyatochka.core.plugin.ctl_sys import service as ctl_service
 
@@ -34,7 +34,7 @@ class Application(BaseApplication):
         """ Parse known arguments
 
         :param list args:
-        :return argparse.Namespace:
+        :return tuple:
         """
         args_parser = argparse.ArgumentParser()
         args_parser.add_argument('command',
@@ -43,11 +43,8 @@ class Application(BaseApplication):
         args_parser.add_argument('--config',
                                  help='Path to config file to use',
                                  default=COMMON_CONFIG_DEFAULT_PATH)
-        args_parser.add_argument('--log',
-                                 help='Use a configured logger to yield debug info',
-                                 action='store_true')
 
-        return args_parser.parse_args(args[1:])
+        return args_parser.parse_known_args(args[1:])
 
     def run(self, args: list):
         """ Run application
@@ -56,25 +53,21 @@ class Application(BaseApplication):
         :return None:
         """
         try:
-            params = self._parse_args(args)
+            params, cmd_args = self._parse_args(args)
 
             self.depend(get_common_config(self, params.config))
             self.depend(get_extensions_config(self))
-
-            if params.log:
-                self.depend(get_logger(self, has_stdout=True))
-            else:
-                self.depend(get_null_logger(self))
+            self.depend(get_console_logger(self))
 
             self.depend(LoaderService)
             self.depend(ctl_service.Service)
 
             plugins_loaders = self.registry.plugins.loaders
             self.registry.ctl.load(plugins_loaders, ctl_service.Wrapper(self.registry.ctl))
-            self.registry.ctl.get_command(params.command)(argv=args, logger=self.registry.log(__name__))
+            self.registry.ctl.get_command(params.command)(argv=cmd_args, logger=self.registry.log(__name__))
 
         except (KeyboardInterrupt, SystemExit):
-            self.registry.log(__name__).info('Interrupted by user')
+            self.registry.log(__name__).warning('Interrupted by user')
             self.stop(_EXIT_CODE_TERM)
 
         except Exception as e:

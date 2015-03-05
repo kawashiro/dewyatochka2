@@ -76,6 +76,8 @@ class Service(BaseService):
                                    entry.params['name'], entry.plugin.__module__,
                                    entry.plugin.__name__, e)
 
+        self.log.info('Loaded %d %s plugins', len(self._plugins), self.name())
+
     def get_command(self, name: str) -> Environment:
         """ Get command to use
 
