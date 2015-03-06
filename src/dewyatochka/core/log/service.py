@@ -108,10 +108,10 @@ class LoggingService(Service):
             logger.critical(str(exception))
 
     @property
-    def logging_level(self) -> int:
+    def logging_level(self) -> str:
         """ Get logging level
 
-        :return int:
+        :return str:
         """
         try:
             return self.config['level']

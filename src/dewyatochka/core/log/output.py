@@ -141,8 +141,8 @@ class FileHandler(Handler):
         :param str log_format:
         :param str file_path:
         """
-        super().__init__(log_format)
         self._file = file_path
+        super().__init__(log_format)
 
     def _create_handler(self) -> logging.StreamHandler:
         """ Create new inner handler instance
