@@ -18,28 +18,28 @@ from .parser import site_iterator
 _REINDEX_AUTO_COMMIT_COUNT = 1000
 
 
-def recreate(config: dict, log):
+def recreate(db_path: str, log):
     """ Create a new empty zadolba.li db
 
-    :param dict config: Plugin config
+    :param str db_path: Path to database file
     :param log:
     :return None:
     """
-    with Storage(config.get('db_path')) as storage:
+    with Storage(db_path) as storage:
         storage.recreate()
 
     log.info('Stories storage successfully recreated at %s' % storage.path)
 
 
-def reindex(config: dict, log):
+def reindex(db_path: str, log):
     """ Populate stories table from scratch
 
-    :param dict config: Plugin config
+    :param str db_path: Path to database file
     :param log:
     :return None:
     """
     inserted = 0
-    with Storage(config.get('db_path')) as storage:
+    with Storage(db_path) as storage:
         log.info('Starting stories re-indexing')
 
         for raw_story in site_iterator():

@@ -15,9 +15,11 @@ Attributes
 
 __all__ = ['RawPost', 'parse_page_url', 'parse_page_html', 'site_iterator']
 
+import re
 from collections import namedtuple
+from functools import reduce
 
-from lxml.html import HtmlElement
+from lxml.html import HtmlElement, tostring
 from pyquery import PyQuery
 
 from dewyatochka.core.utils.http import WebClient
@@ -25,6 +27,10 @@ from dewyatochka.core.utils.http import WebClient
 
 # Raw post immutable structure (id: int, title: str, text: str, tags: frozenset)
 RawPost = namedtuple('RawPost', ('id', 'title', 'text', 'tags'))
+
+# Regexp to extract text from raw post html code
+_post_new_line_regexp = re.compile(r'<br\s*/?>', re.I)
+_post_sanitize_regexp = re.compile(r'<.*?>')
 
 
 class _ClientFactory():
@@ -67,8 +73,18 @@ def _parse_post(html_element: HtmlElement) -> RawPost:
 
     story_id = int(post_pyq_el('div.id span')[0].text)
     story_title = post_pyq_el('h2 a')[0].text
-    story_text = '\n'.join(filter(None, map(lambda el: el.text, post_pyq_el('div.text p'))))
     tags = frozenset(tag.text.strip() for tag in post_pyq_el('div.tags a'))
+
+    story_text = '\n'.join(
+        map(
+            lambda line: _post_sanitize_regexp.sub(r'', line),
+            reduce(
+                lambda msg_lines, lines: msg_lines + lines,
+                [_post_new_line_regexp.split(tostring(line, encoding='unicode'))
+                 for line in post_pyq_el('div.text p')]
+            )
+        )
+    )
 
     return RawPost(story_id, story_title, story_text, tags)
 

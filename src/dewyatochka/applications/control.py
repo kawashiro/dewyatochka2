@@ -39,7 +39,7 @@ class Application(BaseApplication):
         args_parser = argparse.ArgumentParser()
         args_parser.add_argument('command',
                                  metavar='command',
-                                 help='Command name(s) comma separated')
+                                 help='Command name(s) comma separated. Run dewyatochkactl list to see them')
         args_parser.add_argument('--config',
                                  help='Path to config file to use',
                                  default=COMMON_CONFIG_DEFAULT_PATH)
@@ -64,7 +64,7 @@ class Application(BaseApplication):
 
             plugins_loaders = self.registry.plugins.loaders
             self.registry.ctl.load(plugins_loaders, ctl_service.Wrapper(self.registry.ctl))
-            self.registry.ctl.get_command(params.command)(argv=cmd_args, logger=self.registry.log(__name__))
+            self.registry.ctl.get_command(params.command)(argv=cmd_args)
 
         except (KeyboardInterrupt, SystemExit):
             self.registry.log(__name__).warning('Interrupted by user')

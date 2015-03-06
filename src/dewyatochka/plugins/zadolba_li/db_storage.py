@@ -20,19 +20,18 @@ from sqlalchemy.orm.exc import NoResultFound
 from dewyatochka.core.utils.data import ObjectMeta, StorageMeta
 
 
-# Default path to db file
-_DEFAULT_DB_PATH = '/var/lib/dewyatochka/zadolba_li.db'
-
-
 class Storage(metaclass=StorageMeta):
     """ Storage with cool stories """
+
+    # Default path to db file
+    _DEFAULT_DB_PATH = '/var/lib/dewyatochka/zadolba_li.db'
 
     def __init__(self, file=None):
         """ Init sqlite storage
 
         :param str file:
         """
-        self.__file = file
+        self.__file = os.path.realpath(file)
         self.__db_session = None
 
     @property
@@ -43,7 +42,7 @@ class Storage(metaclass=StorageMeta):
         """
         if self.__db_session is None:
             self.__db_session = sessionmaker(
-                bind=create_engine('sqlite:///%s' % (self.__file or _DEFAULT_DB_PATH))
+                bind=create_engine('sqlite:///%s' % (self.__file or self._DEFAULT_DB_PATH))
             )()
 
         return self.__db_session
