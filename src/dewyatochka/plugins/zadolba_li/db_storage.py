@@ -12,8 +12,9 @@ Classes
 __all__ = ['Storage', 'Post', 'Tag']
 
 import os
+import random
 
-from sqlalchemy import create_engine, Column, Table, Integer, String, UniqueConstraint, Text, ForeignKey
+from sqlalchemy import create_engine, Column, Table, Integer, String, UniqueConstraint, Text, ForeignKey, desc
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -33,6 +34,7 @@ class Storage(metaclass=StorageMeta):
         """
         self.__file = os.path.realpath(file)
         self.__db_session = None
+        self.__last_post = None
 
     @property
     def db_session(self) -> Session:
@@ -68,7 +70,7 @@ class Storage(metaclass=StorageMeta):
         # noinspection PyUnresolvedReferences
         self.__class__.metadata.create_all(bind=self.db_session.get_bind())
 
-    def add_story(self, ext_id: int, title: str, text: str, tags=frozenset(), commit=True):
+    def add_post(self, ext_id: int, title: str, text: str, tags=frozenset(), commit=True):
         """ Add a single story and return inserted post instance
 
         :param int ext_id: Story site ID
@@ -94,10 +96,35 @@ class Storage(metaclass=StorageMeta):
         # Save story with tags
         post = Post(ext_id=ext_id, title=title, text=text, tags=post_tags)
         self.db_session.add(post)
+        self.__last_post = post
         if commit:
             self.db_session.commit()
 
         return post
+
+    @property
+    def last_post(self):
+        """ Get last post. Raise runtime error is storage is empty
+
+        :return Post:
+        """
+        if self.__last_post is None:
+            try:
+                self.__last_post = self.db_session.query(Post).order_by(desc(Post.id)).first()
+            except NoResultFound:
+                raise RuntimeError('Storage is empty')
+
+        return self.__last_post
+
+    @property
+    def random_post(self):
+        """ Get random post
+
+        :return Post:
+        """
+        post_id = random.randrange(0, self.last_post.id)
+        return self.last_post if post_id == self.last_post.id \
+            else self.db_session.query(Post).filter(Post.id > post_id).first()
 
     def __enter__(self):
         """ __enter__()

@@ -43,7 +43,7 @@ def reindex(db_path: str, log):
         log.info('Starting stories re-indexing')
 
         for raw_story in site_iterator():
-            storage.add_story(raw_story.id, raw_story.title, raw_story.text, raw_story.tags, commit=False)
+            storage.add_post(raw_story.id, raw_story.title, raw_story.text, raw_story.tags, commit=False)
             inserted += 1
             if inserted % _REINDEX_AUTO_COMMIT_COUNT == 0:
                 # Commit changes only once per 1000 for performance

@@ -76,12 +76,15 @@ def _parse_post(html_element: HtmlElement) -> RawPost:
     tags = frozenset(tag.text.strip() for tag in post_pyq_el('div.tags a'))
 
     story_text = '\n'.join(
-        map(
-            lambda line: _post_sanitize_regexp.sub(r'', line),
-            reduce(
-                lambda msg_lines, lines: msg_lines + lines,
-                [_post_new_line_regexp.split(tostring(line, encoding='unicode'))
-                 for line in post_pyq_el('div.text p')]
+        filter(
+            None,
+            map(
+                lambda line: _post_sanitize_regexp.sub(r'', line).strip(),
+                reduce(
+                    lambda msg_lines, lines: msg_lines + lines,
+                    [_post_new_line_regexp.split(tostring(line, encoding='unicode'))
+                     for line in post_pyq_el('div.text p')]
+                )
             )
         )
     )

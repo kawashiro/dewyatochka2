@@ -7,15 +7,31 @@ Modules
     db_storage  -- zadolba.li local sqlite storage
     maintenance -- Functions for dewyatochkactl
     parser      -- zadolba.li html parser
+    chat        -- Chat functions
 """
 
-__all__ = ['db_storage', 'maintenance', 'parser']
+__all__ = ['db_storage', 'maintenance', 'parser', 'chat']
 
 import argparse
 
 from dewyatochka.core import plugin
 
-from . import maintenance
+from . import maintenance, chat
+
+
+@plugin.chat_command('coolstory')
+def cool_story_command_handler(outp, registry, **_):
+    """ Say a cool story
+
+    :param outp:
+    :param registry:
+    :param _:
+    :return None:
+    """
+    db_path = registry.config.get('db_path')
+    story = chat.get_random_cool_story(db_path)
+
+    outp.say(story)
 
 
 def _parse_args(argv: list):
