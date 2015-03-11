@@ -40,6 +40,7 @@ setup(
               'dewyatochka.core.config',
               'dewyatochka.core.config.source',
               'dewyatochka.core.daemon',
+              'dewyatochka.core.data',
               'dewyatochka.core.log',
               'dewyatochka.core.network',
               'dewyatochka.core.network.xmpp',

@@ -7,8 +7,14 @@ Functions
     ctl -- Decorator for ctl-plugin
 """
 
+from dewyatochka import plugins
 from dewyatochka.core.plugin.loader.internal import entry_point
+from dewyatochka.core.plugin.exceptions import PluginRegistrationError
+
 from .service import PLUGIN_TYPE_CTL
+
+# Commands already in use
+_used_commands = set()
 
 
 def ctl(name: str, description: str, *, services=None) -> callable:
@@ -19,4 +25,12 @@ def ctl(name: str, description: str, *, services=None) -> callable:
     :param list services: Dependencies
     :return callable:
     """
-    return entry_point(PLUGIN_TYPE_CTL, services=services, name=name, description=description)
+    def _entry_point(fn):
+        module_name = fn.__module__.split('.')[-1]
+        full_name = name if module_name in plugins.__all__ else '.'.join((module_name, name))
+        if full_name in _used_commands:
+            raise PluginRegistrationError('ctl command "%s" is already in use' % full_name)
+        _used_commands.add(full_name)
+        return entry_point(PLUGIN_TYPE_CTL, services=services, name=full_name, description=description)(fn)
+
+    return _entry_point

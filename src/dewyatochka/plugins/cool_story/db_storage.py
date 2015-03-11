@@ -1,78 +1,43 @@
 # -*- coding: UTF-8
 
-""" zadolba.li local sqlite storage
+""" Local SQLIte storage
 
 Classes
 =======
     Storage -- Storage with cool stories
     Tag     -- Story tag object
-    Post    -- zadolba.li post
+    Post    -- Story post
 """
 
 __all__ = ['Storage', 'Post', 'Tag']
 
-import os
 import random
 
-from sqlalchemy import create_engine, Column, Table, Integer, String, UniqueConstraint, Text, ForeignKey, desc
-from sqlalchemy.orm import sessionmaker, Session, relationship
+from sqlalchemy import Column, Table, Integer, String, UniqueConstraint, Index, Text, ForeignKey, desc
+from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import NoResultFound
 
-from dewyatochka.core.utils.data import ObjectMeta, StorageMeta
+from dewyatochka.core.data.database import ObjectMeta, SQLIteStorage
 
 
-class Storage(metaclass=StorageMeta):
+class Storage(SQLIteStorage):
     """ Storage with cool stories """
 
     # Default path to db file
-    _DEFAULT_DB_PATH = '/var/lib/dewyatochka/zadolba_li.db'
+    __DEFAULT_DB_PATH = '/var/lib/dewyatochka/cool_story.db'
 
     def __init__(self, file=None):
         """ Init sqlite storage
 
         :param str file:
         """
-        self.__file = os.path.realpath(file)
-        self.__db_session = None
+        super().__init__(file or self.__DEFAULT_DB_PATH)
         self.__last_post = None
 
-    @property
-    def db_session(self) -> Session:
-        """ Get DB session
-
-        :return Session:
-        """
-        if self.__db_session is None:
-            self.__db_session = sessionmaker(
-                bind=create_engine('sqlite:///%s' % (self.__file or self._DEFAULT_DB_PATH))
-            )()
-
-        return self.__db_session
-
-    @property
-    def path(self) -> str:
-        """ Get path to db
-
-        :return str:
-        """
-        return self.__file
-
-    def recreate(self):
-        """ Recreate engine
-
-        :return None:
-        """
-        self.db_session.close()
-
-        if os.path.isfile(self.path):
-            os.unlink(self.path)
-
-        # noinspection PyUnresolvedReferences
-        self.__class__.metadata.create_all(bind=self.db_session.get_bind())
-
-    def add_post(self, ext_id: int, title: str, text: str, tags=frozenset(), commit=True):
+    def add_post(self, source, ext_id: int, title: str, text: str, tags=frozenset(), commit=True):
         """ Add a single story and return inserted post instance
 
+        :param str source: Story site name
         :param int ext_id: Story site ID
         :param str title: Story title
         :param str text:  Story full text
@@ -94,7 +59,7 @@ class Storage(metaclass=StorageMeta):
             post_tags.append(tag)
 
         # Save story with tags
-        post = Post(ext_id=ext_id, title=title, text=text, tags=post_tags)
+        post = Post(source=source, ext_id=ext_id, title=title, text=text, tags=post_tags)
         self.db_session.add(post)
         self.__last_post = post
         if commit:
@@ -125,22 +90,6 @@ class Storage(metaclass=StorageMeta):
         post_id = random.randrange(0, self.last_post.id)
         return self.last_post if post_id == self.last_post.id \
             else self.db_session.query(Post).filter(Post.id > post_id).first()
-
-    def __enter__(self):
-        """ __enter__()
-
-        :return Storage:
-        """
-        return self
-
-    def __exit__(self, *_) -> bool:
-        """ Close session on exit
-
-        :param tuple _:
-        :return bool:
-        """
-        self.db_session.close()
-        return False
 
 
 class TagMeta(ObjectMeta):
@@ -213,9 +162,11 @@ class PostMeta(ObjectMeta):
         """
         return Table('posts', Storage.metadata,
                      Column('id', Integer, primary_key=True),
+                     Column('source', String(255)),
                      Column('ext_id', Integer),
                      Column('title', String(255)),
-                     Column('text', Text))
+                     Column('text', Text),
+                     Index('ix_ext_id', 'source', 'ext_id', unique=True))
 
     @staticmethod
     def get_assoc_table() -> Table:
@@ -237,16 +188,18 @@ class PostMeta(ObjectMeta):
 
 
 class Post(metaclass=PostMeta):
-    """ zadolba.li post """
+    """ Story post """
 
     # noinspection PyShadowingBuiltins
-    def __init__(self, id=None, ext_id=None, title=None, text=None, tags=None):
+    def __init__(self, id=None, source=None, ext_id=None, title=None, text=None, tags=None):
         """ Init object
 
         :param int id:
+        :param str source:
         :param int ext_id:
         :param str title:
         :param str text:
         :param list tags:
         """
-        self.id, self.ext_id, self.title, self.text, self.tags = id, ext_id, title, text, tags or []
+        self.id, self.source, self.ext_id, self.title, self.text, self.tags = \
+            id, source, ext_id, title, text, tags or []
