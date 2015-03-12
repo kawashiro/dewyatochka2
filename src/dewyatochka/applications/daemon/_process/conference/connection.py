@@ -383,7 +383,7 @@ class ConnectionManager(Service):
             raise
 
         except MessageError as e:
-            self.log.error(e)
+            self.log.debug(e)
 
         except C2SConnectionError as e:
             self.log.error(e)
