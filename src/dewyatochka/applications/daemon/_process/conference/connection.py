@@ -60,6 +60,8 @@ class _PresenceHelper():
         self._alive_set_lock = threading.Lock()
         self._reconnect_queue = []
 
+        self.__configured_conferences = None
+
         self._reconnect_thread = threading.Thread(
             name=self._connection_manager.name() + '[PresenceHelper[Reenter]]',
             target=self._do_reconnect,
@@ -99,10 +101,10 @@ class _PresenceHelper():
             self.__assert_started()
             log = self._connection_manager.log
 
-            if conference not in self._alive_conferences:
+            if conference.bare not in self._alive_conferences:
                 log.info('Entering into conference %s as %s', conference.bare.jid, conference.resource)
                 self._connection_manager.client.chat.enter(conference.bare, conference.resource)
-                self._alive_conferences.add(conference)
+                self._alive_conferences.add(conference.bare)
             else:
                 log.debug('Discarded to enter to a conference %s while it is marked as alive', str(conference))
 
@@ -118,21 +120,29 @@ class _PresenceHelper():
 
             if conference in self._alive_conferences:
                 log.info('Leaving conference %s', str(conference))
-                self._connection_manager.client.chat.leave(conference.bare, conference.resource)
+                for c_conference in self._configured_conferences:
+                    if c_conference.bare == conference:
+                        self._connection_manager.client.chat.leave(conference, c_conference.resource)
                 self._alive_conferences.remove(conference)
             else:
                 log.debug('Discarded to leave conference %s while it is not marked as alive', str(conference))
 
-    def enter_all(self, force=False):
-        """ Enter into all the configured conferences
+    def clear_state(self):
+        """ Flush reconnection queue and mark all conferences as dead
 
-        :param bool force: Force re-enter
         :return None:
         """
         self.__assert_started()
-        if force:
-            with self._alive_set_lock:
-                self._alive_conferences.clear()
+        with self._alive_set_lock:
+            self._alive_conferences.clear()
+            self._reconnect_queue.clear()
+
+    def enter_all(self):
+        """ Enter into all the configured conferences
+
+        :return None:
+        """
+        self.__assert_started()
         for conference in self._configured_conferences:
             self.enter(conference)
 
@@ -151,15 +161,35 @@ class _PresenceHelper():
         :param JID conference: Conference jid with nick
         :return None:
         """
-        self._connection_manager.log.error(
-            'Server-to-server connection to %s seems to be broken, scheduling reconnect', conference.bare
-        )
+        self.__assert_started()
+
+        log = self._connection_manager.log
+        log.error('Server-to-server connection to %s seems to be broken, scheduling reconnect', conference)
 
         with self._alive_set_lock:
-            for alive_conference in self._alive_conferences.copy():
-                if alive_conference.bare == conference.bare:
-                    self._alive_conferences.remove(alive_conference)
-                    self._reconnect_queue.append(self.__ReconnectTask(alive_conference, time.time()))
+            try:
+                self._alive_conferences.remove(conference)
+            except KeyError:
+                # Failed on the first connection attempt
+                pass
+            self._reconnect_queue.append(self.__ReconnectTask(self._get_persistence_jid(conference), time.time()))
+
+    def _get_persistence_jid(self, conference: JID) -> JID:
+        """ Get full conference persistence JID
+
+        :param JID conference:
+        :return JID:
+        """
+        try:
+            full_conf = JID(conference.login,
+                            conference.server,
+                            [c.resource for c in self._configured_conferences if c.bare == conference][0])
+        except IndexError:
+            self._connection_manager.log.warn(
+                'Conference %s is marked as alive but is not configured', conference
+            )
+            full_conf = conference
+        return full_conf
 
     def is_alive(self, conference: JID) -> bool:
         """ Check if conference is alive
@@ -183,12 +213,15 @@ class _PresenceHelper():
 
         :return set of JID:
         """
-        try:
-            config = self._connection_manager.application.registry.conferences_config
-            return {JID.from_string('/'.join([config.section(name).get('room'), config.section(name).get('nick')]))
-                    for name in config}
-        except ValueError as e:
-            raise ConferenceConfigError('Invalid conference entry found (%s)' % e)
+        if self.__configured_conferences is None:
+            try:
+                config = self._connection_manager.application.registry.conferences_config
+                conf = {JID.from_string('/'.join([config.section(name).get('room'), config.section(name).get('nick')]))
+                        for name in config}
+                self.__configured_conferences = conf
+            except ValueError as e:
+                raise ConferenceConfigError('Invalid conference entry found (%s)' % e)
+        return self.__configured_conferences
 
     def _do_reconnect(self):
         """ Reconnect queue processing loop
@@ -235,7 +268,7 @@ class _PresenceHelper():
 
                     try:
                         log.debug('Ping %s', conference)
-                        pt = self._connection_manager.client.ping(conference)
+                        pt = self._connection_manager.client.ping(self._get_persistence_jid(conference))
                         log.debug('Ping %s succeeded (%f)', conference, pt)
 
                     except S2SConnectionError:
@@ -313,7 +346,7 @@ class ConnectionManager(Service):
             try:
                 attempts += 1
                 self.client.connect()
-                self._presence_helper.enter_all(force=True)
+                self._presence_helper.enter_all()
             except C2SConnectionError as e:
                 self.log.error('%s (attempt #%d), sleeping %d seconds before the next attempt',
                                e, attempts, _XMPP_RECONNECT_INTERVAL)
@@ -354,6 +387,7 @@ class ConnectionManager(Service):
 
         except C2SConnectionError as e:
             self.log.error(e)
+            self._presence_helper.clear_state()
             if not self._reconnect():
                 raise
 

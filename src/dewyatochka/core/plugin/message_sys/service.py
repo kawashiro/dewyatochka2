@@ -66,7 +66,7 @@ class Environment(BaseEnvironment):
             raise TypeError('`message` keyword argument is required')
 
         if self._matcher.match(message):
-            super().invoke(inp=message, outp=self._get_output_wrapper(message.sender), **kwargs)
+            super().invoke(inp=message, outp=self._get_output_wrapper(message.sender.bare), **kwargs)
 
     def _get_output_wrapper(self, destination: JID):
         """ Get output wrapper for a conference

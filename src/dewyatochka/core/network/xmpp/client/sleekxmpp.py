@@ -170,9 +170,9 @@ class Client(_base.Client):
         else:
             try:
                 self._message_queue.put(_convert_message(message))
-            except ValueError:
-                # Not acceptable message, ignore it
-                pass
+            except ValueError as e:
+                # Not acceptable message
+                self._message_queue.put(MessageError(e))
 
     def _queue_presence_error(self, presence: dict):
         """ Put presence error into messages queue

@@ -99,7 +99,7 @@ def occasional_question(registry):
             last_message_ts = chat.get_activity_info(conference).last_message
 
             if last_message_ts + silence_interval < time.time():
-                log.info('Conference %s is too silent (last msg.: %d), waking up', conference.bare, last_message_ts)
-                registry.xmpp.client.chat(_get_question(category, log), conference.bare)
+                log.info('Conference %s is too silent (last msg.: %d), waking up', conference, last_message_ts)
+                registry.xmpp.send_muc(_get_question(category, log), conference)
             else:
-                log.debug('Conference %s postponed (last msg.: %d)', conference.bare, last_message_ts)
+                log.debug('Conference %s postponed (last msg.: %d)', conference, last_message_ts)
