@@ -49,8 +49,8 @@ class TestEnvironment(unittest.TestCase):
         env = Environment(plugin_fn, registry, xmpp_client, matcher)
 
         wrapper = env._get_output_wrapper(destination)
-        self.assertEqual(destination.bare.jid, wrapper._conference.jid)
-        self.assertEqual(xmpp_client, wrapper._xmpp_client)
+        self.assertEqual(destination.jid, wrapper._conference.jid)
+        self.assertEqual(xmpp_client, wrapper._xmpp_service)
         self.assertEqual(wrapper, env._get_output_wrapper(destination))
 
 
@@ -64,7 +64,7 @@ class TestOutput(unittest.TestCase):
 
         out = Output(xmpp_client, destination)
         out.say('hello')
-        xmpp_client.chat.assert_called_once_with('hello', destination.bare)
+        xmpp_client.send_muc.assert_called_once_with('hello', destination)
 
 
 class TestService(unittest.TestCase):
