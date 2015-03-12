@@ -131,7 +131,8 @@ class _PresenceHelper():
         """
         self.__assert_started()
         if force:
-            self._alive_conferences.clear()
+            with self._alive_set_lock:
+                self._alive_conferences.clear()
         for conference in self._configured_conferences:
             self.enter(conference)
 
@@ -151,16 +152,14 @@ class _PresenceHelper():
         :return None:
         """
         self._connection_manager.log.error(
-            'Server-to-server connection to %s seems to be broken, scheduling reconnect', conference
+            'Server-to-server connection to %s seems to be broken, scheduling reconnect', conference.bare
         )
 
-        try:
-            self._alive_conferences.remove(conference)
-        except KeyError:
-            # Failed on the first connection attempt
-            pass
-
-        self._reconnect_queue.append(self.__ReconnectTask(conference, time.time()))
+        with self._alive_set_lock:
+            for alive_conference in self._alive_conferences.copy():
+                if alive_conference.bare == conference.bare:
+                    self._alive_conferences.remove(alive_conference)
+                    self._reconnect_queue.append(self.__ReconnectTask(alive_conference, time.time()))
 
     def is_alive(self, conference: JID) -> bool:
         """ Check if conference is alive
@@ -408,6 +407,18 @@ class ConnectionManager(Service):
         :return frozenset:
         """
         return self._presence_helper.alive_conferences
+
+    def send_muc(self, message: str, chat: JID):
+        """ Send a message to groupchat
+
+        :param str message: Message content
+        :param JID chat:  Chat JID (with nickname)
+        :return None:
+        """
+        if not self._presence_helper.is_alive(chat):
+            raise S2SConnectionError('Chat %s is not online now' % chat, remote=chat)
+
+        self.client.chat(message, chat.bare)
 
     @classmethod
     def name(cls) -> str:

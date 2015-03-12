@@ -41,18 +41,18 @@ class Environment(BaseEnvironment):
     to pass through only valid messages
     """
 
-    def __init__(self, plugin: callable, registry: Registry, xmpp_client, matcher):
+    def __init__(self, plugin: callable, registry: Registry, xmpp_service, matcher):
         """ Initialize plugin environment
 
         :param callable plugin:
         :param Registry registry:
-        :param xmpp_client:
+        :param xmpp_service:
         :param .matcher.standard.Matcher matcher:
         """
         super().__init__(plugin, registry)
 
         self._matcher = matcher
-        self._xmpp_client = xmpp_client
+        self._xmpp_service = xmpp_service
         self._output_wrappers = {}
 
     def invoke(self, *, message=None, **kwargs):
@@ -75,10 +75,10 @@ class Environment(BaseEnvironment):
         :return None:
         """
         try:
-            output = self._output_wrappers[str(destination.bare)]
+            output = self._output_wrappers[str(destination)]
         except KeyError:
-            output = Output(self._xmpp_client, destination.bare)
-            self._output_wrappers[str(destination.bare)] = output
+            output = Output(self._xmpp_service, destination)
+            self._output_wrappers[str(destination)] = output
 
         return output
 
@@ -141,7 +141,7 @@ class Wrapper(BaseWrapper):
         """
         return Environment(entry.plugin,
                            self._get_registry(entry),
-                           self._service.application.registry.xmpp.client,
+                           self._service.application.registry.xmpp,
                            self._get_matcher(entry))
 
 
@@ -152,13 +152,13 @@ class Output():
     to allow plugin to communicate through xmpp
     """
 
-    def __init__(self, xmpp_client, conference: JID):
+    def __init__(self, xmpp_service, conference: JID):
         """ Bind output wrapper to xmpp-client and a conference
 
-        :param xmpp_client:
+        :param xmpp_service:
         :param JID conference:
         """
-        self._xmpp_client = xmpp_client
+        self._xmpp_service = xmpp_service
         self._conference = conference
 
     def say(self, text: str, *args):
@@ -168,4 +168,4 @@ class Output():
         :param tuple args: Args for message format
         :return None:
         """
-        self._xmpp_client.chat(text % args, self._conference.bare)
+        self._xmpp_service.send_muc(text % args, self._conference)
