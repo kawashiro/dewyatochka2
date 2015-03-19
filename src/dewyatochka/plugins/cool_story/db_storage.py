@@ -17,7 +17,7 @@ from sqlalchemy import Column, Table, Integer, String, UniqueConstraint, Index, 
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import NoResultFound
 
-from dewyatochka.core.data.database import ObjectMeta, SQLIteStorage
+from dewyatochka.core.data.database import ObjectMeta, StoreableObject, CacheableObject, SQLIteStorage
 
 
 class Storage(SQLIteStorage):
@@ -34,10 +34,10 @@ class Storage(SQLIteStorage):
         super().__init__(file or self.__DEFAULT_DB_PATH)
         self.__last_post = None
 
-    def add_post(self, source, ext_id: int, title: str, text: str, tags=frozenset(), commit=True):
+    def add_post(self, source_title, ext_id: int, title: str, text: str, tags=frozenset(), commit=True):
         """ Add a single story and return inserted post instance
 
-        :param str source: Story site name
+        :param str source_title: Story site name
         :param int ext_id: Story site ID
         :param str title: Story title
         :param str text:  Story full text
@@ -57,6 +57,13 @@ class Storage(SQLIteStorage):
             # Increment counter as new link story + tag has been created
             tag.count += 1
             post_tags.append(tag)
+
+        source = Source(title=source_title)
+        if not source.stored:
+            try:
+                source = self.db_session.query(Source).filter(Source.title == source_title).one()
+            except NoResultFound:
+                pass
 
         # Save story with tags
         post = Post(source=source, ext_id=ext_id, title=title, text=text, tags=post_tags)
@@ -109,11 +116,11 @@ class TagMeta(ObjectMeta):
                      UniqueConstraint('title'))
 
 
-class Tag(metaclass=TagMeta):
+class Tag(CacheableObject, metaclass=TagMeta):
     """ tag object """
 
-    # Cached tags by title
-    _tags_cache = {}
+    # Unique key (field name)
+    _key = 'title'
 
     # noinspection PyShadowingBuiltins
     def __init__(self, id=None, title=None, count=0):
@@ -123,31 +130,39 @@ class Tag(metaclass=TagMeta):
         :param str title:
         :param int count:
         """
-        if title is not None and title not in self._tags_cache:
-            # Do not re-init object if it is a cached instance
-            self.id, self.title, self.count = id, title, count
-            self._tags_cache[title] = self
+        super().__init__(id=id, title=title, count=count)
+
+
+class SourceMeta(ObjectMeta):
+    """ Sources metadata """
 
     @property
-    def stored(self) -> bool:
-        """ Is flag stored in db
+    def _table(cls) -> Table:
+        """ Get table associated with metadata
 
-        :return bool:
+        :param cls:
+        :return Table:
         """
-        return self.id is not None
+        return Table('sources', Storage.metadata,
+                     Column('id', Integer, primary_key=True),
+                     Column('title', String(255), index=True),
+                     UniqueConstraint('title'))
+
+
+class Source(CacheableObject, metaclass=SourceMeta):
+    """ Story source """
+
+    # Unique key (field name)
+    _key = 'title'
 
     # noinspection PyShadowingBuiltins
-    def __new__(cls, id=None, title=None, count=0):
-        """ Get cached tag instance instead of creating a new one
+    def __init__(self, id=None, title=None):
+        """ Init object
 
         :param int id:
         :param str title:
-        :param int count:
         """
-        if title is not None and title in cls._tags_cache:
-            return cls._tags_cache[title]
-
-        return super().__new__(cls)
+        super().__init__(id=id, title=title)
 
 
 class PostMeta(ObjectMeta):
@@ -162,14 +177,14 @@ class PostMeta(ObjectMeta):
         """
         return Table('posts', Storage.metadata,
                      Column('id', Integer, primary_key=True),
-                     Column('source', String(255)),
+                     Column('source_id', Integer, ForeignKey('sources.id')),
                      Column('ext_id', Integer),
                      Column('title', String(255)),
                      Column('text', Text),
-                     Index('ix_ext_id', 'source', 'ext_id', unique=True))
+                     Index('ix_ext_id', 'source_id', 'ext_id', unique=True))
 
     @staticmethod
-    def get_assoc_table() -> Table:
+    def get_tags_assoc_table() -> Table:
         """ Get posts 2 tags association table
 
         :return Table:
@@ -184,10 +199,11 @@ class PostMeta(ObjectMeta):
 
         :return dict:
         """
-        return {'tags': relationship(Tag, secondary=cls.get_assoc_table(), backref='posts')}
+        return {'tags': relationship(Tag, secondary=cls.get_tags_assoc_table()),
+                'source': relationship(Source)}
 
 
-class Post(metaclass=PostMeta):
+class Post(StoreableObject, metaclass=PostMeta):
     """ Story post """
 
     # noinspection PyShadowingBuiltins
@@ -195,11 +211,17 @@ class Post(metaclass=PostMeta):
         """ Init object
 
         :param int id:
-        :param str source:
+        :param Source source:
         :param int ext_id:
         :param str title:
         :param str text:
         :param list tags:
         """
-        self.id, self.source, self.ext_id, self.title, self.text, self.tags = \
-            id, source, ext_id, title, text, tags or []
+        super().__init__(
+            id=id,
+            source=source,
+            ext_id=ext_id,
+            title=title,
+            text=text,
+            tags=tags or []
+        )

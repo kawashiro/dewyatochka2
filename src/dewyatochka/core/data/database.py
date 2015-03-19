@@ -5,13 +5,16 @@
 Classes
 =======
     ObjectMeta          -- Abstract metaclass for ORM objects
+    StoreableObject     -- Object storeable in db
+    CacheableObject     -- Object statically cached by some unique key
     UnmappedFieldError  -- Error on access to undefined object field
     StorageMeta         -- Abstract metaclass for storage implementations
     AbstractStorage     -- Very abstract storage
     SQLIteStorage       -- SQLIte based storage
 """
 
-__all__ = ['ObjectMeta', 'UnmappedFieldError', 'StorageMeta', 'AbstractStorage', 'SQLIteStorage']
+__all__ = ['ObjectMeta', 'StoreableObject', 'CacheableObject', 'UnmappedFieldError',
+           'StorageMeta', 'AbstractStorage', 'SQLIteStorage']
 
 
 import os
@@ -63,6 +66,65 @@ class ObjectMeta(type, metaclass=ABCMeta):
         :return None:
         """
         raise UnmappedFieldError('Field %s is not mapped to an object %s' % (item, cls))
+
+
+class StoreableObject():
+    """ Object storeable in db """
+
+    # Primary key
+    _primary = 'id'
+
+    def __init__(self, **kwargs):
+        """ Init object
+
+        :param dict kwargs:
+        """
+        for field in kwargs:
+            setattr(self, field, kwargs[field])
+
+    @property
+    def stored(self) -> bool:
+        """ Is flag stored in db
+
+        :return bool:
+        """
+        try:
+            stored = getattr(self, self._primary) is not None
+        except AttributeError:
+            stored = False
+
+        return stored
+
+
+class CacheableObject(StoreableObject):
+    """ Object statically cached by some unique key """
+
+    # Cached tags by title
+    _cache = {}
+
+    # Unique key (field name)
+    _key = None
+
+    def __init__(self, **kwargs):
+        """ Init object
+
+        :param dict kwargs:
+        """
+        if self._key not in kwargs or kwargs[self._key] not in self._cache:
+            # Do not re-init object if it is a cached instance
+            super().__init__(**kwargs)
+
+    def __new__(cls, **kwargs):
+        """ Get cached tag instance instead of creating a new one
+
+        :param dict kwargs:
+        """
+        try:
+            return cls._cache[kwargs[cls._key]]
+        except KeyError:  # Unique key is not defined or an object is not cached yet
+            pass
+
+        return super().__new__(cls)
 
 
 class StorageMeta(ABCMeta):
