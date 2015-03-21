@@ -132,7 +132,6 @@ class _PresenceHelper():
 
         :return None:
         """
-        self.__assert_started()
         with self._alive_set_lock:
             self._alive_conferences.clear()
             self._reconnect_queue.clear()
