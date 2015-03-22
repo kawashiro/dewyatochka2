@@ -72,7 +72,7 @@ class TestService(unittest.TestCase):
 
     def test_accepts(self):
         """ Test acceptable plugins types list getter """
-        self.assertEqual(['message', 'chat_command'], Service(VoidApplication()).accepts)
+        self.assertEqual(['message', 'chat_command', 'accost'], Service(VoidApplication()).accepts)
 
     def test_name(self):
         """ Test service name getter """

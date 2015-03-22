@@ -6,11 +6,14 @@ Functions
 =========
     chat_message -- Decorator for chat message plugin
     chat_command -- Decorator for chat command plugin
+    chat_accost  -- Decorator for chat accost plugin
 """
+
+__all__ = ['chat_command', 'chat_message', 'chat_accost']
 
 from dewyatochka.core.plugin.loader.internal import entry_point
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
-from .service import PLUGIN_TYPE_COMMAND, PLUGIN_TYPE_MESSAGE
+from .service import PLUGIN_TYPE_COMMAND, PLUGIN_TYPE_MESSAGE, PLUGIN_TYPE_ACCOST
 
 
 # Commands already in use
@@ -44,3 +47,14 @@ def chat_command(command, *, services=None) -> callable:
 
     _reserved_commands.add(command)
     return entry_point(PLUGIN_TYPE_COMMAND, services=services, command=command)
+
+
+def chat_accost(fn, *, services=None) -> callable:
+    """ Register handler for a chat personal accost
+
+    :param callable fn: Function if decorator is invoked directly
+    :param list services: Dependent services list
+    :return callable:
+    """
+    entry_point_fn = entry_point(PLUGIN_TYPE_ACCOST, services=services)
+    return entry_point_fn(fn) if fn is not None else entry_point_fn

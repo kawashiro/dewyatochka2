@@ -67,6 +67,7 @@ def _get_question(category: str, log) -> str:
         _get_question_lock.release()
 
 
+@plugin.chat_accost
 @plugin.chat_command('talk')
 def talk_command_handler(outp, registry, **_):
     """ Echo to the conference a question

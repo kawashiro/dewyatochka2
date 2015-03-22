@@ -6,9 +6,10 @@ Classes
 =======
     Matcher        -- Matches any chat message
     CommandMatcher -- Matches chat message that seems to be a bot command
+    AccostMatcher  -- If someone is trying to talk to Dewyatochka
 """
 
-__all__ = ['Matcher', 'CommandMatcher']
+__all__ = ['Matcher', 'CommandMatcher', 'AccostMatcher']
 
 import re
 
@@ -70,6 +71,7 @@ class Matcher():
             try:
                 params = self._conferences.section(name)
                 room, server = params['room'].split('@')
+                # FIXME: Detection on empty nick in the config
                 conf_receiver_jid = JID(room, server, params.get('nick', message.receiver))
                 if conf_receiver_jid == message.sender:
                     return True
@@ -111,3 +113,36 @@ class CommandMatcher(Matcher):
         :return bool:
         """
         return super().match(message) and self._cmd_regexp.match(message.text) is not None
+
+
+class AccostMatcher(Matcher):
+    """ If someone is trying to talk to Dewyatochka """
+
+    def __init__(self, conferences_config: ConferencesConfig):
+        """ Create a matcher for message types specified
+
+        :param ConferencesConfig conferences_config:
+        """
+        super().__init__(conferences_config)
+
+    def match(self, message: ChatMessage) -> bool:
+        """ Check message
+
+        Return True if message matches this matcher
+
+        :param Message message: Chat message
+        :return bool:
+        """
+        nick = None
+        msg_conference = str(message.sender.bare)
+        for name in self._conferences:
+            try:
+                conference_cfg = self._conferences.section(name)
+                if conference_cfg['room'] == msg_conference:
+                    # TODO: Use fulltext analyzer when it is implemented
+                    nick = conference_cfg.get('nick')
+            except:
+                # Malformed config, just skip it
+                pass
+
+        return super().match(message) and nick and nick in message.text

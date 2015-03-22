@@ -14,9 +14,11 @@ Attributes
     PLUGIN_TYPE_MESSAGE -- Simple message plugin type
     PLUGIN_TYPE_COMMAND -- Chat command plugin type
     PLUGIN_TYPES        -- All plugin types list
+    PLUGIN_TYPE_ACCOST  -- Chat accost plugin type
 """
 
-__all__ = ['Environment', 'Service', 'Wrapper', 'Output', 'PLUGIN_TYPE_COMMAND', 'PLUGIN_TYPE_MESSAGE', 'PLUGIN_TYPES']
+__all__ = ['Environment', 'Service', 'Wrapper', 'Output',
+           'PLUGIN_TYPE_COMMAND', 'PLUGIN_TYPE_MESSAGE', 'PLUGIN_TYPE_ACCOST', 'PLUGIN_TYPES']
 
 from dewyatochka.core.application import Registry
 from dewyatochka.core.network.xmpp.entity import Message, JID
@@ -31,7 +33,8 @@ from .matcher.standard import *
 # Plugin types provided
 PLUGIN_TYPE_MESSAGE = 'message'
 PLUGIN_TYPE_COMMAND = 'chat_command'
-PLUGIN_TYPES = [PLUGIN_TYPE_MESSAGE, PLUGIN_TYPE_COMMAND]
+PLUGIN_TYPE_ACCOST = 'accost'
+PLUGIN_TYPES = [PLUGIN_TYPE_MESSAGE, PLUGIN_TYPE_COMMAND, PLUGIN_TYPE_ACCOST]
 
 
 class Environment(BaseEnvironment):
@@ -126,6 +129,8 @@ class Wrapper(BaseWrapper):
             except KeyError:
                 raise PluginRegistrationError('Failed to register chat command plugin: '
                                               'Chat command prefix is not configured')
+        elif e_type == PLUGIN_TYPE_ACCOST:
+            matcher = AccostMatcher(c_conf)
         else:
             raise PluginRegistrationError(
                 'Failed to determine matcher type for a plugin %s type of %s' % (repr(entry.plugin), repr(e_type))
