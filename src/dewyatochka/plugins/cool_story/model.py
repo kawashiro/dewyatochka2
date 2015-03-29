@@ -34,6 +34,38 @@ class Storage(SQLIteStorage):
         super().__init__(file or self.__DEFAULT_DB_PATH)
         self.__last_post = None
 
+    def __get_entity_by_title(self, entity_cls, title: str):
+        """ Get cacheable entity instance by title
+
+        :param TagMeta|SourceMeta entity_cls:
+        :param str title:
+        :return Tag:
+        """
+        entity = entity_cls(title=title)
+        if not entity.stored:
+            try:
+                entity = self.db_session.query(entity_cls).filter(entity_cls.title == title).one()
+            except NoResultFound:
+                # Okay, using not stored instance
+                pass
+        return entity
+
+    def get_tag_by_title(self, title: str):
+        """ Get tag instance by title
+
+        :param str title: Tag title
+        :return Tag:
+        """
+        return self.__get_entity_by_title(Tag, title)
+
+    def get_source_by_title(self, title: str):
+        """ Get source instance by title
+
+        :param str title: Source title
+        :return Tag:
+        """
+        return self.__get_entity_by_title(Source, title)
+
     def add_post(self, source_title, ext_id: int, title: str, text: str, tags=frozenset(), commit=True):
         """ Add a single story and return inserted post instance
 
@@ -47,23 +79,12 @@ class Storage(SQLIteStorage):
         """
         post_tags = []
         for tag_title in tags:
-            tag = Tag(title=tag_title)
-            if not tag.stored:
-                try:
-                    tag = self.db_session.query(Tag).filter(Tag.title == tag_title).one()
-                except NoResultFound:
-                    # Okay, using not stored instance
-                    pass
+            tag = self.get_tag_by_title(tag_title)
             # Increment counter as new link story + tag has been created
             tag.count += 1
             post_tags.append(tag)
 
-        source = Source(title=source_title)
-        if not source.stored:
-            try:
-                source = self.db_session.query(Source).filter(Source.title == source_title).one()
-            except NoResultFound:
-                pass
+        source = self.get_source_by_title(source_title)
 
         # Save story with tags
         post = Post(source=source, ext_id=ext_id, title=title, text=text, tags=post_tags)
@@ -88,15 +109,42 @@ class Storage(SQLIteStorage):
 
         return self.__last_post
 
-    @property
-    def random_post(self):
+    def get_random_post(self, source=None):
         """ Get random post
 
+        :param str source: Source title
         :return Post:
         """
-        post_id = random.randrange(0, self.last_post.id)
-        return self.last_post if post_id == self.last_post.id \
-            else self.db_session.query(Post).filter(Post.id > post_id).first()
+        if source:
+            max_ext_id = self.get_last_indexed_post(source).ext_id
+            if not max_ext_id:
+                raise RuntimeError('No stories found for source %s' % source)
+            filters = [Post.ext_id > random.randrange(0, max_ext_id),
+                       Post.source == self.get_source_by_title(source)]
+            order_by = Post.ext_id
+        else:
+            filters = [Post.id > random.randrange(0, self.last_post.id)]
+            order_by = Post.id
+
+        post = self.db_session.query(Post).filter(*filters).order_by(order_by).first()
+        if not post:
+            raise RuntimeError('Failed to get random post by filters %s' % filters)
+
+        return post
+
+    def get_last_indexed_post(self, source):
+        """ Get the last post indexed (highest external id)
+
+        :param str source: Source title
+        :return:
+        """
+        post = self.db_session \
+            .query(Post) \
+            .filter(Post.source == self.get_source_by_title(source)) \
+            .order_by(desc(Post.ext_id)) \
+            .first()
+
+        return post or Post()
 
 
 class TagMeta(ObjectMeta):

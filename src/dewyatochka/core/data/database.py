@@ -21,7 +21,7 @@ import os
 from abc import ABCMeta, abstractproperty
 
 from sqlalchemy import Table, MetaData, create_engine
-from sqlalchemy.orm import mapper, sessionmaker, Session
+from sqlalchemy.orm import mapper, sessionmaker, Session, reconstructor
 
 
 class UnmappedFieldError(AttributeError):
@@ -113,6 +113,25 @@ class CacheableObject(StoreableObject):
         if self._key not in kwargs or kwargs[self._key] not in self._cache:
             # Do not re-init object if it is a cached instance
             super().__init__(**kwargs)
+            self.cache()
+
+    @reconstructor
+    def cache(self):
+        """ Put self into cache
+
+        :return None:
+        """
+        self._cache[getattr(self, str(self._key))] = self
+
+    def free(self):
+        """ Remove from cache
+
+        :return None:
+        """
+        try:
+            del self._cache[getattr(self, str(self._key))]
+        except KeyError:
+            pass
 
     def __new__(cls, **kwargs):
         """ Get cached tag instance instead of creating a new one

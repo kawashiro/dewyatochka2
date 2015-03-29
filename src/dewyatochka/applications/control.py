@@ -17,7 +17,7 @@ from dewyatochka.core.config import get_common_config, get_extensions_config
 from dewyatochka.core.config.factory import COMMON_CONFIG_DEFAULT_PATH
 from dewyatochka.core.log import get_console_logger
 from dewyatochka.core.plugin.loader import LoaderService
-from dewyatochka.core.plugin.ctl_sys import service as ctl_service
+from dewyatochka.core.plugin.subsystem.control import service as ctl_service
 
 
 # App exit codes

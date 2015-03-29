@@ -10,8 +10,8 @@ from dewyatochka import __version__
 from dewyatochka.core.application import Registry
 from dewyatochka.core.plugin import chat_message, chat_command, ctl
 from dewyatochka.core.plugin.loader import LoaderService
-from dewyatochka.core.plugin.ctl_sys.service import Service as CtlService
-from dewyatochka.core.plugin.message_sys.service import Service as MSysService
+from dewyatochka.core.plugin.subsystem.control.service import Service as CtlService
+from dewyatochka.core.plugin.subsystem.message.service import Service as MSysService
 from dewyatochka.core.utils.chat import get_activity_info
 
 

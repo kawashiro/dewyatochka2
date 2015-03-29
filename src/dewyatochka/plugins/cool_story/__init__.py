@@ -8,12 +8,13 @@ Packages
 
 Modules
 =======
-    db_storage  -- Local SQLite storage
+    model       -- Plugin logic impl
     maintenance -- Functions for dewyatochkactl
     chat        -- Chat functions
+    helper      -- Chat helpers
 """
 
-__all__ = ['db_storage', 'maintenance', 'parser', 'chat']
+__all__ = ['model', 'maintenance', 'parser', 'chat', 'helper']
 
 from dewyatochka.core import plugin
 
@@ -27,6 +28,17 @@ def cool_story_command_handler(**kwargs):
     """
     from . import chat
     chat.cool_story_command_handler(**kwargs)
+
+
+@plugin.chat_command('azaza')
+def cool_joke_command_handler(**kwargs):
+    """ Say a cool joke
+
+    :param dict kwargs: Plugin args
+    :return None:
+    """
+    from . import chat
+    chat.cool_joke_command_handler(**kwargs)
 
 
 @plugin.ctl('recreate', 'Create a new empty cool stories db')
@@ -50,3 +62,25 @@ def reindex(**kwargs):
     from . import maintenance
     maintenance.recreate(**kwargs)
     maintenance.reindex(**kwargs)
+
+
+@plugin.helper
+def storage_helper(**kwargs):
+    """ Storage helper thread
+
+    :param dict kwargs: Plugin args
+    :return None:
+    """
+    from . import helper
+    helper.StorageHelper()(**kwargs)
+
+
+@plugin.helper
+def stories_indexer(**kwargs):
+    """ Live stories incremental indexer
+
+    :param dict kwargs: Plugin args
+    :return None:
+    """
+    from . import helper
+    helper.stories_indexer(**kwargs)

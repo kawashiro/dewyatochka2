@@ -1,12 +1,12 @@
 # -*- coding=utf-8
 
-""" Tests suite for dewyatochka.core.plugin.message_sys.service """
+""" Tests suite for dewyatochka.core.plugin.subsystem.message.service """
 
 import unittest
 from unittest.mock import Mock, call, patch
 
-from dewyatochka.core.plugin.message_sys.service import *
-from dewyatochka.core.plugin.message_sys.matcher.standard import *
+from dewyatochka.core.plugin.subsystem.message.service import *
+from dewyatochka.core.plugin.subsystem.message.matcher.standard import *
 from dewyatochka.core.plugin.base import Wrapper as BaseWrapper
 from dewyatochka.core.plugin.base import PluginEntry
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
@@ -15,7 +15,7 @@ from dewyatochka.core.network.xmpp.entity import JID, ChatMessage
 
 
 class TestEnvironment(unittest.TestCase):
-    """ Covers dewyatochka.core.plugin.message_sys.service.Environment """
+    """ Covers dewyatochka.core.plugin.subsystem.message.service.Environment """
 
     def test_invoke(self):
         """ Test message plugin call """
@@ -55,7 +55,7 @@ class TestEnvironment(unittest.TestCase):
 
 
 class TestOutput(unittest.TestCase):
-    """ Covers dewyatochka.core.plugin.message_sys.service.Output """
+    """ Covers dewyatochka.core.plugin.subsystem.message.service.Output """
 
     def test_say(self):
         """ Test say() method """
@@ -68,7 +68,7 @@ class TestOutput(unittest.TestCase):
 
 
 class TestService(unittest.TestCase):
-    """ Covers dewyatochka.core.plugin.message_sys.service.Service """
+    """ Covers dewyatochka.core.plugin.subsystem.message.service.Service """
 
     def test_accepts(self):
         """ Test acceptable plugins types list getter """
@@ -80,7 +80,7 @@ class TestService(unittest.TestCase):
 
 
 class TestWrapper(unittest.TestCase):
-    """ Covers dewyatochka.core.plugin.message_sys.service.Wrapper """
+    """ Covers dewyatochka.core.plugin.subsystem.message.service.Wrapper """
 
     @patch.object(BaseWrapper, '_get_registry')
     def test_wrap(self, registry_getter_mock):

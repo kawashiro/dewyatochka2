@@ -19,8 +19,8 @@ from dewyatochka.core.application import Application
 from dewyatochka.core.log import get_daemon_logger
 from dewyatochka.core.config import get_common_config, get_conferences_config, get_extensions_config
 from dewyatochka.core.config.factory import COMMON_CONFIG_DEFAULT_PATH
-from dewyatochka.core.plugin.message_sys import service as m_service
-from dewyatochka.core.plugin.helper_sys import service as h_service
+from dewyatochka.core.plugin.subsystem.message import service as m_service
+from dewyatochka.core.plugin.subsystem.helper import service as h_service
 from dewyatochka.core.plugin.base import Wrapper as BaseWrapper
 from dewyatochka.core.plugin.loader import LoaderService
 

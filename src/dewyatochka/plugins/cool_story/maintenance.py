@@ -14,7 +14,7 @@ import argparse
 import threading
 import queue
 
-from .db_storage import Storage
+from .model import Storage
 from .parser import parsers, AbstractParser
 
 

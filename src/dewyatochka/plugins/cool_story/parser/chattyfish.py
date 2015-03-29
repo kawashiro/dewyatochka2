@@ -6,9 +6,14 @@ Classes
 =======
     ZadolbaLiParser -- zadolba.li html parser
     ItHappensParser -- ithappens.me html parser
+
+Attributes
+==========
+    ZADOLBA_LI_SOURCE_NAME -- zadolba.li source name constant
+    ITHAPPENS_SOURCE_NAME  -- ithappens.me source name constant
 """
 
-__all__ = ['ZadolbaLiParser', 'ItHappensParser']
+__all__ = ['ZadolbaLiParser', 'ItHappensParser', 'ZADOLBA_LI_SOURCE_NAME', 'ITHAPPENS_SOURCE_NAME']
 
 from abc import abstractproperty
 
@@ -18,12 +23,17 @@ from pyquery import PyQuery
 from ._base import *
 
 
+# Source names constants
+ZADOLBA_LI_SOURCE_NAME = 'zadolba.li'
+ITHAPPENS_SOURCE_NAME = 'ithappens.me'
+
+
 class _BaseParser(AbstractParser):
     """ Common ChattyFish logic (all projects use the same markup) """
 
     @abstractproperty
-    def _web_host(self) -> str:
-        """ Remote server hostname
+    def name(self) -> str:
+        """ Get unique name
 
         :return str:
         """
@@ -74,21 +84,21 @@ class ZadolbaLiParser(_BaseParser):
     """ zadolba.li html parser """
 
     @property
-    def _web_host(self) -> str:
-        """ Remote server hostname
+    def name(self) -> str:
+        """ Get unique name
 
         :return str:
         """
-        return 'zadolba.li'
+        return ZADOLBA_LI_SOURCE_NAME
 
 
 class ItHappensParser(_BaseParser):
     """ ithappens.me html parser """
 
     @property
-    def _web_host(self) -> str:
-        """ Remote server hostname
+    def name(self) -> str:
+        """ Get unique name
 
         :return str:
         """
-        return 'ithappens.me'
+        return ITHAPPENS_SOURCE_NAME

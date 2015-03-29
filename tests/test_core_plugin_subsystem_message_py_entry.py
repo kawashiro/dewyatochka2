@@ -1,16 +1,16 @@
 # -*- coding=utf-8
 
-""" Tests suite for dewyatochka.core.plugin.message_sys.py_entry """
+""" Tests suite for dewyatochka.core.plugin.subsystem.message.py_entry """
 
 import unittest
 
-from dewyatochka.core.plugin.message_sys.py_entry import *
+from dewyatochka.core.plugin.subsystem.message.py_entry import *
 from dewyatochka.core.plugin.loader import internal
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 
 
 class TestChatMessage(unittest.TestCase):
-    """ Covers dewyatochka.core.plugin.message_sys.py_entry.chat_message """
+    """ Covers dewyatochka.core.plugin.subsystem.message.py_entry.chat_message """
 
     def test_wrap(self):
         """ Test @chat_message decorator """
@@ -40,7 +40,7 @@ class TestChatMessage(unittest.TestCase):
 
 
 class TestChatCommand(unittest.TestCase):
-    """ Covers dewyatochka.core.plugin.message_sys.py_entry.chat_command """
+    """ Covers dewyatochka.core.plugin.subsystem.message.py_entry.chat_command """
 
     def test_wrap(self):
         """ Test @chat_command decorator """

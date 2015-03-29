@@ -81,7 +81,7 @@ class TestService(unittest.TestCase):
         loader2.load.assert_called_once_with(service)
         wrapper.assert_has_calls([call.wrap(e) for e in entries])
 
-        self.assertEqual(1, logger_mock.info.call_count)
+        self.assertEqual(1, logger_mock.debug.call_count)
 
     @patch.object(Service, 'log')
     def test_plugins_loading_fail(self, logger_mock):

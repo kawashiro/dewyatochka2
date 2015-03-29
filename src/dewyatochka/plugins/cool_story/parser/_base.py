@@ -108,21 +108,21 @@ class AbstractParser(metaclass=ABCMeta):
         """
         return self.parse_page_html(self._client.get(page))
 
-    @abstractproperty
+    @property
     def _web_host(self) -> str:
-        """ Remote server hostname
+        """ Remote server hostname, normally same as hostname
 
         :return str:
         """
-        pass
+        return self.name
 
-    @property
+    @abstractproperty
     def name(self) -> str:
         """ Get unique name
 
         :return str:
         """
-        return self._web_host
+        pass
 
     @property
     def _client(self) -> WebClient:

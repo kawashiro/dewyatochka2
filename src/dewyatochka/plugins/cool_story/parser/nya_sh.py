@@ -5,9 +5,13 @@
 Classes
 =======
     Parser -- Parser implementation
+
+Attributes
+==========
+    NYA_SH_SOURCE_NAME -- Source name constant
 """
 
-__all__ = ['Parser']
+__all__ = ['Parser', 'NYA_SH_SOURCE_NAME']
 
 from html.parser import HTMLParser
 
@@ -15,6 +19,10 @@ from lxml.html import HtmlElement
 from pyquery import PyQuery
 
 from ._base import *
+
+
+# Source name constant
+NYA_SH_SOURCE_NAME = 'nya.sh'
 
 
 class Parser(AbstractParser):
@@ -26,12 +34,12 @@ class Parser(AbstractParser):
         self.__html_parser = HTMLParser()
 
     @property
-    def _web_host(self) -> str:
-        """ Remote server hostname
+    def name(self) -> str:
+        """ Get unique name
 
         :return str:
         """
-        return 'nya.sh'
+        return NYA_SH_SOURCE_NAME
 
     def _parse_posts_collection(self, html: PyQuery) -> list:
         """ Get posts HTMLElement[] collection
