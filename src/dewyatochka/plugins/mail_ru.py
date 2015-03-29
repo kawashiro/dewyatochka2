@@ -11,7 +11,6 @@ import threading
 from collections import defaultdict
 
 from dewyatochka.core import plugin
-from dewyatochka.core.utils.http import WebClient
 from dewyatochka.core.utils import chat
 
 
@@ -44,6 +43,8 @@ def _get_question(category: str, log) -> str:
     :param logging.Logger log: Logger instance
     :return str:
     """
+    from dewyatochka.core.utils.http import WebClient
+
     try:
         _get_question_lock.acquire()
         category_questions = _mail_ru_questions_cache[category]

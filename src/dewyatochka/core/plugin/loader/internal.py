@@ -109,7 +109,7 @@ class Loader(BaseLoader):
             for load_name in self._get_modules(service):
                 try:
                     importlib.import_module(load_name)
-                    service.application.registry.log(__name__).info('Loaded plugins from %s', load_name)
+                    service.application.registry.log(__name__).debug('Loaded plugins from %s', load_name)
                 except Exception as e:
                     service.application.registry.log(__name__).error('Failed to load module %s: %s', load_name, e)
 

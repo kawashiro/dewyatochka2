@@ -22,7 +22,7 @@ _INIT_MESSAGE = 'Logging started'
 # Log line formats
 _FORMAT_DAEMON_DEFAULT = '%(asctime)s :: %(levelname)-8s :: %(message)s'
 _FORMAT_DAEMON_DEBUG = '%(asctime)s :: %(levelname)-8s :: %(name)s :: %(message)s'
-_FORMAT_CONSOLE_DEFAULT = '%(levelname).1s :: %(message)s'
+_FORMAT_CONSOLE_DEFAULT = '%(levelname).1s: %(message)s'
 _FORMAT_CONSOLE_DEBUG = _FORMAT_DAEMON_DEBUG
 
 

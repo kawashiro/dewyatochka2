@@ -125,8 +125,6 @@ class CommandsList():
         commands = self._get_commands(registry)
         cmd_len = max(map(lambda s: len(s), commands.keys())) + 1
 
-        registry.log.info('====================')
         registry.log.info('Accessible commands:')
-        registry.log.info('====================')
         for command in sorted(commands.keys()):
-            registry.log.info('%s: %s' % (command.ljust(cmd_len), commands[command]))
+            registry.log.info('    %s: %s' % (command.ljust(cmd_len), commands[command]))

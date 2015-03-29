@@ -17,8 +17,6 @@ __all__ = ['db_storage', 'maintenance', 'parser', 'chat']
 
 from dewyatochka.core import plugin
 
-from . import maintenance, chat
-
 
 @plugin.chat_command('coolstory')
 def cool_story_command_handler(**kwargs):
@@ -27,6 +25,7 @@ def cool_story_command_handler(**kwargs):
     :param dict kwargs: Plugin args
     :return None:
     """
+    from . import chat
     chat.cool_story_command_handler(**kwargs)
 
 
@@ -37,6 +36,7 @@ def recreate(**kwargs):
     :param dict kwargs: Plugin args
     :return None:
     """
+    from . import maintenance
     maintenance.recreate(**kwargs)
 
 
@@ -47,5 +47,6 @@ def reindex(**kwargs):
     :param dict kwargs: Plugin args
     :return None:
     """
+    from . import maintenance
     maintenance.recreate(**kwargs)
     maintenance.reindex(**kwargs)
