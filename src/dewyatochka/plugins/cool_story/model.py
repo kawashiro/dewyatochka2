@@ -32,7 +32,7 @@ class Storage(SQLIteStorage):
         :param str file:
         """
         super().__init__(file or self.__DEFAULT_DB_PATH)
-        self.__last_post = None
+        self.__tags_cache_warmed = False
 
     def __get_entity_by_title(self, entity_cls, title: str):
         """ Get cacheable entity instance by title
@@ -89,48 +89,39 @@ class Storage(SQLIteStorage):
         # Save story with tags
         post = Post(source=source, ext_id=ext_id, title=title, text=text, tags=post_tags)
         self.db_session.add(post)
-        self.__last_post = post
         if commit:
             self.db_session.commit()
 
         return post
 
-    @property
-    def last_post(self):
-        """ Get last post. Raise runtime error is storage is empty
+    def get_random_post_by(self, *expressions):
+        """ Get random post by filters expression(s)
 
+        :param tuple expressions: SQL expressions
         :return Post:
         """
-        if self.__last_post is None:
-            try:
-                self.__last_post = self.db_session.query(Post).order_by(desc(Post.id)).first()
-            except NoResultFound:
-                raise RuntimeError('Storage is empty')
+        posts_ids_query = self.db_session.query(Post.id).filter(*expressions)
+        posts_ids, = zip(*posts_ids_query.all())
+        if not posts_ids:
+            raise RuntimeError('Found no posts by filters %s' % posts_ids_query.as_scalar())
 
-        return self.__last_post
+        return self.db_session.query(Post).filter(Post.id == random.choice(posts_ids)).first()
 
-    def get_random_post(self, source=None):
-        """ Get random post
+    def get_random_post_by_source(self, source: str):
+        """ Get random post by source title
 
         :param str source: Source title
         :return Post:
         """
-        if source:
-            max_ext_id = self.get_last_indexed_post(source).ext_id
-            if not max_ext_id:
-                raise RuntimeError('No stories found for source %s' % source)
-            filters = [Post.ext_id > random.randrange(0, max_ext_id),
-                       Post.source == self.get_source_by_title(source)]
-            order_by = Post.ext_id
-        else:
-            filters = [Post.id > random.randrange(0, self.last_post.id)]
-            order_by = Post.id
+        return self.get_random_post_by(Post.source == self.get_source_by_title(source))
 
-        post = self.db_session.query(Post).filter(*filters).order_by(order_by).first()
-        if not post:
-            raise RuntimeError('Failed to get random post by filters %s' % filters)
+    def get_random_post_by_tag(self, tag_title: str):
+        """ Get random post by tag title
 
-        return post
+        :param str tag_title: Tag title
+        :return Post:
+        """
+        return self.get_random_post_by(Post.tags.contains(self.get_tag_by_title(tag_title)))
 
     def get_last_indexed_post(self, source):
         """ Get the last post indexed (highest external id)
@@ -145,6 +136,17 @@ class Storage(SQLIteStorage):
             .first()
 
         return post or Post()
+
+    @property
+    def tags(self) -> dict:
+        """ Get all tags dict
+
+        :return dict:
+        """
+        if not self.__tags_cache_warmed:
+            self.db_session.query(Tag).all()
+            self.__tags_cache_warmed = True
+        return Tag.get_cached()
 
 
 class TagMeta(ObjectMeta):

@@ -41,27 +41,15 @@ def cool_joke_command_handler(**kwargs):
     chat.cool_joke_command_handler(**kwargs)
 
 
-@plugin.ctl('recreate', 'Create a new empty cool stories db')
-def recreate(**kwargs):
-    """ Create a new empty cool stories db
+@plugin.chat_message
+def keyword_story_selector(**kwargs):
+    """ Find a story by keyword and yield it
 
     :param dict kwargs: Plugin args
     :return None:
     """
-    from . import maintenance
-    maintenance.recreate(**kwargs)
-
-
-@plugin.ctl('reindex', 'Populate stories table from scratch')
-def reindex(**kwargs):
-    """ Populate stories table from scratch
-
-    :param dict kwargs: Plugin args
-    :return None:
-    """
-    from . import maintenance
-    maintenance.recreate(**kwargs)
-    maintenance.reindex(**kwargs)
+    from . import chat
+    chat.keyword_story_selector(**kwargs)
 
 
 @plugin.helper
@@ -84,3 +72,26 @@ def stories_indexer(**kwargs):
     """
     from . import helper
     helper.stories_indexer(**kwargs)
+
+
+@plugin.ctl('recreate', 'Create a new empty cool stories db')
+def recreate(**kwargs):
+    """ Create a new empty cool stories db
+
+    :param dict kwargs: Plugin args
+    :return None:
+    """
+    from . import maintenance
+    maintenance.recreate(**kwargs)
+
+
+@plugin.ctl('reindex', 'Populate stories table from scratch')
+def reindex(**kwargs):
+    """ Populate stories table from scratch
+
+    :param dict kwargs: Plugin args
+    :return None:
+    """
+    from . import maintenance
+    maintenance.recreate(**kwargs)
+    maintenance.reindex(**kwargs)

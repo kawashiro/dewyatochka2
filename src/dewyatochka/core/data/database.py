@@ -99,8 +99,8 @@ class StoreableObject():
 class CacheableObject(StoreableObject):
     """ Object statically cached by some unique key """
 
-    # Cached tags by title
-    _cache = {}
+    # Cached entities by title
+    _cache = None
 
     # Unique key (field name)
     _key = None
@@ -133,11 +133,22 @@ class CacheableObject(StoreableObject):
         except KeyError:
             pass
 
+    @classmethod
+    def get_cached(cls) -> dict:
+        """ Get all cached entities
+
+        :return dict:
+        """
+        return cls._cache
+
     def __new__(cls, **kwargs):
         """ Get cached tag instance instead of creating a new one
 
         :param dict kwargs:
         """
+        if cls._cache is None:
+            cls._cache = {}
+
         try:
             return cls._cache[kwargs[cls._key]]
         except KeyError:  # Unique key is not defined or an object is not cached yet
