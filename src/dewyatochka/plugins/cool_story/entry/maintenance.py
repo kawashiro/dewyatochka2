@@ -14,8 +14,8 @@ import argparse
 import threading
 import queue
 
-from .model import Storage
-from .parser import parsers, AbstractParser
+from ..model import Storage
+from ..parser import parsers, AbstractParser
 
 
 # Stories amount to commit to db

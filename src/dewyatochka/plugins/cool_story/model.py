@@ -4,12 +4,13 @@
 
 Classes
 =======
-    Storage -- Storage with cool stories
-    Tag     -- Story tag object
-    Post    -- Story post
+    Storage       -- Storage with cool stories
+    StorageHelper -- Storage helper thread
+    Tag           -- Story tag object
+    Post          -- Story post
 """
 
-__all__ = ['Storage', 'Post', 'Tag']
+__all__ = ['Storage', 'StorageHelper', 'Post', 'Tag']
 
 import random
 
@@ -18,20 +19,21 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import NoResultFound
 
 from dewyatochka.core.data.database import ObjectMeta, StoreableObject, CacheableObject, SQLIteStorage
+from dewyatochka.core.data.database import StorageHelper as StorageHelperBase
 
 
 class Storage(SQLIteStorage):
     """ Storage with cool stories """
 
     # Default path to db file
-    __DEFAULT_DB_PATH = '/var/lib/dewyatochka/cool_story.db'
+    _DEFAULT_DB_PATH = '/var/lib/dewyatochka/cool_story.db'
 
     def __init__(self, file=None):
         """ Init sqlite storage
 
         :param str file:
         """
-        super().__init__(file or self.__DEFAULT_DB_PATH)
+        super().__init__(file or self._DEFAULT_DB_PATH)
         self.__tags_cache_warmed = False
 
     def __get_entity_by_title(self, entity_cls, title: str):
@@ -147,6 +149,11 @@ class Storage(SQLIteStorage):
             self.db_session.query(Tag).all()
             self.__tags_cache_warmed = True
         return Tag.get_cached()
+
+
+class StorageHelper(StorageHelperBase):
+    """ Storage helper thread """
+    pass
 
 
 class TagMeta(ObjectMeta):

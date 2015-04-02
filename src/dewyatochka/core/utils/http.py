@@ -15,7 +15,7 @@ Attributes
 
 __all__ = ['WebClient']
 
-from http.client import HTTPConnection, HTTPSConnection
+from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
 from urllib.parse import urlencode
 import json
 from html.parser import HTMLParser
@@ -165,11 +165,24 @@ class WebClient:
         :param int port: int Remote server port
         :param bool https: Use HTTPS instead of HTTP
         """
-        self._headers = {'Accept': 'text/html,application/xhtml+xml,application/xml,text/plain',
+        self._headers = {'Accept': 'text/html,application/xhtml+xml,application/xml,text/plain,application/json',
                          'Connection': 'keep-alive', 'Host': host, 'User-Agent': _DEFAULT_USER_AGENT}
         self._connection = (HTTPSConnection if https else HTTPConnection)(host, port)
 
-    def get(self, uri, query=None, content_type=None):
+    def get_raw(self, uri: str, query=None) -> HTTPResponse:
+        """ Get directly HTTPResponse object with no parsing
+
+        :param str uri: Request uri
+        :param dict query: Query params
+        :return HTTPResponse:
+        """
+        if query is not None:
+            uri = '?'.join([uri, urlencode(query)])
+
+        self._connection.request('GET', uri, headers=self._headers)
+        return self._connection.getresponse()
+
+    def get(self, uri: str, query=None, content_type=None):
         """ Get content by uri
 
         :param str uri: Request uri
@@ -177,11 +190,7 @@ class WebClient:
         :param str content_type: Expected content-type
         :returns: Depends on content type expected
         """
-        if query is not None:
-            uri = '?'.join([uri, urlencode(query)])
-
-        self._connection.request('GET', uri, headers=self._headers)
-        response = self._connection.getresponse()
+        response = self.get_raw(uri, query)
 
         content = response.read()
         headers = dict(response.getheaders())

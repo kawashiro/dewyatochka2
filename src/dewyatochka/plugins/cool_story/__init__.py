@@ -5,16 +5,14 @@
 Packages
 ========
     parser -- External stories sources parsers
+    entry  -- Plugin entry points
 
 Modules
 =======
-    model       -- Plugin logic impl
-    maintenance -- Functions for dewyatochkactl
-    chat        -- Chat functions
-    helper      -- Chat helpers
+    model -- Plugin logic impl
 """
 
-__all__ = ['model', 'maintenance', 'parser', 'chat', 'helper']
+__all__ = ['model', 'parser', 'entry']
 
 from dewyatochka.core import plugin
 
@@ -26,7 +24,7 @@ def cool_story_command_handler(**kwargs):
     :param dict kwargs: Plugin args
     :return None:
     """
-    from . import chat
+    from .entry import chat
     chat.cool_story_command_handler(**kwargs)
 
 
@@ -37,7 +35,7 @@ def cool_joke_command_handler(**kwargs):
     :param dict kwargs: Plugin args
     :return None:
     """
-    from . import chat
+    from .entry import chat
     chat.cool_joke_command_handler(**kwargs)
 
 
@@ -48,19 +46,19 @@ def keyword_story_selector(**kwargs):
     :param dict kwargs: Plugin args
     :return None:
     """
-    from . import chat
+    from .entry import chat
     chat.keyword_story_selector(**kwargs)
 
 
 @plugin.helper
-def storage_helper(**kwargs):
+def storage_helper(registry):
     """ Storage helper thread
 
-    :param dict kwargs: Plugin args
+    :param registry: Plugin registry
     :return None:
     """
-    from . import helper
-    helper.StorageHelper()(**kwargs)
+    from .model import Storage, StorageHelper
+    StorageHelper(Storage(registry.config.get('db_path')))()
 
 
 @plugin.helper
@@ -70,7 +68,7 @@ def stories_indexer(**kwargs):
     :param dict kwargs: Plugin args
     :return None:
     """
-    from . import helper
+    from .entry import helper
     helper.stories_indexer(**kwargs)
 
 
@@ -81,7 +79,7 @@ def recreate(**kwargs):
     :param dict kwargs: Plugin args
     :return None:
     """
-    from . import maintenance
+    from .entry import maintenance
     maintenance.recreate(**kwargs)
 
 
@@ -92,6 +90,6 @@ def reindex(**kwargs):
     :param dict kwargs: Plugin args
     :return None:
     """
-    from . import maintenance
+    from .entry import maintenance
     maintenance.recreate(**kwargs)
     maintenance.reindex(**kwargs)

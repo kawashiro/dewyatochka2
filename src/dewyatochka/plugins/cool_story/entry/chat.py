@@ -13,9 +13,10 @@ __all__ = ['cool_story_command_handler', 'cool_joke_command_handler', 'keyword_s
 
 import random
 
+from ..parser.chattyfish import ZADOLBA_LI_SOURCE_NAME, ITHAPPENS_SOURCE_NAME
+from ..parser.nya_sh import NYA_SH_SOURCE_NAME
+
 from .helper import StorageHelper
-from .parser.chattyfish import ZADOLBA_LI_SOURCE_NAME, ITHAPPENS_SOURCE_NAME
-from .parser.nya_sh import NYA_SH_SOURCE_NAME
 
 
 def cool_story_command_handler(outp, **_):

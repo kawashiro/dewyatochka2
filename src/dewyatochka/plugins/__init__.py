@@ -14,3 +14,11 @@ Modules
 """
 
 __all__ = ['builtin']
+
+import importlib
+
+try:
+    importlib.import_module('lxml')  # FIXME: Remove this dirty hack
+    importlib.import_module('lxml.etree')
+except ImportError:
+    pass

@@ -11,14 +11,17 @@ Classes
     StorageMeta         -- Abstract metaclass for storage implementations
     AbstractStorage     -- Very abstract storage
     SQLIteStorage       -- SQLIte based storage
+    StorageHelper       -- Sync one-threaded storage wrapper
 """
 
 __all__ = ['ObjectMeta', 'StoreableObject', 'CacheableObject', 'UnmappedFieldError',
-           'StorageMeta', 'AbstractStorage', 'SQLIteStorage']
+           'StorageMeta', 'AbstractStorage', 'SQLIteStorage', 'StorageHelper']
 
 
 import os
-from abc import ABCMeta, abstractproperty
+import threading
+import queue
+from abc import ABCMeta, abstractproperty, abstractmethod
 
 from sqlalchemy import Table, MetaData, create_engine
 from sqlalchemy.orm import mapper, sessionmaker, Session, reconstructor
@@ -271,3 +274,112 @@ class SQLIteStorage(AbstractStorage):
             os.unlink(self.path)
 
         super().recreate()
+
+
+class StorageHelper():
+    """ Sync one-threaded storage wrapper
+
+    Processes storage requests queue
+    """
+
+    # Tasks queue
+    _queue = None
+
+    # Event if helper is not temporary locked and can perform tasks
+    _enabled = None
+
+    class Task():
+        """ Storage helper task """
+        def __init__(self, callback):
+            """ Init a new task with non result assigned
+
+            :param callable callback:
+            """
+            self.__ready = threading.Event()
+            self.__action = callback
+            self.__result = None
+
+        def run(self, storage_instance: AbstractStorage):
+            """ Set task result
+
+            :param Storage storage_instance: Storage instance
+            :return None:
+            """
+            self.__result = self.__action(storage_instance)
+            self.__ready.set()
+
+        def get_result(self, timeout=None):
+            """ Wait for a task is ready and get a result
+
+            :param timeout:
+            :return object:
+            """
+            self.__ready.wait(timeout)
+            return self.__result
+
+    def __init__(self, storage=None):
+        """ Override storage path if needed
+
+        :param Storage storage: Pre-instantiated storage instance to be served
+        """
+        self._storage = storage
+
+    @classmethod
+    def run_task(cls, callback, background=False):
+        """ Get random post
+
+        :param callable callback: Function to run. Accepts a storage instance as the first argument
+        :param bool background: Do not wait until task is completed, return None any way
+        :return object:
+        """
+        task = cls.Task(callback)
+        cls._queue.put(task)
+
+        return None if background else task.get_result()
+
+    @classmethod
+    def stop(cls):
+        """ Disable helper queue processing
+
+        :return None:
+        """
+        cls._enabled.clear()
+        cls.run_task(lambda s: None)  # Add void task to release queue if it is locked
+
+    @classmethod
+    def resume(cls):
+        """ Enable running
+
+        :return None:
+        """
+        cls._enabled.set()
+
+    @classmethod
+    def wait(cls):
+        """ Wait until queue is empty
+
+        :return None:
+        """
+        cls._queue.join()
+
+    def __call__(self):
+        """ Helper is invokable
+
+        :return None:
+        """
+        self._enabled.set()
+        with self._storage as storage:
+            while True:
+                self._enabled.wait()
+                task = self._queue.get()
+                task.run(storage)
+                self._queue.task_done()
+
+    def __new__(cls, *args):
+        """ Create new class instance """
+        if cls._queue is None:
+            cls._queue = queue.Queue()
+        if cls._enabled is None:
+            cls._enabled = threading.Event()
+
+        return super().__new__(cls)
