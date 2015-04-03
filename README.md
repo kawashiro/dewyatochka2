@@ -15,6 +15,7 @@ Dependencies
 * [SleekXMPP](https://github.com/fritzy/SleekXMPP "SleekXMPP")
 * [PyQuery](https://github.com/gawel/pyquery "PyQuery") (recommended)
 * [pyasn1_modules](http://pypi.python.org/pypi/pyasn1-modules) (recommended)
+* [lxml](http://lxml.de/) (recommended)
 
 Installing
 ----------
