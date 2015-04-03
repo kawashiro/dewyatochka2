@@ -9,6 +9,10 @@ certain application is too complicated.
 Packages
 ========
     daemon -- Dewyatochka daemon app (dewyatochkad)
+
+Modules
+=======
+    control -- dewyatochkactl utility implementation
 """
 
-__all__ = ['daemon']
+__all__ = ['daemon', 'control']

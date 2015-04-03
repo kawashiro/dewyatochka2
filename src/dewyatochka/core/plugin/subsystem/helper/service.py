@@ -4,7 +4,8 @@
 
 Classes
 =======
-    Service -- Helper plugins container service
+    Environment -- Helper plugin environment (using basic implementation)
+    Service     -- Helper plugins container service
 
 Attributes
 ==========

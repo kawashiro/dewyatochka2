@@ -12,7 +12,7 @@ __all__ = ['HelpersManager']
 import threading
 
 from dewyatochka.core.application import Service, Application
-from dewyatochka.core.plugin.helper_sys.service import Environment
+from dewyatochka.core.plugin.subsystem.helper.service import Environment
 
 
 # Interval between helpers state checks

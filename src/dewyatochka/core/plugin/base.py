@@ -116,7 +116,7 @@ class Service(AppService, metaclass=ABCMeta):
                                    entry.plugin.__name__,
                                    e)
 
-        self.log.info('Loaded %d %s plugins', len(self._plugins), self.name())
+        self.log.debug('Loaded %d %s plugins', len(self._plugins), self.name())
 
     @abstractproperty
     def accepts(self) -> list:  # pragma: no cover

@@ -25,9 +25,6 @@ from dewyatochka.core.plugin.base import Service
 from dewyatochka.core.config.exception import SectionRetrievingError
 
 
-# Modules to load anyway
-_BUILTIN = ('dewyatochka.core.utils.chat',)
-
 # Entry points dict grouped by entry point type
 _entry_points = defaultdict(lambda: [])
 
@@ -71,7 +68,7 @@ class Loader(BaseLoader):
     # Python plugins auto loading path
     __PLUGINS_PATH = os.path.dirname(plugins.__file__)
 
-    def _get_optional_modules(self, service: Service) -> list:
+    def _get_modules(self, service: Service) -> list:
         """ Load optional plugin modules
 
         :param Service service: Reference to a service initiated load
@@ -90,7 +87,8 @@ class Loader(BaseLoader):
 
             try:
                 conf_name = load_name.split(self.__PKG_SEP)[-1]
-                service.application.registry.ext_config.section(conf_name, require=True)
+                if conf_name not in plugins.__all__:
+                    service.application.registry.ext_config.section(conf_name, require=True)
             except SectionRetrievingError:
                 service.application.registry.log(__name__).warning('Plugin %s is disabled', load_name)
                 continue
@@ -108,12 +106,10 @@ class Loader(BaseLoader):
         global _ready
 
         if not _ready:
-            modules = list(_BUILTIN)
-            modules.extend(self._get_optional_modules(service))
-            for load_name in modules:
+            for load_name in self._get_modules(service):
                 try:
                     importlib.import_module(load_name)
-                    service.application.registry.log(__name__).info('Loaded plugins from %s', load_name)
+                    service.application.registry.log(__name__).debug('Loaded plugins from %s', load_name)
                 except Exception as e:
                     service.application.registry.log(__name__).error('Failed to load module %s: %s', load_name, e)
 

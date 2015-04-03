@@ -14,6 +14,7 @@ Sub-packages
     plugin  -- Plugins loading system
     daemon  -- Dewyatochka daemon implementation package
     utils   -- Miscellaneous useful modules
+    data    -- Data access
 
 Modules
 =======

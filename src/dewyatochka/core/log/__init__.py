@@ -6,38 +6,14 @@ Modules
 =======
     output  -- Log output handlers implementation
     service -- Logging app service implementation
+    factory -- Subroutines to create and configure appropriate logger instance
 
 Functions
 =========
-    get_logger -- Get configured logger instance
+    get_daemon_logger  -- Get configured logger instance for daemonizeable apps
+    get_console_logger -- Get console app logger
 """
 
-__all__ = ['service', 'output', 'get_logger']
+__all__ = ['service', 'output', 'factory', 'get_daemon_logger', 'get_console_logger']
 
-from dewyatochka.core.application import Application
-
-from .service import LoggingService
-from .output import *
-
-
-# Default message on logging start
-_INIT_MESSAGE = 'Logging started'
-
-
-def get_logger(application: Application, has_stdout=True) -> LoggingService:
-    """ Get configured logger instance
-
-    :param Application application: Application instance to configure logger for
-    :param bool has_stdout: Set to True if application has stdout to attach stdout handler instead of file one
-    :return LoggingService:
-    """
-    logger = LoggingService(application)
-
-    try:
-        logger.register_handler(STDOUTHandler(logger) if has_stdout else FileHandler(logger))
-        logger().info(_INIT_MESSAGE)
-    except:
-        # Something wrong with default log handler using null as a fallback
-        logger.register_handler(NullHandler(logger))
-
-    return logger
+from .factory import get_console_logger, get_daemon_logger

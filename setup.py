@@ -23,11 +23,7 @@ setup(
     license='GPL-3',
     platforms=['POSIX'],
     # Dependencies
-    requires=['sleekxmpp', 'pyquery'],
-    extras_require={
-        'html': ['pyquery'],
-        'ssl': ['pyasn1_modules']
-    },
+    requires=['sleekxmpp', 'pyquery', 'pyasn1_modules', 'sqlalchemy', 'lxml'],
     # Python packages
     package_dir={'': 'src/'},
     packages=['dewyatochka',
@@ -39,24 +35,32 @@ setup(
               'dewyatochka.core.config',
               'dewyatochka.core.config.source',
               'dewyatochka.core.daemon',
+              'dewyatochka.core.data',
               'dewyatochka.core.log',
               'dewyatochka.core.network',
               'dewyatochka.core.network.xmpp',
               'dewyatochka.core.network.xmpp.client',
               'dewyatochka.core.plugin',
-              'dewyatochka.core.plugin.helper_sys',
               'dewyatochka.core.plugin.loader',
-              'dewyatochka.core.plugin.message_sys',
-              'dewyatochka.core.plugin.message_sys.matcher',
+              'dewyatochka.core.plugin.subsystem.control',
+              'dewyatochka.core.plugin.subsystem.helper',
+              'dewyatochka.core.plugin.subsystem.message',
+              'dewyatochka.core.plugin.subsystem.message.matcher',
               'dewyatochka.core.utils',
-              'dewyatochka.plugins'],
+              'dewyatochka.plugins',
+              'dewyatochka.plugins.anidb',
+              'dewyatochka.plugins.cool_story',
+              'dewyatochka.plugins.cool_story.entry',
+              'dewyatochka.plugins.cool_story.parser'],
     # Python extensions
     ext_modules=[Extension('dewyatochka.core.daemon._utils', ['src/ext/daemon/utilsmodule.c'])],
     # Executable files
-    scripts=['src/dewyatochkad'],
+    scripts=['src/dewyatochkad', 'src/dewyatochkactl'],
     # Data files
     data_files=[
         ('/etc/dewyatochka', ['data/etc/dewyatochka.ini', 'data/etc/conferences.ini']),
-        ('/etc/dewyatochka/ext', ['data/etc/ext/hentai.ini', 'data/etc/ext/mail_ru.ini'])
+        ('/etc/dewyatochka/ext', ['data/etc/ext/hentai.ini', 'data/etc/ext/mail_ru.ini',
+                                  'data/etc/ext/anidb.ini', 'data/etc/ext/cool_story.ini']),
+        ('/var/lib/dewyatochka', ['data/var/lib/.FAKE'])
     ]
 )

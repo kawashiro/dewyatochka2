@@ -5,6 +5,7 @@
 Modules
 =======
     http -- Simplified stupid HTTP-client
+    chat -- Provides some utils for conferences
 """
 
-__all__ = ['http']
+__all__ = ['http', 'chat']

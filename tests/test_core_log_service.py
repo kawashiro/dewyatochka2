@@ -18,17 +18,17 @@ class TestLogger(unittest.TestCase):
     @patch.object(Logger, 'config')
     def test_register_handler(self, config_property):
         """ Test log handler registration """
-        config_property.get = Mock(side_effect=(logging.ERROR, logging.ERROR))
+        config_property.__getitem__ = Mock(side_effect=(logging.ERROR, logging.ERROR))
 
         logger = Logger(VoidApplication())
-        handler = NullHandler(logger)
+        handler = NullHandler('')
         logger.register_handler(handler)
 
         root_logger = logging.getLogger()
         self.assertEqual(logging.ERROR, root_logger.level)
         self.assertEqual([handler], root_logger.handlers)
 
-        config_property.get.assert_has_calls([call('level', 'INFO'), call('level', 'INFO')])
+        config_property.__getitem__.assert_has_calls([call('level')])
 
     @patch('logging.getLogger')
     def test_fatal_error(self, get_logger):

@@ -1,18 +1,18 @@
 # -*- coding=utf-8
 
-""" Tests suite for dewyatochka.core.plugin.message_sys.matcher.standard """
+""" Tests suite for dewyatochka.core.plugin.subsystem.message.matcher.standard """
 
 import unittest
 
 from dewyatochka.core.application import VoidApplication
 from dewyatochka.core.config.container import ConferencesConfig
 from dewyatochka.core.config.source.virtual import Predefined
-from dewyatochka.core.plugin.message_sys.matcher.standard import *
+from dewyatochka.core.plugin.subsystem.message.matcher.standard import *
 from dewyatochka.core.network.xmpp.entity import *
 
 
 class TestMatcher(unittest.TestCase):
-    """ Covers dewyatochka.core.plugin.message_sys.matcher.standard.Matcher """
+    """ Covers dewyatochka.core.plugin.subsystem.message.matcher.standard.Matcher """
 
     def test_match(self):
         """ Test matching by conditions specified """
@@ -40,7 +40,7 @@ class TestMatcher(unittest.TestCase):
 
 
 class TestCommandMatcher(unittest.TestCase):
-    """ Covers dewyatochka.core.plugin.message_sys.matcher.standard.CommandMatcher """
+    """ Covers dewyatochka.core.plugin.subsystem.message.matcher.standard.CommandMatcher """
 
     def test_match(self):
         """ Test matching by conditions specified """

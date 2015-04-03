@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
 # -*- coding: UTF-8
 
-""" Dewyatochka root package
+""" Dewyatochka control utility
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,17 +18,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2015 Kawashiro Nitori
 
-Sub-packages
-============
-    core         -- Core package, contains all the packages needed dewyatochka to work
-    plugins      -- Originally empty package used for builtin and third-party plugins auto loading
-    applications -- High-level applications implementation
+Usage
+=====
+    dewyatochkactl [-h] [--config CONFIG] command
 
-Attributes
-==========
-    __version__ -- Core lib version
+Optional arguments
+==================
+    command          Command to execute
+    -h, --help       Show this help message and exit
+    --config CONFIG  Path to config file to use
+    --log            Use a configured logger to yield debug info
 """
 
-__version__ = '0.2.0'
+import sys
 
-__all__ = ['applications', 'core', 'plugins', '__version__']
+from dewyatochka.applications import control
+
+if __name__ == '__main__':
+    # Run, Dewyatochka, run! ^-^
+    control.Application().run(sys.argv)

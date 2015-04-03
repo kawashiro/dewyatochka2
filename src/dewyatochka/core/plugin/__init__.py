@@ -6,9 +6,8 @@ Contains plugins auto loading systems
 
 Packages
 ========
-    loader      -- Plugins loaders package
-    message_sys -- Message plugins sub-system
-    helper_sys  -- Helper plugins sub-system
+    loader    -- Plugins loaders package
+    subsystem -- Plugin subsystems implementations
 
 Modules
 =======
@@ -20,10 +19,12 @@ Functions
     helper       -- Decorator for helper plugin
     chat_message -- Decorator for chat message plugin
     chat_command -- Decorator for chat command plugin
+    ctl          -- dewyatochkactl command handler decorator
 """
 
-__all__ = ['loader', 'message_sys', 'helper_sys', 'base', 'exceptions',
-           'helper', 'chat_message', 'chat_command']
+__all__ = ['loader', 'subsystem', 'base', 'exceptions',
+           'helper', 'chat_message', 'chat_command', 'ctl']
 
-from .helper_sys.py_entry import *
-from .message_sys.py_entry import *
+from .subsystem.helper.py_entry import *
+from .subsystem.message.py_entry import *
+from .subsystem.control.py_entry import *

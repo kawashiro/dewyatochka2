@@ -16,11 +16,11 @@ import argparse
 
 from dewyatochka.core import daemon
 from dewyatochka.core.application import Application
-from dewyatochka.core.log import get_logger
+from dewyatochka.core.log import get_daemon_logger
 from dewyatochka.core.config import get_common_config, get_conferences_config, get_extensions_config
 from dewyatochka.core.config.factory import COMMON_CONFIG_DEFAULT_PATH
-from dewyatochka.core.plugin.message_sys import service as m_service
-from dewyatochka.core.plugin.helper_sys import service as h_service
+from dewyatochka.core.plugin.subsystem.message import service as m_service
+from dewyatochka.core.plugin.subsystem.helper import service as h_service
 from dewyatochka.core.plugin.base import Wrapper as BaseWrapper
 from dewyatochka.core.plugin.loader import LoaderService
 
@@ -33,6 +33,12 @@ from ._process.helper import HelpersManager
 _EXIT_CODE_OK = 0
 _EXIT_CODE_ERROR = 1
 _EXIT_CODE_TERM = 2
+
+# Default path to the log file
+_DEFAULT_LOG_FILE_PATH = '/var/log/dewyatochka/dewyatochkad.log'
+
+# Path to the lock-file if none is specified
+_DEFAULT_LOCK_FILE_PATH = '/var/run/dewyatochka/dewyatochkad.pid'
 
 
 class DaemonApp(Application):
@@ -65,7 +71,9 @@ class DaemonApp(Application):
             params = self._parse_args(args)
 
             self.depend(get_common_config(self, params.config))
-            self.depend(get_logger(self, params.nodaemon))
+            log_file = None if params.nodaemon \
+                else self.registry.config.section('log').get('file', _DEFAULT_LOG_FILE_PATH)
+            self.depend(get_daemon_logger(self, log_file))
 
             self.depend(get_conferences_config(self))
             self.depend(get_extensions_config(self))
@@ -80,7 +88,7 @@ class DaemonApp(Application):
 
             if not params.nodaemon:
                 daemon.detach(lambda *_: self.stop(_EXIT_CODE_OK))
-                daemon.acquire_lock(self.registry.config.global_section.get('lock'))
+                daemon.acquire_lock(self.registry.config.global_section.get('lock', _DEFAULT_LOCK_FILE_PATH))
 
             plugins_loaders = self.registry.plugins.loaders
             self.registry.chat.load(plugins_loaders, m_service.Wrapper(self.registry.chat))
@@ -91,7 +99,7 @@ class DaemonApp(Application):
             self.wait()
 
         except (KeyboardInterrupt, SystemExit):
-            self.registry.log(__name__).info('Interrupted by user')
+            self.registry.log(__name__).warning('Interrupted by user')
             self.stop(_EXIT_CODE_TERM)
 
         except Exception as e:

@@ -1,15 +1,15 @@
 # -*- coding=utf-8
 
-""" Tests suite for dewyatochka.core.plugin.helper_sys.py_entry """
+""" Tests suite for dewyatochka.core.plugin.subsystem.helper.py_entry """
 
 import unittest
 
-from dewyatochka.core.plugin.helper_sys.py_entry import *
+from dewyatochka.core.plugin.subsystem.helper.py_entry import *
 from dewyatochka.core.plugin.loader import internal
 
 
 class TestHelper(unittest.TestCase):
-    """ Covers dewyatochka.core.plugin.helper_sys.py_entry.helper """
+    """ Covers dewyatochka.core.plugin.subsystem.helper.py_entry.helper """
 
     def test_wrap(self):
         """ Test @helper decorator """

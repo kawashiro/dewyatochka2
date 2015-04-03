@@ -24,7 +24,7 @@ Usage
 
 Optional arguments
 ==================
-    -h, --help       show this help message and exit
+    -h, --help       Show this help message and exit
     --config CONFIG  Path to config file to use
     --nodaemon       Do not detach process from console
 """

@@ -6,7 +6,6 @@ __all__ = []
 
 import random
 
-from dewyatochka.core.utils.http import WebClient
 from dewyatochka.core.plugin import chat_command
 
 
@@ -36,6 +35,8 @@ def hentai_command_handler(inp, outp, registry):
     :param registry:
     :return None:
     """
+    from dewyatochka.core.utils.http import WebClient
+    
     search_keywords = ' '.join(inp.text.split(' ')[1:])
     message_args = {'user': inp.sender.resource, 'keywords': search_keywords}
     hentai_params = _HENTAI_SEARCH_PARAMS.copy()
