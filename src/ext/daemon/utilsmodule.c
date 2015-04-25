@@ -9,12 +9,13 @@ static PyObject* daemon_utils_close_io(PyObject* self, PyObject* args)
 {
     char *err_msg;
     char *stdout_file_name = NULL;
+    FILE *stdout_file;
 
     if (!PyArg_ParseTuple(args, "s", &stdout_file_name)) {
         return NULL;
     }
 
-    FILE *stdout_file = fopen(stdout_file_name, "a+");
+    stdout_file = fopen(stdout_file_name, "a+");
     if (stdout_file == NULL) {
         sprintf(err_msg, "Failed to open file %s: %s", stdout_file_name, strerror(errno));
         PyErr_SetString(PyExc_RuntimeError, err_msg);
