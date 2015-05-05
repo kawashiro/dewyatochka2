@@ -12,7 +12,7 @@ Her personality is childish, as you might expect from her appearance.
 Dependencies
 ------------
 * [Python 3.3](https://www.python.org/ "Python") or higher
-* [SleekXMPP](https://github.com/fritzy/SleekXMPP "SleekXMPP")
+* [SleekXMPP 1.2](https://github.com/fritzy/SleekXMPP "SleekXMPP") or higher
 * [PyQuery](https://github.com/gawel/pyquery "PyQuery") (recommended)
 * [pyasn1_modules](http://pypi.python.org/pypi/pyasn1-modules) (recommended)
 * [lxml](http://lxml.de/) (recommended)
