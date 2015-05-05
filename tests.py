@@ -14,4 +14,4 @@ if __name__ == '__main__':
     sys.path.insert(0, home_dir + '/src')
     unittest_args = [__file__, 'discover', '-s', home_dir + '/tests'] + sys.argv[1:]
 
-    unittest.main(argv=unittest_args)
+    unittest.main(argv=unittest_args, module=None)
