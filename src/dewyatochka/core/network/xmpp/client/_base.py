@@ -14,7 +14,8 @@ __all__ = ['Client', 'Command']
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 
-from dewyatochka.core.network.xmpp.entity import *
+from dewyatochka.core.network.entity import Message
+from dewyatochka.core.network.xmpp.entity import JID
 from dewyatochka.core.network.xmpp.exception import C2SConnectionError, ClientDisconnectedError
 
 

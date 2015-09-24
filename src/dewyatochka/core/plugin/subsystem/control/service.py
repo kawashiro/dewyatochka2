@@ -50,24 +50,15 @@ class Service(BaseService):
         """
         return PLUGIN_TYPES
 
-    @classmethod
-    def name(cls) -> str:
-        """ Get service unique name
-
-        :return str:
-        """
-        return 'ctl'
-
-    def load(self, loaders, wrapper):
+    def load(self):
         """ Load plugins
 
-        :param iterable loaders: Loaders collection
-        :param Wrapper wrapper: Wrapper instance
         :return None:
         """
         self._plugins = {}
+        wrapper = self._wrapper
 
-        for loader in loaders:
+        for loader in self.application.registry.plugins.loaders:
             for entry in loader.load(self):
                 try:
                     self._plugins[entry.params['name']] = wrapper.wrap(entry)
@@ -95,7 +86,16 @@ class Service(BaseService):
 
         :return list:
         """
+        # noinspection PyUnresolvedReferences
         return super().plugins.values()
+
+    @property
+    def _wrapper(self):
+        """ Get wrapper instance
+
+        :return Wrapper:
+        """
+        return Wrapper(self)
 
 
 class Wrapper(BaseWrapper):

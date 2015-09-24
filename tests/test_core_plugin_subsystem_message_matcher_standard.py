@@ -8,7 +8,8 @@ from dewyatochka.core.application import VoidApplication
 from dewyatochka.core.config.container import ConferencesConfig
 from dewyatochka.core.config.source.virtual import Predefined
 from dewyatochka.core.plugin.subsystem.message.matcher.standard import *
-from dewyatochka.core.network.xmpp.entity import *
+from dewyatochka.core.network.xmpp.entity import JID
+from dewyatochka.core.network.entity import TextMessage
 
 
 class TestMatcher(unittest.TestCase):
@@ -23,9 +24,9 @@ class TestMatcher(unittest.TestCase):
         conf_config.load(Predefined({'c': {'room': 'self@example.com', 'nick': 'nick'},
                                      'd': {'room': 'self@ex@mple.com', 'nick': None}}))
 
-        chat_message = ChatMessage(jid_other, jid_self, 'Normal chat message')
-        own_message = ChatMessage(jid_self, jid_self, 'Own message')
-        sys_message = ChatMessage(jid_other_sys, jid_self, 'Sys message')
+        chat_message = TextMessage(jid_other, jid_self, text='Normal chat message')
+        own_message = TextMessage(jid_self, jid_self, text='Own message')
+        sys_message = TextMessage(jid_other_sys, jid_self, text='Sys message')
 
         flag_matches = {'regular': chat_message, 'system': sys_message, 'own': own_message}
 
@@ -50,12 +51,12 @@ class TestCommandMatcher(unittest.TestCase):
         conf_config = ConferencesConfig(VoidApplication())
         conf_config.load(Predefined({'c': {'room': 'self@example.com', 'nick': 'nick'}}))
 
-        chat_message1 = ChatMessage(jid_other, jid_self, '~cmd arg1 arg2')
-        chat_message2 = ChatMessage(jid_other, jid_self, '\\cmd_arg1 arg2')
-        own_message = ChatMessage(jid_self, jid_self, 'Own message')
-        sys_message = ChatMessage(jid_other_sys, jid_self, 'Sys message')
-        chat_command = ChatMessage(jid_other, jid_self, '\\cmd arg1 arg2')
-        other_chat_command = ChatMessage(jid_other, jid_self, '\\cme arg1 arg2')
+        chat_message1 = TextMessage(jid_other, jid_self, text='~cmd arg1 arg2')
+        chat_message2 = TextMessage(jid_other, jid_self, text='\\cmd_arg1 arg2')
+        own_message = TextMessage(jid_self, jid_self, text='Own message')
+        sys_message = TextMessage(jid_other_sys, jid_self, text='Sys message')
+        chat_command = TextMessage(jid_other, jid_self, text='\\cmd arg1 arg2')
+        other_chat_command = TextMessage(jid_other, jid_self, text='\\cme arg1 arg2')
 
         matcher = CommandMatcher(conf_config, '\\', 'cmd')
         self.assertFalse(matcher.match(chat_message1))

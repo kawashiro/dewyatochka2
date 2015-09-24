@@ -88,7 +88,7 @@ class Loader(BaseLoader):
             try:
                 conf_name = load_name.split(self.__PKG_SEP)[-1]
                 if conf_name not in plugins.__all__:
-                    service.application.registry.ext_config.section(conf_name, require=True)
+                    service.application.registry.extensions_config.section(conf_name, require=True)
             except SectionRetrievingError:
                 service.application.registry.log(__name__).warning('Plugin %s is disabled', load_name)
                 continue

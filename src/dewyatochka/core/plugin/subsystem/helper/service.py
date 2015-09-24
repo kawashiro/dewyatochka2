@@ -34,11 +34,3 @@ class Service(BaseService):
         :return list:
         """
         return PLUGIN_TYPES
-
-    @classmethod
-    def name(cls) -> str:
-        """ Get service unique name
-
-        :return str:
-        """
-        return 'helper'

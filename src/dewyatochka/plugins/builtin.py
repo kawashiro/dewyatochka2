@@ -56,10 +56,10 @@ class HelpMessage():
         """
         if self.__commands is None:
             commands = []
-            prefix = registry.chat.config['command_prefix']
+            prefix = registry.message.config['command_prefix']
             for loader in registry.plugins.loaders:
                 commands += [prefix + entry.params['command']
-                             for entry in loader.load(registry.chat)
+                             for entry in loader.load(registry.message)
                              if 'command' in entry.params]
             self.__commands = frozenset(commands)
 
@@ -73,9 +73,9 @@ class HelpMessage():
         :param _:
         :return None:
         """
-        msg_format = registry.chat.config.get('help_message')
+        msg_format = registry.message.config.get('help_message')
         if msg_format:
-            message = msg_format.format(user=inp.sender.resource,
+            message = msg_format.format(user=inp.sender.public_name,
                                         version=__version__,
                                         commands=', '.join(self._get_commands(registry)))
             outp.say(message)

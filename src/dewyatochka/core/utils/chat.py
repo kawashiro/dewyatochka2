@@ -15,7 +15,7 @@ __all__ = ['ActivityInfo', 'get_activity_info']
 
 from collections import defaultdict
 
-from dewyatochka.core.network.xmpp.entity import JID
+from dewyatochka.core.network.entity import GroupChat
 
 
 # Conference jid -> last activity
@@ -25,7 +25,7 @@ _conference_last_activity = defaultdict(lambda key: ActivityInfo(key))
 class ActivityInfo(object):
     """ Conference activity info structure """
 
-    def __init__(self, conference: JID):
+    def __init__(self, conference: GroupChat):
         """ Create new activity info object with default values
 
         :param JID conference:
@@ -35,7 +35,7 @@ class ActivityInfo(object):
         self.last_activity = 0
 
     @property
-    def conference(self) -> JID:
+    def conference(self) -> GroupChat:
         """ Conference getter
 
         :return JID:
@@ -43,7 +43,7 @@ class ActivityInfo(object):
         return self._conference
 
 
-def get_activity_info(conference: JID) -> ActivityInfo:
+def get_activity_info(conference: GroupChat) -> ActivityInfo:
     """ Get conference activity info
 
     :param JID conference: Conference JID

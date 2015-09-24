@@ -15,7 +15,7 @@ Classes
 __all__ = ['XMPPError', 'ClientDisconnectedError', 'MessageError',
            'XMPPConnectionError', 'S2SConnectionError', 'C2SConnectionError']
 
-from .entity import JID
+from .entity import Conference
 
 
 class XMPPError(RuntimeError):
@@ -36,10 +36,10 @@ class C2SConnectionError(XMPPConnectionError):
 class S2SConnectionError(XMPPConnectionError):
     """ Exception server-to-server connection error """
 
-    def __init__(self, *args, remote, **kwargs):
+    def __init__(self, *args, remote: Conference, **kwargs):
         """ Instantiate S2S connection exception and assign remote member JID to it
 
-        :param JID remote: Remote member JID
+        :param Conference remote: Remote member JID
         :param tuple args:
         :param dict kwargs:
         """
@@ -47,10 +47,10 @@ class S2SConnectionError(XMPPConnectionError):
         self._remote = remote
 
     @property
-    def remote(self) -> JID:
+    def remote(self) -> Conference:
         """ Get remote member JID
 
-        :return JID:
+        :return Conference:
         """
         return self._remote
 

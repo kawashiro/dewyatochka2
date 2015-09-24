@@ -82,7 +82,7 @@ def talk_command_handler(outp, registry, **_):
     outp.say(_get_question(category, registry.log))
 
 
-@plugin.helper(services=['xmpp'])
+@plugin.helper(services=['bot'])
 def occasional_question(registry):
     """ Ask a question if conference is too silent
 
@@ -97,11 +97,11 @@ def occasional_question(registry):
         time.sleep(60)
 
         log.debug('Checking conferences state')
-        for conference in registry.xmpp.alive_conferences:
+        for conference in registry.bot.alive_conferences:
             last_message_ts = chat.get_activity_info(conference).last_message
 
             if last_message_ts + silence_interval < time.time():
                 log.info('Conference %s is too silent (last msg.: %d), waking up', conference, last_message_ts)
-                registry.xmpp.send_muc(_get_question(category, log), conference)
+                registry.bot.send_muc(_get_question(category, log), conference)
             else:
                 log.debug('Conference %s postponed (last msg.: %d)', conference, last_message_ts)

@@ -5,8 +5,9 @@
 import unittest
 from unittest.mock import patch
 
+from dewyatochka.core.network.entity import Message
 from dewyatochka.core.network.xmpp.client._base import *
-from dewyatochka.core.network.xmpp.entity import *
+from dewyatochka.core.network.xmpp.entity import JID
 from dewyatochka.core.network.xmpp.exception import C2SConnectionError, ClientDisconnectedError
 
 
@@ -20,10 +21,11 @@ class _ClientStub(Client):
         """
         pass
 
-    def disconnect(self, wait=True):
+    def disconnect(self, wait=True, notify=True):
         """ Close connection
 
         :param bool wait: Wait until all received messages are processed
+        :param bool notify: Notify reader about disconnection
         :return None:
         """
         pass

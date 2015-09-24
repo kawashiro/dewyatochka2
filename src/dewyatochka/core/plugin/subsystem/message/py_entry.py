@@ -13,7 +13,7 @@ __all__ = ['chat_command', 'chat_message', 'chat_accost']
 
 from dewyatochka.core.plugin.loader.internal import entry_point
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
-from .service import PLUGIN_TYPE_COMMAND, PLUGIN_TYPE_MESSAGE, PLUGIN_TYPE_ACCOST
+from .matcher import PLUGIN_TYPE_COMMAND, PLUGIN_TYPE_MESSAGE, PLUGIN_TYPE_ACCOST
 
 
 # Commands already in use

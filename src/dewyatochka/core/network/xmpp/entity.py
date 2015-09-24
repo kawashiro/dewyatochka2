@@ -5,16 +5,17 @@
 Classes
 =======
     JID          -- JID params container
-    Message      -- Common message params container
-    ChatMessage  -- Chat text message params container
     ChatPresence -- Groupchat member presence change notification
     ChatSubject  -- Groupchat subject change notification
+    Conference   -- XMPP conference
 """
 
-__all__ = ['JID', 'Message', 'ChatMessage', 'ChatPresence', 'ChatSubject']
+__all__ = ['JID', 'ChatPresence', 'ChatSubject', 'Conference']
+
+from ..entity import *
 
 
-class JID():
+class JID(Participant):
     """ JID params container """
 
     def __init__(self, login: str, server: str, resource=''):
@@ -27,6 +28,7 @@ class JID():
         self._login = login
         self._server = server
         self._resource = resource
+
         self._jid = '{}@{}{}'.format(login, server, ('/%s' % resource) if resource else '')
         self._bare = JID(login, server) if resource else self
 
@@ -70,27 +72,20 @@ class JID():
         """
         return self._jid
 
+    @property
+    def public_name(self) -> str:
+        """ Get public name displayed in chat
+
+        :return str:
+        """
+        return self.resource
+
     def __str__(self) -> str:
         """ Convert JID object to string
 
         :return str:
         """
         return self.jid
-
-    def __eq__(self, other) -> bool:
-        """ Check if JIDs are equal
-
-        :param JID other:
-        :return bool:
-        """
-        return str(self) == str(other)
-
-    def __hash__(self) -> int:
-        """ Calculate unique hash
-
-        :return int:
-        """
-        return hash('jid:///%s' % self)
 
     @classmethod
     def from_string(cls, jid: str):
@@ -106,69 +101,43 @@ class JID():
                 raise ValueError()
 
             return cls(login, server, parts[1] if len(parts) > 1 else '')
+
         except (ValueError, AttributeError):
             raise ValueError('Invalid JID (%s)' % repr(jid))
 
 
-class Message():
-    """ Common message params container """
-
-    def __init__(self, sender: JID, receiver: JID):
-        """ Create message instance
-
-        :param JID sender:
-        :param JID receiver:
-        """
-        self._sender = sender
-        self._receiver = receiver
+class Conference(JID, GroupChat):
+    """ XMPP conference """
 
     @property
-    def sender(self) -> JID:
-        """ Get sender
+    def self(self) -> JID:
+        """ Get self identification
 
-        :return JID:
+        :return Participant:
         """
-        return self._sender
+        return self.bare
 
     @property
-    def receiver(self) -> JID:
-        """ Get receiver
-
-        :return JID:
-        """
-        return self._receiver
-
-
-class ChatMessage(Message):
-    """ Chat text message params container """
-
-    def __init__(self, sender: JID, receiver: JID, text: str):
-        """ Create message instance
-
-        :param JID sender:
-        :param JID receiver:
-        :param str text:
-        """
-        super().__init__(sender, receiver)
-        self._text = text
-
-    @property
-    def text(self) -> str:
-        """ Get message text
+    def public_name(self) -> str:
+        """ Get public name displayed in chat
 
         :return str:
         """
-        return self._text
+        return str(self.bare)
 
-    def __str__(self) -> str:
-        """ Convert to string
+    @classmethod
+    def from_config(cls, room: str, nick: str):
+        """ Factory function
 
-        :return str:
+        :param str room: conference@server.org
+        :param str nick: Participant's nick
+        :return Conference:
         """
-        return self.text
+        room, server = room.split('@')
+        return cls(room, server, nick)
 
 
-class ChatSubject(ChatMessage):
+class ChatSubject(TextMessage):
     """ Groupchat subject change notification """
 
     @property
@@ -179,23 +148,17 @@ class ChatSubject(ChatMessage):
         """
         return self.text
 
+    @property
+    def is_system(self) -> bool:
+        """ Check if message is a system one
+
+        :return bool:
+        """
+        return True
+
 
 class ChatPresence(Message):
     """ Groupchat member presence change notification """
-
-    def __init__(self, sender: JID, receiver: JID, p_type: str, status: str, role: str):
-        """ Create message instance
-
-        :param JID sender:
-        :param JID receiver:
-        :param str p_type:
-        :param str status:
-        :param str role:
-        """
-        super().__init__(sender, receiver)
-        self._type = p_type
-        self._status = status
-        self._role = role
 
     @property
     def type(self) -> str:
@@ -203,7 +166,7 @@ class ChatPresence(Message):
 
         :return str:
         """
-        return self._type
+        return self._content['type']
 
     @property
     def status(self) -> str:
@@ -211,7 +174,7 @@ class ChatPresence(Message):
 
         :return str:
         """
-        return self._status
+        return self._content['status']
 
     @property
     def role(self) -> str:
@@ -219,11 +182,24 @@ class ChatPresence(Message):
 
         :return str:
         """
-        return self._role
+        return self._content['role']
+
+    @property
+    def is_system(self) -> bool:
+        """ Check if message is a system one
+
+        :return bool:
+        """
+        return True
 
     def __str__(self) -> str:
         """ Convert to str
 
         :return str:
         """
-        return '{} {} is now {} ({})'.format(self.role.capitalize(), self.sender.resource, self.type, self.status)
+        return '{} {} is now {} ({})'.format(
+            self.role.capitalize(),
+            self.sender.resource,
+            self.type,
+            self.status
+        )

@@ -46,6 +46,19 @@ class LoggerWrapper():
         """
         return getattr(self._logger, item)
 
+    def error(self, msg, *args, **kwargs):
+        """ Log 'msg % args' with severity 'ERROR'
+
+        :param str msg: Message template
+        :param tuple args: args
+        :param dict kwargs: kwargs
+        :return None:
+        """
+        if self._logger.isEnabledFor(logging.DEBUG):
+            self._logger.exception(msg, *args, **kwargs)
+        else:
+            self._logger.error(msg, *args, **kwargs)
+
     def progress(self, template, *args, **kwargs):
         """ Echo some process progress info
 

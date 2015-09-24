@@ -21,6 +21,7 @@ from sleekxmpp.stanza.message import Message as SMessage
 from sleekxmpp.stanza.presence import Presence
 
 from . import _base
+from dewyatochka.core.network.entity import Message, TextMessage
 from dewyatochka.core.network.xmpp.entity import *
 from dewyatochka.core.network.xmpp.exception import *
 
@@ -42,7 +43,7 @@ _TASK_C2S_CHECK_NAME = 'c2s_connection_check'
 _TASK_C2S_CHECK_INTERVAL = 60
 
 
-def _convert_message(raw_message: ElementBase) -> ChatMessage:
+def _convert_message(raw_message: ElementBase) -> TextMessage:
     """ Convert message to a Message instance
 
     :param ElementBase raw_message:
@@ -50,19 +51,20 @@ def _convert_message(raw_message: ElementBase) -> ChatMessage:
     """
     if isinstance(raw_message, SMessage) and raw_message['type'] == 'groupchat':
         if raw_message['body']:
-            return ChatMessage(JID.from_string(raw_message['from'].full),
-                               JID.from_string(raw_message['to'].full),
-                               raw_message['body'])
+            sender = JID.from_string(raw_message['from'].full)
+            receiver = JID.from_string(raw_message['to'].full)
+            is_system = not sender.resource
+            return TextMessage(sender, receiver, text=raw_message['body'], system=is_system)
         elif raw_message['subject']:
             return ChatSubject(JID.from_string(raw_message['from'].full),
                                JID.from_string(raw_message['to'].full),
-                               raw_message['subject'])
+                               text=raw_message['subject'])
     elif isinstance(raw_message, Presence):
         return ChatPresence(JID.from_string(raw_message['from'].full),
                             JID.from_string(raw_message['to'].full),
-                            raw_message['type'],
-                            raw_message['status'],
-                            raw_message['muc']['role'])
+                            type=raw_message['type'],
+                            status=raw_message['status'],
+                            role=raw_message['muc']['role'])
     raise ValueError('Not acceptable message: %s' % raw_message)
 
 

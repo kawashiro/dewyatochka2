@@ -11,7 +11,8 @@ from dewyatochka.core.plugin.base import Wrapper as BaseWrapper
 from dewyatochka.core.plugin.base import PluginEntry
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 from dewyatochka.core.application import Registry, VoidApplication
-from dewyatochka.core.network.xmpp.entity import JID, ChatMessage
+from dewyatochka.core.network.xmpp.entity import JID
+from dewyatochka.core.network.entity import TextMessage
 
 
 class TestEnvironment(unittest.TestCase):
@@ -23,7 +24,7 @@ class TestEnvironment(unittest.TestCase):
         registry = Registry()
         matcher = Mock()
         matcher.match.side_effect = (True, False)
-        message = ChatMessage(JID.from_string('jid1@example.com'), JID.from_string('jid1@example.com'), 'text')
+        message = TextMessage(JID.from_string('jid1@example.com'), JID.from_string('jid1@example.com'), text='text')
         additional_args = {'foo': 'bar'}
 
         env = Environment(plugin_fn, registry, None, matcher)

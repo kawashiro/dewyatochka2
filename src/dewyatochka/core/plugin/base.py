@@ -24,14 +24,15 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 
 from dewyatochka.core.application import Registry, Application
 from dewyatochka.core.application import Service as AppService
-from dewyatochka.core.plugin.exceptions import PluginRegistrationError
+
+from .exceptions import PluginRegistrationError
 
 
 # Registered plugin structure
 PluginEntry = namedtuple('PluginEntry', ['plugin', 'params'])
 
 
-class Environment():
+class Environment:
     """ Minimal plugin environment
 
     Contains only a references to a plugin
@@ -61,7 +62,7 @@ class Environment():
 
         :return str:
         """
-        return '{}[{}.{}]'.format(self.__module__, self._plugin.__module__, self._plugin.__name__)
+        return '.'.join((self._plugin.__module__, self._plugin.__name__))
 
     def __str__(self) -> str:
         """ Convert to string (=name)
@@ -98,15 +99,15 @@ class Service(AppService, metaclass=ABCMeta):
         super().__init__(application)
         self._plugins = None
 
-    def load(self, loaders, wrapper):
+    def load(self):
         """ Load plugins
 
-        :param iterable loaders: Loaders collection
-        :param Wrapper wrapper: Wrapper instance
         :return None:
         """
         self._plugins = []
-        for loader in loaders:
+        wrapper = self._wrapper
+
+        for loader in self.application.registry.plugins.loaders:
             for entry in loader.load(self):
                 try:
                     self._plugins.append(wrapper.wrap(entry))
@@ -125,6 +126,14 @@ class Service(AppService, metaclass=ABCMeta):
         :return list:
         """
         pass
+
+    @property
+    def _wrapper(self):
+        """ Get wrapper instance
+
+        :return Wrapper:
+        """
+        return Wrapper(self)
 
     @property
     def plugins(self) -> list:
@@ -151,7 +160,7 @@ class Loader(metaclass=ABCMeta):
         pass
 
 
-class Wrapper():
+class Wrapper:
     """ Wraps a plugin into environment """
 
     def __init__(self, service: Service):
@@ -182,7 +191,7 @@ class Wrapper():
                     )
 
         plugin_conf_section = entry.plugin.__module__.split('.')[-1]
-        plugin_conf_data = self._service.application.registry.ext_config.section(plugin_conf_section)
+        plugin_conf_data = self._service.application.registry.extensions_config.section(plugin_conf_section)
         config_container = PluginConfigService(self._service.application, plugin_conf_data)
         plugin_registry.add_service(config_container)
 

@@ -23,14 +23,12 @@ setup(
     license='GPL-3',
     platforms=['POSIX'],
     # Dependencies
-    requires=['sleekxmpp', 'pyquery', 'pyasn1_modules', 'sqlalchemy', 'lxml'],
+    requires=['sleekxmpp', 'pyquery', 'pyasn1_modules', 'SQLAlchemy', 'lxml'],
     # Python packages
     package_dir={'': 'src/'},
     packages=['dewyatochka',
               'dewyatochka.applications',
               'dewyatochka.applications.daemon',
-              'dewyatochka.applications.daemon._process',
-              'dewyatochka.applications.daemon._process.conference',
               'dewyatochka.core',
               'dewyatochka.core.config',
               'dewyatochka.core.config.source',

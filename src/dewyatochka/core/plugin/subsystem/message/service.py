@@ -11,30 +11,27 @@ Classes
 
 Attributes
 ==========
-    PLUGIN_TYPE_MESSAGE -- Simple message plugin type
-    PLUGIN_TYPE_COMMAND -- Chat command plugin type
     PLUGIN_TYPES        -- All plugin types list
-    PLUGIN_TYPE_ACCOST  -- Chat accost plugin type
 """
 
-__all__ = ['Environment', 'Service', 'Wrapper', 'Output',
-           'PLUGIN_TYPE_COMMAND', 'PLUGIN_TYPE_MESSAGE', 'PLUGIN_TYPE_ACCOST', 'PLUGIN_TYPES']
+__all__ = ['Environment', 'Service', 'Wrapper', 'Output', 'PLUGIN_TYPES']
 
 from dewyatochka.core.application import Registry
-from dewyatochka.core.network.xmpp.entity import Message, JID
+from dewyatochka.core.network.entity import Message, GroupChat
+from dewyatochka.core.network.service import ChatManager
 from dewyatochka.core.plugin.base import Environment as BaseEnvironment
 from dewyatochka.core.plugin.base import Service as BaseService
 from dewyatochka.core.plugin.base import Wrapper as BaseWrapper
 from dewyatochka.core.plugin.base import PluginEntry
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
-from .matcher.standard import *
+
+from . import matcher
 
 
 # Plugin types provided
-PLUGIN_TYPE_MESSAGE = 'message'
-PLUGIN_TYPE_COMMAND = 'chat_command'
-PLUGIN_TYPE_ACCOST = 'accost'
-PLUGIN_TYPES = [PLUGIN_TYPE_MESSAGE, PLUGIN_TYPE_COMMAND, PLUGIN_TYPE_ACCOST]
+PLUGIN_TYPES = [matcher.PLUGIN_TYPE_MESSAGE,
+                matcher.PLUGIN_TYPE_COMMAND,
+                matcher.PLUGIN_TYPE_ACCOST]
 
 
 class Environment(BaseEnvironment):
@@ -44,18 +41,19 @@ class Environment(BaseEnvironment):
     to pass through only valid messages
     """
 
-    def __init__(self, plugin: callable, registry: Registry, xmpp_service, matcher):
+    def __init__(self, plugin: callable, registry: Registry,
+                 chat_manager: ChatManager, matcher_: matcher.AbstractMatcher):
         """ Initialize plugin environment
 
         :param callable plugin:
         :param Registry registry:
-        :param xmpp_service:
-        :param .matcher.standard.Matcher matcher:
+        :param ChatManager chat_manager:
+        :param AbstractMatcher matcher_:
         """
         super().__init__(plugin, registry)
 
-        self._matcher = matcher
-        self._xmpp_service = xmpp_service
+        self._matcher = matcher_
+        self._chat_manager = chat_manager
         self._output_wrappers = {}
 
     def invoke(self, *, message=None, **kwargs):
@@ -71,7 +69,7 @@ class Environment(BaseEnvironment):
         if self._matcher.match(message):
             super().invoke(inp=message, outp=self._get_output_wrapper(message.sender.bare), **kwargs)
 
-    def _get_output_wrapper(self, destination: JID):
+    def _get_output_wrapper(self, destination: GroupChat):
         """ Get output wrapper for a conference
 
         :param JID destination:
@@ -80,7 +78,7 @@ class Environment(BaseEnvironment):
         try:
             output = self._output_wrappers[str(destination)]
         except KeyError:
-            output = Output(self._xmpp_service, destination)
+            output = Output(self._chat_manager, destination)
             self._output_wrappers[str(destination)] = output
 
         return output
@@ -97,46 +95,40 @@ class Service(BaseService):
         """
         return PLUGIN_TYPES
 
+    @property
+    def _wrapper(self):
+        """ Get wrapper instance
+
+        :return Wrapper:
+        """
+        return Wrapper(self)
+
     @classmethod
     def name(cls) -> str:
         """ Get service unique name
 
         :return str:
         """
-        return 'chat'
+        return 'message'
 
 
 class Wrapper(BaseWrapper):
     """ Wraps a plugin into environment """
 
-    def _get_matcher(self, entry: PluginEntry) -> Matcher:
+    def _get_matcher(self, entry: PluginEntry) -> matcher.AbstractMatcher:
         """ Get matcher for plugin
 
         :param PluginEntry entry:
         :return Matcher:
         """
-        c_conf = self._service.application.registry.conferences_config
-        e_type = entry.params.get('type')
+        try:
+            entry_type = entry.params.get('type')
+            cmd_prefix = self._service.config.get('command_prefix')
 
-        if e_type == PLUGIN_TYPE_MESSAGE:
-            matcher = Matcher(
-                c_conf,
-                **{param: entry.params[param] for param in entry.params if param in ['system', 'own', 'regular']}
-            )
-        elif e_type == PLUGIN_TYPE_COMMAND:
-            try:
-                matcher = CommandMatcher(c_conf, self._service.config['command_prefix'], entry.params['command'])
-            except KeyError:
-                raise PluginRegistrationError('Failed to register chat command plugin: '
-                                              'Chat command prefix is not configured')
-        elif e_type == PLUGIN_TYPE_ACCOST:
-            matcher = AccostMatcher(c_conf)
-        else:
-            raise PluginRegistrationError(
-                'Failed to determine matcher type for a plugin %s type of %s' % (repr(entry.plugin), repr(e_type))
-            )
+            return matcher.factory(entry_type, command_prefix=cmd_prefix, **entry.params)
 
-        return matcher
+        except matcher.UnknownMatcherError as e:
+            raise PluginRegistrationError(e)
 
     def wrap(self, entry: PluginEntry) -> Environment:
         """ Wrap plugin into it's environment
@@ -144,26 +136,27 @@ class Wrapper(BaseWrapper):
         :param PluginEntry entry: Raw plugin entry
         :return Environment:
         """
-        return Environment(entry.plugin,
-                           self._get_registry(entry),
-                           self._service.application.registry.xmpp,
-                           self._get_matcher(entry))
+        registry = self._get_registry(entry)
+        c_manager = self._service.application.registry.chat_manager
+        matcher_ = self._get_matcher(entry)
+
+        return Environment(entry.plugin, registry, c_manager, matcher_)
 
 
-class Output():
+class Output:
     """ Output wrapper
 
     Output wrapper is passed to each message plugin
     to allow plugin to communicate through xmpp
     """
 
-    def __init__(self, xmpp_service, conference: JID):
+    def __init__(self, chat_manager: ChatManager, conference: GroupChat):
         """ Bind output wrapper to xmpp-client and a conference
 
-        :param xmpp_service:
+        :param ChatManager chat_manager:
         :param JID conference:
         """
-        self._xmpp_service = xmpp_service
+        self._chat_manager = chat_manager
         self._conference = conference
 
     def say(self, text: str, *args):
@@ -173,4 +166,4 @@ class Output():
         :param tuple args: Args for message format
         :return None:
         """
-        self._xmpp_service.send_muc(text % args, self._conference)
+        self._chat_manager.send(text % args, self._conference)

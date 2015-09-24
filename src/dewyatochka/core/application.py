@@ -50,7 +50,7 @@ class Application(metaclass=ABCMeta):
     def depend(self, dependent_service):
         """ Add a dependent service to a registry
 
-        :param type dependent_service: Subclass of Service
+        :param dependent_service: Subclass of Service
         :return None:
         """
         if isinstance(dependent_service, type):
@@ -131,7 +131,7 @@ class VoidApplication(Application):  # pragma: no cover
         pass
 
 
-class Service():
+class Service:
     """ Abstract registrable service """
 
     def __init__(self, application: Application):
@@ -163,7 +163,8 @@ class Service():
 
         :return Logger:
         """
-        return self.application.registry.log(self.__module__)
+        logger_name = '.'.join((self.__class__.__module__, self.__class__.__name__))
+        return self.application.registry.log(logger_name)
 
     @classmethod
     def name(cls) -> str:
@@ -174,7 +175,7 @@ class Service():
         return '.'.join((cls.__module__, cls.__name__))
 
 
-class Registry():
+class Registry:
     """ Registry pattern implementation """
 
     def __init__(self):

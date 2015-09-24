@@ -4,22 +4,26 @@
 
 Classes
 =======
-    ConnectionManager     -- Serves xmpp-connection
+    Connection            -- Serves xmpp-connection
     ConnectionConfigError -- Error on invalid xmpp connection config
     ConferenceConfigError -- Error on invalid conference config
 """
 
-__all__ = ['ConnectionManager', 'ConnectionConfigError', 'ConferenceConfigError']
+__all__ = ['Connection', 'ConnectionConfigError', 'ConferenceConfigError']
 
 import time
 from collections import namedtuple
 import threading
 
-from dewyatochka.core.application import Service, Application
+from dewyatochka.core.application import Application
 from dewyatochka.core.config.exception import ConfigError
-from dewyatochka.core.network.xmpp import client
-from dewyatochka.core.network.xmpp.entity import Message, JID
-from dewyatochka.core.network.xmpp.exception import *
+
+from ..service import ConnectionManager
+from ..entity import Message
+
+from . import client
+from .entity import Conference, JID
+from .exception import *
 
 
 # Seconds to wait between multiple connections attempts
@@ -42,7 +46,7 @@ class ConferenceConfigError(ConfigError):
     pass
 
 
-class _PresenceHelper():
+class _PresenceHelper:
     """ Serves presence in conferences """
 
     # Conference reconnect task structure
@@ -63,12 +67,12 @@ class _PresenceHelper():
         self.__configured_conferences = None
 
         self._reconnect_thread = threading.Thread(
-            name=self._connection_manager.name() + '[PresenceHelper[Reenter]]',
+            name=self._connection_manager.name() + '[PresenceHelper][Reenter]',
             target=self._do_reconnect,
             daemon=True
         )
         self._ping_thread = threading.Thread(
-            name=self._connection_manager.name() + '[PresenceHelper[Ping]]',
+            name=self._connection_manager.name() + '[PresenceHelper][Ping]',
             target=self._do_s2s_ping,
             daemon=True
         )
@@ -91,10 +95,10 @@ class _PresenceHelper():
         self.__assert_started()
         self._running = False
 
-    def enter(self, conference: JID):
+    def enter(self, conference: Conference):
         """ Enter a conference
 
-        :param JID conference: Conference jid with nick
+        :param Conference conference: Conference jid with nick
         :return None:
         """
         with self._alive_set_lock:
@@ -108,10 +112,10 @@ class _PresenceHelper():
             else:
                 log.debug('Discarded to enter to a conference %s while it is marked as alive', str(conference))
 
-    def leave(self, conference: JID):
+    def leave(self, conference: Conference):
         """ Leave conference
 
-        :param JID conference: Conference jid with nick
+        :param Conference conference: Conference jid with nick
         :return:
         """
         with self._alive_set_lock:
@@ -154,10 +158,10 @@ class _PresenceHelper():
         for conference in self._alive_conferences.copy():
             self.leave(conference)
 
-    def schedule_reenter(self, conference: JID):
+    def schedule_reenter(self, conference: Conference):
         """ Schedule conference reenter
 
-        :param JID conference: Conference jid with nick
+        :param Conference conference: Conference jid with nick
         :return None:
         """
         self.__assert_started()
@@ -171,29 +175,28 @@ class _PresenceHelper():
             except KeyError:
                 # Failed on the first connection attempt
                 pass
-            self._reconnect_queue.append(self.__ReconnectTask(self._get_persistence_jid(conference), time.time()))
+            self._reconnect_queue.append(self.__ReconnectTask(self.get_presence_jid(conference), time.time()))
 
-    def _get_persistence_jid(self, conference: JID) -> JID:
-        """ Get full conference persistence JID
+    def get_presence_jid(self, conference: JID) -> JID:
+        """ Get full conference presence JID
 
-        :param JID conference:
+        :param JID conference: Full or bare JID
         :return JID:
         """
         try:
-            full_conf = JID(conference.login,
-                            conference.server,
-                            [c.resource for c in self._configured_conferences if c.bare == conference][0])
+            full_conf_resource = [c.resource for c in self._configured_conferences if c.bare == conference.bare][0]
+            full_conf = JID(conference.login, conference.server, full_conf_resource)
+
         except IndexError:
-            self._connection_manager.log.warn(
-                'Conference %s is marked as alive but is not configured', conference
-            )
+            self._connection_manager.log.warn('Conference %s is marked as alive but is not configured', conference)
             full_conf = conference
+
         return full_conf
 
-    def is_alive(self, conference: JID) -> bool:
+    def is_alive(self, conference: Conference) -> bool:
         """ Check if conference is alive
 
-        :param JID conference: Conference jid with nick
+        :param Conference conference: Conference jid with nick
         :return bool:
         """
         return conference in self._alive_conferences
@@ -210,14 +213,19 @@ class _PresenceHelper():
     def _configured_conferences(self) -> set:
         """ Return a set of configured conferences
 
-        :return set of JID:
+        :return set of Conference:
         """
         if self.__configured_conferences is None:
             try:
+                self.__configured_conferences = set()
                 config = self._connection_manager.application.registry.conferences_config
-                conf = {JID.from_string('/'.join([config.section(name).get('room'), config.section(name).get('nick')]))
-                        for name in config}
-                self.__configured_conferences = conf
+                for conf_name in config:
+                    conf_config = config.section(conf_name)
+                    if not conf_config.get('nick') or not conf_config.get('room'):
+                        self._connection_manager.log.warn('Conference [%s] is not configured properly', conf_name)
+                    else:
+                        self.__configured_conferences.add(Conference.from_config(**conf_config))
+
             except ValueError as e:
                 raise ConferenceConfigError('Invalid conference entry found (%s)' % e)
         return self.__configured_conferences
@@ -267,7 +275,7 @@ class _PresenceHelper():
 
                     try:
                         log.debug('Ping %s', conference)
-                        pt = self._connection_manager.client.ping(self._get_persistence_jid(conference))
+                        pt = self._connection_manager.client.ping(self.get_presence_jid(conference))
                         log.debug('Ping %s succeeded (%f)', conference, pt)
 
                     except S2SConnectionError:
@@ -289,7 +297,7 @@ class _PresenceHelper():
             raise RuntimeError('Presence management is not started')
 
 
-class ConnectionManager(Service):
+class Connection(ConnectionManager):
     """ Serves xmpp-connection
 
     Check connections state and provides
@@ -418,6 +426,8 @@ class ConnectionManager(Service):
             while self.application.running:
                 msg = self.__try(self.client.read)
                 if msg is not None:
+                    if msg.receiver == self.client.jid:
+                        msg.receiver = self._presence_helper.get_presence_jid(msg.sender)
                     yield msg
 
             self.__try(self._presence_helper.leave_all)
@@ -434,18 +444,18 @@ class ConnectionManager(Service):
             pass
 
     @property
-    def alive_conferences(self) -> frozenset:
+    def alive_chats(self) -> frozenset:
         """ Get alive conferences
 
         :return frozenset:
         """
         return self._presence_helper.alive_conferences
 
-    def send_muc(self, message: str, chat: JID):
+    def send(self, message: str, chat: Conference):
         """ Send a message to groupchat
 
         :param str message: Message content
-        :param JID chat:  Chat JID (with nickname)
+        :param Conference chat: Chat JID (with nickname)
         :return None:
         """
         if not self._presence_helper.is_alive(chat):

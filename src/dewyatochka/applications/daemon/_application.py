@@ -19,14 +19,12 @@ from dewyatochka.core.application import Application
 from dewyatochka.core.log import get_daemon_logger
 from dewyatochka.core.config import get_common_config, get_conferences_config, get_extensions_config
 from dewyatochka.core.config.factory import COMMON_CONFIG_DEFAULT_PATH
+from dewyatochka.core.network.xmpp import service as xmpp
 from dewyatochka.core.plugin.subsystem.message import service as m_service
 from dewyatochka.core.plugin.subsystem.helper import service as h_service
-from dewyatochka.core.plugin.base import Wrapper as BaseWrapper
 from dewyatochka.core.plugin.loader import LoaderService
 
-from ._process.conference.connection import ConnectionManager
-from ._process.conference.bot import Bot
-from ._process.helper import HelpersManager
+from . import _process
 
 
 # App exit codes
@@ -71,6 +69,7 @@ class DaemonApp(Application):
             params = self._parse_args(args)
 
             self.depend(get_common_config(self, params.config))
+
             log_file = None if params.nodaemon \
                 else self.registry.config.section('log').get('file', _DEFAULT_LOG_FILE_PATH)
             self.depend(get_daemon_logger(self, log_file))
@@ -82,20 +81,21 @@ class DaemonApp(Application):
             self.depend(m_service.Service)
             self.depend(h_service.Service)
 
-            self.depend(HelpersManager)
-            self.depend(ConnectionManager)
-            self.depend(Bot)
+            self.depend(_process.Helper)
+            self.depend(_process.ChatManager)
+            self.depend(xmpp.Connection)
+            self.registry.add_service_alias(_process.ChatManager, 'bot')
 
             if not params.nodaemon:
                 daemon.detach(lambda *_: self.stop(_EXIT_CODE_OK))
                 daemon.acquire_lock(self.registry.config.global_section.get('lock', _DEFAULT_LOCK_FILE_PATH))
 
-            plugins_loaders = self.registry.plugins.loaders
-            self.registry.chat.load(plugins_loaders, m_service.Wrapper(self.registry.chat))
-            self.registry.helper.load(plugins_loaders, BaseWrapper(self.registry.helper))
+            self.registry.get_service(m_service.Service).load()
+            self.registry.get_service(h_service.Service).load()
 
-            self.registry.bot.start()
-            self.registry.helpers_manager.start()
+            self.registry.chat_manager.start()
+            self.registry.helper.start()
+
             self.wait()
 
         except (KeyboardInterrupt, SystemExit):
@@ -108,7 +108,7 @@ class DaemonApp(Application):
 
         finally:
             # Stop threads if needed
-            for critical_svc in (Bot, HelpersManager):
+            for critical_svc in _process.ChatManager, _process.Helper:
                 try:
                     self.registry.get_service(critical_svc).wait()
                 except RuntimeError:

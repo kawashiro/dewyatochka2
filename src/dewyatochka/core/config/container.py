@@ -104,4 +104,4 @@ class ExtensionsConfig(ConfigContainer):
 
         :return str:
         """
-        return 'ext_config'
+        return 'extensions_config'
