@@ -51,8 +51,8 @@ def _get_question(category: str, log) -> str:
         if not category_questions:
             log.info('No questions left, loading new')
 
-            response = WebClient(_QUESTIONS_DOMAIN)\
-                .get(_QUESTIONS_REQUEST_URI, {'n': _QUESTIONS_PER_QUERY, 'cat': category})\
+            response = WebClient(_QUESTIONS_DOMAIN, https=True) \
+                .get(_QUESTIONS_REQUEST_URI, {'n': _QUESTIONS_PER_QUERY, 'cat': category}) \
                 .get('qst', [])
             questions = [question['qtext'] for question in response]
 

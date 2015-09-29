@@ -17,9 +17,12 @@ import importlib
 
 __all__ = ['builtin']
 
+# Mega hack for plugins loading
+# to avoids random import errors on startup
+__modules_preload = ('lxml', 'lxml.etree', 'sqlalchemy')
 
-try:
-    importlib.import_module('lxml')  # FIXME: Remove this dirty hack
-    importlib.import_module('lxml.etree')
-except ImportError:
-    pass
+for module in __modules_preload:
+    try:
+        importlib.import_module(module)
+    except ImportError as e:
+        pass
