@@ -11,12 +11,12 @@ Classes
     UndefinedServiceError -- Error on unknown service
 """
 
-__all__ = ['Application', 'Registry', 'Service', 'VoidApplication']
-
 import sys
 from abc import ABCMeta, abstractmethod
 from threading import Event
 from logging import Logger
+
+__all__ = ['Application', 'Registry', 'Service', 'VoidApplication']
 
 
 class UndefinedServiceError(RuntimeError):
@@ -202,12 +202,12 @@ class Registry:
         """
         self.__add_service(service.name(), service)
 
-    def add_service_alias(self, original: str, alias: str):
+    def add_service_alias(self, original, alias: str):
         """ Add an alias to the service
 
         Service may be accessible by two different attributes after that.
 
-        :param str original: Original name of the registered service
+        :param original: Original registered service name or class
         :param str alias: Alias to be added
         :return None:
         """
@@ -231,4 +231,5 @@ class Registry:
         :param str item:
         :return Service:
         """
+        # noinspection PyTypeChecker
         return self.get_service(item)

@@ -9,8 +9,6 @@ Functions
     update_db_from_file -- Update cartoons database from xml file specified
 """
 
-__all__ = ['recreate_storage', 'update_db_manual', 'update_db_from_file']
-
 import time
 import argparse
 import threading
@@ -19,6 +17,8 @@ from dewyatochka.core.config.exception import SectionRetrievingError
 
 from .model import Storage, StorageHelper
 from .importer import *
+
+__all__ = ['recreate_storage', 'update_db_manual', 'update_db_from_file']
 
 
 # Check updates interval. Must be greater than 24 h.

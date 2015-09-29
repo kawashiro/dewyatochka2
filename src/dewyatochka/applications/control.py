@@ -7,8 +7,6 @@ Classes
     Application -- Application class
 """
 
-__all__ = ['Application']
-
 import sys
 import argparse
 
@@ -18,6 +16,8 @@ from dewyatochka.core.config.factory import COMMON_CONFIG_DEFAULT_PATH
 from dewyatochka.core.log import get_console_logger
 from dewyatochka.core.plugin.loader import LoaderService
 from dewyatochka.core.plugin.subsystem.control import service as ctl_service
+
+__all__ = ['Application']
 
 
 # App exit codes

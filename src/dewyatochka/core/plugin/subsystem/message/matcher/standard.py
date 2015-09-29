@@ -10,12 +10,12 @@ Classes
     AccostMatcher   -- If someone is trying to talk to Dewyatochka
 """
 
-__all__ = ['AbstractMatcher', 'SimpleMatcher', 'CommandMatcher', 'AccostMatcher']
-
 import re
 from abc import ABCMeta, abstractmethod
 
 from dewyatochka.core.network.entity import Message, TextMessage
+
+__all__ = ['AbstractMatcher', 'SimpleMatcher', 'CommandMatcher', 'AccostMatcher']
 
 
 class AbstractMatcher(metaclass=ABCMeta):

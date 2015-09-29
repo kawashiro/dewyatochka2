@@ -15,12 +15,12 @@ Functions
     get_extensions_config  -- Get extensions config container instance
 """
 
-__all__ = ['COMMON_CONFIG_DEFAULT_PATH', 'CONFERENCES_CONFIG_DEFAULT_PATH', 'EXTENSIONS_CONFIG_DEFAULT_PATH',
-           'get_common_config', 'get_conferences_config', 'get_extensions_config']
-
 from dewyatochka.core.application import Application
 from dewyatochka.core.config.container import *
 from dewyatochka.core.config.source.filesystem import INIFiles
+
+__all__ = ['COMMON_CONFIG_DEFAULT_PATH', 'CONFERENCES_CONFIG_DEFAULT_PATH', 'EXTENSIONS_CONFIG_DEFAULT_PATH',
+           'get_common_config', 'get_conferences_config', 'get_extensions_config']
 
 
 # Filesystem configs default locations

@@ -15,9 +15,9 @@ Classes
     ConfigSource -- Abstract config data source
 """
 
-__all__ = ['ConfigSource', 'filesystem', 'virtual']
-
 from abc import ABCMeta, abstractmethod
+
+__all__ = ['ConfigSource', 'filesystem', 'virtual']
 
 
 class ConfigSource(metaclass=ABCMeta):

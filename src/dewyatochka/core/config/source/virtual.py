@@ -8,9 +8,9 @@ Classes
     Predefined -- Returns prepared data specified
 """
 
-__all__ = ['Empty', 'Predefined']
-
 from dewyatochka.core.config.source import ConfigSource
+
+__all__ = ['Empty', 'Predefined']
 
 
 class Predefined(ConfigSource):

@@ -13,9 +13,10 @@ Modules
     builtin -- Built-in chat / ctl commands accessible out of the box
 """
 
+import importlib
+
 __all__ = ['builtin']
 
-import importlib
 
 try:
     importlib.import_module('lxml')  # FIXME: Remove this dirty hack

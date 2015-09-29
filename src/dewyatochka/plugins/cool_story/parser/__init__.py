@@ -17,10 +17,11 @@ Attributes
     parsers -- All parsers declared
 """
 
-__all__ = ['AbstractParser', 'RawPost', 'chattyfish', 'nya_sh', 'parsers']
-
 from ._base import AbstractParser, RawPost  # Public for notations in external modules
 from . import chattyfish, nya_sh
+
+__all__ = ['AbstractParser', 'RawPost', 'chattyfish', 'nya_sh', 'parsers']
+
 
 # All parsers tuple
 parsers = (chattyfish.ItHappensParser,

@@ -11,8 +11,6 @@ Functions
     entry_point -- Plugin entry point decorator
 """
 
-__all__ = ['Loader', 'entry_point']
-
 import os
 from collections import defaultdict
 import importlib
@@ -23,6 +21,8 @@ from dewyatochka.core.plugin.base import Loader as BaseLoader
 from dewyatochka.core.plugin.base import PluginEntry
 from dewyatochka.core.plugin.base import Service
 from dewyatochka.core.config.exception import SectionRetrievingError
+
+__all__ = ['Loader', 'entry_point']
 
 
 # Entry points dict grouped by entry point type

@@ -10,9 +10,9 @@ Classes
     Conference   -- XMPP conference
 """
 
-__all__ = ['JID', 'ChatPresence', 'ChatSubject', 'Conference']
-
 from ..entity import *
+
+__all__ = ['JID', 'ChatPresence', 'ChatSubject', 'Conference']
 
 
 class JID(Participant):

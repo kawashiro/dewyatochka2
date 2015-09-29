@@ -8,14 +8,14 @@ Functions
     reindex  -- Populate stories table from scratch
 """
 
-__all__ = ['recreate', 'reindex']
-
 import argparse
 import threading
 import queue
 
 from ..model import Storage
 from ..parser import parsers, AbstractParser
+
+__all__ = ['recreate', 'reindex']
 
 
 # Stories amount to commit to db

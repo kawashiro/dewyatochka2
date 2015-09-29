@@ -10,8 +10,6 @@ Classes
     Post          -- Story post
 """
 
-__all__ = ['Storage', 'StorageHelper', 'Post', 'Tag']
-
 import random
 
 from sqlalchemy import Column, Table, Integer, String, UniqueConstraint, Index, Text, ForeignKey, desc
@@ -20,6 +18,8 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from dewyatochka.core.data.database import ObjectMeta, StoreableObject, CacheableObject, SQLIteStorage
 from dewyatochka.core.data.database import StorageHelper as StorageHelperBase
+
+__all__ = ['Storage', 'StorageHelper', 'Post', 'Tag']
 
 
 class Storage(SQLIteStorage):

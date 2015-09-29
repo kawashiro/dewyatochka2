@@ -12,10 +12,10 @@ Classes
     MessageError            -- On error message receiving
 """
 
+from .entity import Conference
+
 __all__ = ['XMPPError', 'ClientDisconnectedError', 'MessageError',
            'XMPPConnectionError', 'S2SConnectionError', 'C2SConnectionError']
-
-from .entity import Conference
 
 
 class XMPPError(RuntimeError):

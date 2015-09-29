@@ -8,6 +8,8 @@ Classes
     PluginRegistrationError -- Error on plugin loading
 """
 
+__all__ = ['PluginError', 'PluginRegistrationError']
+
 
 class PluginError(RuntimeError):
     """ Common exception related to plugins """

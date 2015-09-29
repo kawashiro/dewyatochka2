@@ -8,12 +8,12 @@ Functions
     get_console_logger -- Get console app logger
 """
 
-__all__ = ['get_daemon_logger', 'get_console_logger']
-
 from dewyatochka.core.application import Application
 
 from .service import LoggingService
 from .output import *
+
+__all__ = ['get_daemon_logger', 'get_console_logger']
 
 
 # Default message on logging start

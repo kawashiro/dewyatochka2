@@ -14,12 +14,12 @@ Attributes
     PLUGIN_TYPES     -- All plugin types list
 """
 
-__all__ = ['Environment', 'Service', 'Wrapper', 'PLUGIN_TYPE_CTL', 'PLUGIN_TYPES']
-
 from dewyatochka.core.plugin.base import PluginEntry
 from dewyatochka.core.plugin.base import Environment as BaseEnvironment
 from dewyatochka.core.plugin.base import Service as BaseService
 from dewyatochka.core.plugin.base import Wrapper as BaseWrapper
+
+__all__ = ['Environment', 'Service', 'Wrapper', 'PLUGIN_TYPE_CTL', 'PLUGIN_TYPES']
 
 
 # Plugin types provided

@@ -13,10 +13,10 @@ Functions
     release_lock -- Delete a lock-file
 """
 
-__all__ = ['ProcessLockedError', 'ProcessNotLockedError', 'acquire_lock', 'release_lock']
-
 import os
 import fcntl
+
+__all__ = ['ProcessLockedError', 'ProcessNotLockedError', 'acquire_lock', 'release_lock']
 
 
 # Global lock file handler

@@ -14,8 +14,6 @@ Attributes
     PLUGIN_TYPES        -- All plugin types list
 """
 
-__all__ = ['Environment', 'Service', 'Wrapper', 'Output', 'PLUGIN_TYPES']
-
 from dewyatochka.core.application import Registry
 from dewyatochka.core.network.entity import Message, GroupChat
 from dewyatochka.core.network.service import ChatManager
@@ -26,6 +24,8 @@ from dewyatochka.core.plugin.base import PluginEntry
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 
 from . import matcher
+
+__all__ = ['Environment', 'Service', 'Wrapper', 'Output', 'PLUGIN_TYPES']
 
 
 # Plugin types provided

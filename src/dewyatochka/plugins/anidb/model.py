@@ -15,8 +15,6 @@ Attributes
     RemoteCartoonTitle -- Remote cartoon title structure
 """
 
-__all__ = ['Storage', 'Cartoon', 'CartoonTitle', 'RemoteCartoon', 'RemoteCartoonTitle']
-
 import re
 import locale
 import random
@@ -28,6 +26,8 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from dewyatochka.core.data.database import SQLIteStorage, StoreableObject, ObjectMeta
 from dewyatochka.core.data.database import StorageHelper as StorageHelperBase
+
+__all__ = ['Storage', 'Cartoon', 'CartoonTitle', 'RemoteCartoon', 'RemoteCartoonTitle']
 
 
 # Remote data structures

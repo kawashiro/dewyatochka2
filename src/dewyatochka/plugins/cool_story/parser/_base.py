@@ -15,8 +15,6 @@ Attributes
     RawPost -- Raw post immutable structure
 """
 
-__all__ = ['AbstractParser', 'RawPost', 'parse_multiline_html']
-
 import re
 from collections import namedtuple
 from functools import reduce
@@ -27,6 +25,8 @@ from pyquery import PyQuery
 
 from dewyatochka.core.utils.http import WebClient
 
+__all__ = ['AbstractParser', 'RawPost', 'parse_multiline_html']
+
 
 # Raw post immutable structure (id: int, title: str, text: str, tags: frozenset)
 RawPost = namedtuple('RawPost', ('id', 'source', 'title', 'text', 'tags'))
@@ -36,9 +36,13 @@ __post_new_line_regexp = re.compile(r'<br\s*/?>', re.I)
 __post_sanitize_regexp = re.compile(r'<.*?>')
 
 
-# Join html paragraphs collection into one multi line string
-parse_multiline_html = lambda paragraphs: '\n'. \
-    join(
+def parse_multiline_html(paragraphs) -> str:
+    """ Join html paragraphs collection into one multi line string
+
+    :param iterable paragraphs: Paragraphs HTML nodes list
+    :return:
+    """
+    return '\n'.join(
         filter(
             None,
             map(

@@ -9,8 +9,6 @@ Classes
     ConferenceConfigError -- Error on invalid conference config
 """
 
-__all__ = ['Connection', 'ConnectionConfigError', 'ConferenceConfigError']
-
 import time
 from collections import namedtuple
 import threading
@@ -24,6 +22,8 @@ from ..entity import Message
 from . import client
 from .entity import Conference, JID
 from .exception import *
+
+__all__ = ['Connection', 'ConnectionConfigError', 'ConferenceConfigError']
 
 
 # Seconds to wait between multiple connections attempts

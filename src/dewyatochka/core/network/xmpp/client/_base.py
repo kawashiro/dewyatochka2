@@ -10,13 +10,13 @@ Classes
     Command -- Abstract command to extend client functionality
 """
 
-__all__ = ['Client', 'Command']
-
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 from dewyatochka.core.network.entity import Message
 from dewyatochka.core.network.xmpp.entity import JID
 from dewyatochka.core.network.xmpp.exception import C2SConnectionError, ClientDisconnectedError
+
+__all__ = ['Client', 'Command']
 
 
 class Command(metaclass=ABCMeta):

@@ -14,17 +14,16 @@ Classes
     StorageHelper       -- Sync one-threaded storage wrapper
 """
 
-__all__ = ['ObjectMeta', 'StoreableObject', 'CacheableObject', 'UnmappedFieldError',
-           'StorageMeta', 'AbstractStorage', 'SQLIteStorage', 'StorageHelper']
-
-
 import os
 import threading
 import queue
-from abc import ABCMeta, abstractproperty, abstractmethod
+from abc import ABCMeta, abstractproperty
 
 from sqlalchemy import Table, MetaData, create_engine
 from sqlalchemy.orm import mapper, sessionmaker, Session, reconstructor
+
+__all__ = ['ObjectMeta', 'StoreableObject', 'CacheableObject', 'UnmappedFieldError',
+           'StorageMeta', 'AbstractStorage', 'SQLIteStorage', 'StorageHelper']
 
 
 class UnmappedFieldError(AttributeError):
@@ -71,7 +70,7 @@ class ObjectMeta(type, metaclass=ABCMeta):
         raise UnmappedFieldError('Field %s is not mapped to an object %s' % (item, cls))
 
 
-class StoreableObject():
+class StoreableObject:
     """ Object storeable in db """
 
     # Primary key
@@ -276,7 +275,7 @@ class SQLIteStorage(AbstractStorage):
         super().recreate()
 
 
-class StorageHelper():
+class StorageHelper:
     """ Sync one-threaded storage wrapper
 
     Processes storage requests queue
@@ -288,7 +287,7 @@ class StorageHelper():
     # Event if helper is not temporary locked and can perform tasks
     _enabled = None
 
-    class Task():
+    class Task:
         """ Storage helper task """
         def __init__(self, callback):
             """ Init a new task with non result assigned

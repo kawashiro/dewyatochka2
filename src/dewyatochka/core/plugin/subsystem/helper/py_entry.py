@@ -7,10 +7,10 @@ Functions
     helper -- Decorator for helper plugin
 """
 
-__all__ = ['helper']
-
 from dewyatochka.core.plugin.loader.internal import entry_point
 from .service import PLUGIN_TYPE_HELPER
+
+__all__ = ['helper']
 
 
 def helper(fn=None, *, services=None) -> callable:

@@ -2,11 +2,11 @@
 
 """ e-hentai galleries adapter (simple search by keywords) """
 
-__all__ = []
-
 import random
 
 from dewyatochka.core.plugin import chat_command
+
+__all__ = []
 
 
 # Domain to fetch galleries from

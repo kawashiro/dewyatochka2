@@ -11,14 +11,15 @@ Attributes
     NYA_SH_SOURCE_NAME -- Source name constant
 """
 
-__all__ = ['Parser', 'NYA_SH_SOURCE_NAME']
-
+import html
 from html.parser import HTMLParser
 
 from lxml.html import HtmlElement
 from pyquery import PyQuery
 
 from ._base import *
+
+__all__ = ['Parser', 'NYA_SH_SOURCE_NAME']
 
 
 # Source name constant
@@ -41,22 +42,22 @@ class Parser(AbstractParser):
         """
         return NYA_SH_SOURCE_NAME
 
-    def _parse_posts_collection(self, html: PyQuery) -> list:
+    def _parse_posts_collection(self, html_: PyQuery) -> list:
         """ Get posts HTMLElement[] collection
 
-        :param PyQuery html: Page PyQuery object
+        :param PyQuery html_: Page PyQuery object
         :return list:
         """
-        return html('div.q')
+        return html_('div.q')
 
-    def _parse_pages_collection(self, html: PyQuery) -> list:
+    def _parse_pages_collection(self, html_: PyQuery) -> list:
         """ Get pages urls for indexation
 
-        :param PyQuery html: Page PyQuery object
+        :param PyQuery html_: Page PyQuery object
         :return list:
         """
         pages_links = []
-        links_list = html('div.pages *')
+        links_list = html_('div.pages *')
 
         is_next_link = False
         for link in links_list:
@@ -76,6 +77,6 @@ class Parser(AbstractParser):
         post_pyq_el = PyQuery(html_element)
 
         story_id = int(post_pyq_el('div.sm a b')[0].text.lstrip('#'))
-        story_text = self.__html_parser.unescape(parse_multiline_html(post_pyq_el('div.content')))
+        story_text = html.unescape(parse_multiline_html(post_pyq_el('div.content')))
 
         return RawPost(story_id, self.name, '', story_text, frozenset())

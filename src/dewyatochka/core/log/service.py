@@ -13,11 +13,11 @@ Attributes
     LEVEL_NAME_PROGRESS -- Special level no for progress messages (text repr.)
 """
 
-__all__ = ['LoggingService', 'LoggerWrapper', 'LEVEL_PROGRESS', 'LEVEL_NAME_PROGRESS']
-
 import logging
 
 from dewyatochka.core.application import Application, Service
+
+__all__ = ['LoggingService', 'LoggerWrapper', 'LEVEL_PROGRESS', 'LEVEL_NAME_PROGRESS']
 
 
 # Special level no for progress messages
@@ -25,7 +25,7 @@ LEVEL_PROGRESS = 25
 LEVEL_NAME_PROGRESS = 'PROGRESS'
 
 
-class LoggerWrapper():
+class LoggerWrapper:
     """ Extended logging.Logger """
 
     # Already instantiated loggers by name

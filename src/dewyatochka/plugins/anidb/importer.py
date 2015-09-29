@@ -10,8 +10,6 @@ Functions
     update_database -- Update database from remote file
 """
 
-__all__ = ['parse_xml_file', 'import_xml_file', 'fetch_xml_file', 'update_database']
-
 import os
 import struct
 import time
@@ -23,6 +21,8 @@ from dewyatochka.core.plugin.base import PluginLogService
 
 from .model import RemoteCartoon, RemoteCartoonTitle
 from .entry import StorageHelper
+
+__all__ = ['parse_xml_file', 'import_xml_file', 'fetch_xml_file', 'update_database']
 
 
 # Remote file location

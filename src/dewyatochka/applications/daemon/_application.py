@@ -9,8 +9,6 @@ Classes
     DaemonApp -- Application implementation
 """
 
-__all__ = ['DaemonApp']
-
 import sys
 import argparse
 
@@ -25,6 +23,8 @@ from dewyatochka.core.plugin.subsystem.helper import service as h_service
 from dewyatochka.core.plugin.loader import LoaderService
 
 from . import _process
+
+__all__ = ['DaemonApp']
 
 
 # App exit codes

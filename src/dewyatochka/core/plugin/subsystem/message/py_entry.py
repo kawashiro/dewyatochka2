@@ -9,11 +9,11 @@ Functions
     chat_accost  -- Decorator for chat accost plugin
 """
 
-__all__ = ['chat_command', 'chat_message', 'chat_accost']
-
 from dewyatochka.core.plugin.loader.internal import entry_point
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 from .matcher import PLUGIN_TYPE_COMMAND, PLUGIN_TYPE_MESSAGE, PLUGIN_TYPE_ACCOST
+
+__all__ = ['chat_command', 'chat_message', 'chat_accost']
 
 
 # Commands already in use

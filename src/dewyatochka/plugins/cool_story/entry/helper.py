@@ -11,12 +11,12 @@ Functions
     stories_indexer -- Live stories incremental indexer
 """
 
-__all__ = ['StorageHelper', 'stories_indexer']
-
 import time
 
 from ..model import StorageHelper
 from ..parser import parsers
+
+__all__ = ['StorageHelper', 'stories_indexer']
 
 
 # Stories updates check interval
@@ -45,8 +45,9 @@ def stories_indexer(registry):
                 if story.id <= last_id:
                     log.debug('Story #%d from %s is already indexed, completed', story.id, story.source)
                     break
-                storage_task = lambda s: s.add_post(story.source, story.id, story.title, story.text, story.tags)
-                StorageHelper.run_task(storage_task)
+                StorageHelper.run_task(
+                    lambda s: s.add_post(story.source, story.id, story.title, story.text, story.tags)
+                )
                 new_stories += 1
                 log.debug('Indexed new story #%d from %s', story.id, story.source)
             if new_stories:

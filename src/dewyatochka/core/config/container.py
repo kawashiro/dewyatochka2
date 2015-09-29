@@ -10,11 +10,11 @@ Classes
     ExtensionsConfig  -- Container with options accessible to extensions
 """
 
-__all__ = ['ConfigContainer', 'CommonConfig', 'ConferencesConfig', 'ExtensionsConfig']
-
 from dewyatochka.core.application import Application, Service
 from dewyatochka.core.config.source import ConfigSource
 from dewyatochka.core.config.exception import SectionRetrievingError
+
+__all__ = ['ConfigContainer', 'CommonConfig', 'ConferencesConfig', 'ExtensionsConfig']
 
 
 class ConfigContainer(Service):

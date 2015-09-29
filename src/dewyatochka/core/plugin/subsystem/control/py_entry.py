@@ -13,6 +13,9 @@ from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 
 from .service import PLUGIN_TYPE_CTL
 
+__all__ = ['ctl']
+
+
 # Commands already in use
 _used_commands = set()
 

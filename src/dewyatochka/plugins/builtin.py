@@ -2,8 +2,6 @@
 
 """ Some chat / ctl commands accessible by default """
 
-__all__ = []
-
 import time
 
 from dewyatochka import __version__
@@ -13,6 +11,8 @@ from dewyatochka.core.plugin.loader import LoaderService
 from dewyatochka.core.plugin.subsystem.control.service import Service as CtlService
 from dewyatochka.core.plugin.subsystem.message.service import Service as MSysService
 from dewyatochka.core.utils.chat import get_activity_info
+
+__all__ = []
 
 
 @chat_message(regular=True, own=True)
@@ -41,7 +41,7 @@ def activity_input(inp, **_):
 
 @chat_command('help', services=(LoaderService, MSysService))
 @chat_command('info', services=(LoaderService, MSysService))
-class HelpMessage():
+class HelpMessage:
     """ Show help message """
 
     def __init__(self):
@@ -95,7 +95,7 @@ def version(outp, **_):
 
 
 @ctl('list', 'List all the commands available', services=(LoaderService, CtlService))
-class CommandsList():
+class CommandsList:
     """ Show help message """
 
     def __init__(self):

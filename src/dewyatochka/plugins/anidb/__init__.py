@@ -9,9 +9,9 @@ Modules
     importer -- AniDB import logic
 """
 
-__all__ = ['entry', 'model', 'importer']
-
 from dewyatochka.core import plugin
+
+__all__ = ['entry', 'model', 'importer']
 
 
 @plugin.ctl('import-file', 'Update cartoons database from xml file specified')

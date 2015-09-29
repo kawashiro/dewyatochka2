@@ -12,9 +12,9 @@ Modules
     model -- Plugin logic impl
 """
 
-__all__ = ['model', 'parser', 'entry']
-
 from dewyatochka.core import plugin
+
+__all__ = ['model', 'parser', 'entry']
 
 
 @plugin.chat_command('coolstory')

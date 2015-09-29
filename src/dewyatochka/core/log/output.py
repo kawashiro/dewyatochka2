@@ -10,8 +10,6 @@ Classes
     NullHandler   -- Empty handler (stub)
 """
 
-__all__ = ['Handler', 'STDOUTHandler', 'FileHandler', 'NullHandler']
-
 import sys
 import logging
 import fcntl
@@ -21,6 +19,8 @@ from abc import ABCMeta, abstractmethod
 from threading import Lock
 
 from .service import LEVEL_PROGRESS, LEVEL_NAME_PROGRESS
+
+__all__ = ['Handler', 'STDOUTHandler', 'FileHandler', 'NullHandler']
 
 
 class Handler(metaclass=ABCMeta):

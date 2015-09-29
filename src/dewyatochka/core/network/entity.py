@@ -10,9 +10,9 @@ Classes
     GroupChat   -- Group chat params container
 """
 
-__all__ = ['Participant', 'Message', 'TextMessage', 'GroupChat']
-
 from abc import ABCMeta, abstractmethod, abstractproperty
+
+__all__ = ['Participant', 'Message', 'TextMessage', 'GroupChat']
 
 
 class _Entity(metaclass=ABCMeta):

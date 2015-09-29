@@ -9,6 +9,6 @@ Classes
     Application -- dewyatochkad application
 """
 
-__all__ = ['Application']
-
 from ._application import DaemonApp as Application  # Alias for a common interface
+
+__all__ = ['Application']

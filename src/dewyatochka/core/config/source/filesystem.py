@@ -8,14 +8,14 @@ Classes
     INIFiles   -- Non-recursive INI-files parser
 """
 
-__all__ = ['Filesystem', 'INIFiles']
-
 from os import path, listdir
 from abc import ABCMeta, abstractmethod, abstractproperty
 import configparser
 
 from dewyatochka.core.config.source import ConfigSource
 from dewyatochka.core.config.exception import ReadError
+
+__all__ = ['Filesystem', 'INIFiles']
 
 
 class Filesystem(ConfigSource, metaclass=ABCMeta):

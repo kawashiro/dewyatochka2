@@ -9,14 +9,14 @@ Functions
     keyword_story_selector    -- Find a story by keyword and yield it
 """
 
-__all__ = ['cool_story_command_handler', 'cool_joke_command_handler', 'keyword_story_selector']
-
 import random
 
 from ..parser.chattyfish import ZADOLBA_LI_SOURCE_NAME, ITHAPPENS_SOURCE_NAME
 from ..parser.nya_sh import NYA_SH_SOURCE_NAME
 
 from .helper import StorageHelper
+
+__all__ = ['cool_story_command_handler', 'cool_joke_command_handler', 'keyword_story_selector']
 
 
 def cool_story_command_handler(outp, **_):

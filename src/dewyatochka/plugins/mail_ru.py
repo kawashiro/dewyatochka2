@@ -2,8 +2,6 @@
 
 """ Ask a question from mail.ru """
 
-__all__ = []
-
 import time
 import logging
 import random
@@ -12,6 +10,8 @@ from collections import defaultdict
 
 from dewyatochka.core import plugin
 from dewyatochka.core.utils import chat
+
+__all__ = []
 
 
 # Cached questions lists by categories

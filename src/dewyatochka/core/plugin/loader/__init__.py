@@ -14,11 +14,11 @@ Classes
     LoaderService -- Simple loader service
 """
 
-__all__ = ['internal', 'LoaderService']
-
 from dewyatochka.core.application import Service
 
 from . import internal
+
+__all__ = ['internal', 'LoaderService']
 
 
 class LoaderService(Service):

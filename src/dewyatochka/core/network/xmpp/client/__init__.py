@@ -13,9 +13,9 @@ Functions
     create -- Get configured client instance
 """
 
-__all__ = ['create', 'sleekxmpp']
-
 from ._base import Client
+
+__all__ = ['create', 'sleekxmpp']
 
 
 def create(host: str, login: str, password: str, port=5222, location='') -> Client:

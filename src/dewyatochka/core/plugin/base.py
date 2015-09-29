@@ -17,8 +17,6 @@ Attributes
         and attributes which plugin has been registered with
 """
 
-__all__ = ['Environment', 'Service', 'Loader', 'Wrapper', 'PluginEntry', 'PluginLogService', 'PluginConfigService']
-
 from collections import namedtuple
 from abc import ABCMeta, abstractmethod, abstractproperty
 
@@ -26,6 +24,8 @@ from dewyatochka.core.application import Registry, Application
 from dewyatochka.core.application import Service as AppService
 
 from .exceptions import PluginRegistrationError
+
+__all__ = ['Environment', 'Service', 'Loader', 'Wrapper', 'PluginEntry', 'PluginLogService', 'PluginConfigService']
 
 
 # Registered plugin structure

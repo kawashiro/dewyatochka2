@@ -14,6 +14,6 @@ Functions
     get_console_logger -- Get console app logger
 """
 
-__all__ = ['service', 'output', 'factory', 'get_daemon_logger', 'get_console_logger']
-
 from .factory import get_console_logger, get_daemon_logger
+
+__all__ = ['service', 'output', 'factory', 'get_daemon_logger', 'get_console_logger']

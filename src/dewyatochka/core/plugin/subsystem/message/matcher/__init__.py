@@ -23,10 +23,10 @@ Attributes
     PLUGIN_TYPE_ACCOST  -- Chat accost plugin type
 """
 
+from .standard import *
+
 __all__ = ['standard', 'factory', 'UnknownMatcherError',
            'PLUGIN_TYPE_COMMAND', 'PLUGIN_TYPE_MESSAGE', 'PLUGIN_TYPE_ACCOST']
-
-from .standard import *
 
 
 # Plugins types

@@ -7,12 +7,12 @@ Functions
     detach -- Detach a process from console
 """
 
-__all__ = ['detach']
-
 import os
 import signal
 
 from . import _utils
+
+__all__ = ['detach']
 
 
 def detach(sigterm_handler=None):

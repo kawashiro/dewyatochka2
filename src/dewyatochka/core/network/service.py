@@ -8,13 +8,13 @@ Classes
     ConnectionManager -- Serves multiple connections
 """
 
-__all__ = ['ChatManager', 'ConnectionManager']
-
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 from dewyatochka.core.application import Application, Service
 
 from .entity import Message, GroupChat
+
+__all__ = ['ChatManager', 'ConnectionManager']
 
 
 class ChatManager(Service, metaclass=ABCMeta):

@@ -13,14 +13,14 @@ Attributes
     ITHAPPENS_SOURCE_NAME  -- ithappens.me source name constant
 """
 
-__all__ = ['ZadolbaLiParser', 'ItHappensParser', 'ZADOLBA_LI_SOURCE_NAME', 'ITHAPPENS_SOURCE_NAME']
-
-from abc import abstractproperty
+from abc import ABCMeta, abstractproperty
 
 from lxml.html import HtmlElement
 from pyquery import PyQuery
 
 from ._base import *
+
+__all__ = ['ZadolbaLiParser', 'ItHappensParser', 'ZADOLBA_LI_SOURCE_NAME', 'ITHAPPENS_SOURCE_NAME']
 
 
 # Source names constants
@@ -28,7 +28,7 @@ ZADOLBA_LI_SOURCE_NAME = 'zadolba.li'
 ITHAPPENS_SOURCE_NAME = 'ithappens.me'
 
 
-class _BaseParser(AbstractParser):
+class _BaseParser(AbstractParser, metaclass=ABCMeta):
     """ Common ChattyFish logic (all projects use the same markup) """
 
     @abstractproperty

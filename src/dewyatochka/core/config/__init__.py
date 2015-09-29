@@ -19,7 +19,7 @@ Functions
     get_extensions_config  -- Import from dewyatochka.core.config.factory
 """
 
+from .factory import get_common_config, get_conferences_config, get_extensions_config
+
 __all__ = ['container', 'exception', 'factory', 'source',
            'get_common_config', 'get_conferences_config', 'get_extensions_config']
-
-from .factory import get_common_config, get_conferences_config, get_extensions_config

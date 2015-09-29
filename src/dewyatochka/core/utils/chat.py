@@ -11,11 +11,11 @@ Functions
     get_activity_info -- Get conference activity info by JID
 """
 
-__all__ = ['ActivityInfo', 'get_activity_info']
-
 from collections import defaultdict
 
 from dewyatochka.core.network.entity import GroupChat
+
+__all__ = ['ActivityInfo', 'get_activity_info']
 
 
 # Conference jid -> last activity

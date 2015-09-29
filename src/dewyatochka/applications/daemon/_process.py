@@ -8,8 +8,6 @@ Classes
     ChatManager -- Chat manager service implementation
 """
 
-__all__ = ['Helper', 'ChatManager']
-
 import threading
 from functools import reduce
 
@@ -20,6 +18,9 @@ from dewyatochka.core.network.entity import Message, GroupChat
 from dewyatochka.core.plugin.subsystem.helper.service import Environment
 from dewyatochka.core.plugin.subsystem.helper.service import Service as HService
 from dewyatochka.core.plugin.subsystem.message.service import Service as MService
+
+__all__ = ['Helper', 'ChatManager']
+
 
 # Interval between helpers state checks
 _HELPER_PERSISTENT_CHECK_INTERVAL = 60

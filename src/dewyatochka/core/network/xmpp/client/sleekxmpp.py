@@ -9,8 +9,6 @@ Classes
     PingCommand -- XMPP ping
 """
 
-__all__ = ['Client', 'MUCCommand', 'PingCommand']
-
 import threading
 import queue
 
@@ -24,6 +22,8 @@ from . import _base
 from dewyatochka.core.network.entity import Message, TextMessage
 from dewyatochka.core.network.xmpp.entity import *
 from dewyatochka.core.network.xmpp.exception import *
+
+__all__ = ['Client', 'MUCCommand', 'PingCommand']
 
 
 # Required sleekxmpp plugins names
@@ -303,7 +303,7 @@ class PingCommand(_base.Command):
     def _do_ping(self, destination=None, timeout=None) -> int:
         """ Ping destination by jid
 
-        :param JID destination: Destination JID or None to check C2S connection
+        :param Conference destination: Destination JID or None to check C2S connection
         :param int timeout: Time to wait for a response, in seconds
         :return int:
         """
@@ -325,7 +325,7 @@ class PingCommand(_base.Command):
     def __call__(self, destination=None, timeout=None) -> int:
         """ Ping destination by jid
 
-        :param JID destination: Destination JID or None to check C2S connection
+        :param Conference destination: Destination JID or None to check C2S connection
         :param int timeout: Time to wait for a response, in seconds
         :return int:
         """

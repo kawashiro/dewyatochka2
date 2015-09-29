@@ -13,8 +13,6 @@ Attributes
     TYPE_TEXT -- text/plain
 """
 
-__all__ = ['WebClient']
-
 from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
 from urllib.parse import urlencode
 import json
@@ -22,11 +20,14 @@ from html.parser import HTMLParser
 
 from dewyatochka import __version__
 
+__all__ = ['WebClient']
+
+
 try:
     from pyquery import PyQuery
 
 except ImportError:
-    class PyQuery():
+    class PyQuery:
         """ Just a stub """
         def __init__(self, html):
             self._html = html
