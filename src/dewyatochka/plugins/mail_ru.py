@@ -82,7 +82,7 @@ def talk_command_handler(outp, registry, **_):
     outp.say(_get_question(category, registry.log))
 
 
-@plugin.helper(services=['bot'])
+@plugin.schedule('@minutely', services=['bot'])
 def occasional_question(registry):
     """ Ask a question if conference is too silent
 
@@ -93,15 +93,12 @@ def occasional_question(registry):
     silence_interval = int(registry.config.get('silence_interval', _DEFAULT_SILENCE_INTERVAL))
     log = registry.log
 
-    while True:
-        time.sleep(60)
+    log.debug('Checking conferences state')
+    for conference in registry.bot.alive_chats:
+        last_message_ts = chat.get_activity_info(conference).last_message
 
-        log.debug('Checking conferences state')
-        for conference in registry.bot.alive_conferences:
-            last_message_ts = chat.get_activity_info(conference).last_message
-
-            if last_message_ts + silence_interval < time.time():
-                log.info('Conference %s is too silent (last msg.: %d), waking up', conference, last_message_ts)
-                registry.bot.send_muc(_get_question(category, log), conference)
-            else:
-                log.debug('Conference %s postponed (last msg.: %d)', conference, last_message_ts)
+        if last_message_ts + silence_interval < time.time():
+            log.info('Conference %s is too silent (last msg.: %d), waking up', conference, last_message_ts)
+            registry.bot.send_muc(_get_question(category, log), conference)
+        else:
+            log.debug('Conference %s postponed (last msg.: %d)', conference, last_message_ts)

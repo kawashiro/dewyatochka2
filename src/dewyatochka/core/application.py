@@ -47,15 +47,20 @@ class Application(metaclass=ABCMeta):
         """
         return self._registry
 
-    def depend(self, dependent_service):
+    def depend(self, dependent_service, *aliases):
         """ Add a dependent service to a registry
 
         :param dependent_service: Subclass of Service
+        :param tuple aliases:
         :return None:
         """
         if isinstance(dependent_service, type):
             dependent_service = dependent_service(self)
+
         self.registry.add_service(dependent_service)
+
+        for alias in aliases:
+            self.registry.add_service_alias(dependent_service, alias)
 
     @abstractmethod
     def run(self, args: list):  # pragma: no cover

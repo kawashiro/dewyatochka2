@@ -47,7 +47,7 @@ def recreate(**kwargs):
     entry.update_db_manual(**kwargs)
 
 
-@plugin.helper
+@plugin.daemon
 def storage_helper(**kwargs):
     """ Daemon helper to check for updates
 
@@ -58,7 +58,7 @@ def storage_helper(**kwargs):
     StorageHelper(Storage(kwargs['registry'].config.get('db_path')))()
 
 
-@plugin.helper
+@plugin.schedule('@daily')
 def updates_helper(**kwargs):
     """ Daemon helper to check for updates
 

@@ -81,20 +81,23 @@ class DaemonApp(Application):
             self.depend(m_service.Service)
             self.depend(h_service.Service)
 
-            self.depend(_process.Helper)
-            self.depend(_process.ChatManager)
+            self.depend(_process.Bootstrap)
+            self.depend(_process.Scheduler)
+            self.depend(_process.Daemon)
+            self.depend(_process.ChatManager, 'bot')
             self.depend(xmpp.Connection)
-            self.registry.add_service_alias(_process.ChatManager, 'bot')
+
+            self.registry.message_plugin_provider.load()
+            self.registry.helper_plugin_provider.load()
+
+            self.registry.bootstrap.run()
+            self.registry.daemon.start()
+            self.registry.scheduler.start()
+            self.registry.chat_manager.start()
 
             if not params.nodaemon:
                 daemon.detach(lambda *_: self.stop(_EXIT_CODE_OK))
                 daemon.acquire_lock(self.registry.config.global_section.get('lock', _DEFAULT_LOCK_FILE_PATH))
-
-            self.registry.get_service(m_service.Service).load()
-            self.registry.get_service(h_service.Service).load()
-
-            self.registry.chat_manager.start()
-            self.registry.helper.start()
 
             self.wait()
 
@@ -108,7 +111,7 @@ class DaemonApp(Application):
 
         finally:
             # Stop threads if needed
-            for critical_svc in _process.ChatManager, _process.Helper:
+            for critical_svc in _process.ChatManager, _process.Scheduler, _process.Daemon:
                 try:
                     self.registry.get_service(critical_svc).wait()
                 except RuntimeError:

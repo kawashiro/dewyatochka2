@@ -21,10 +21,6 @@ from .importer import *
 __all__ = ['recreate_storage', 'update_db_manual', 'update_db_from_file']
 
 
-# Check updates interval. Must be greater than 24 h.
-_UPDATES_CHECK_INTERVAL = 87000
-
-
 def _parse_ctl_args(argv: list, require_xml_param=False):
     """ Parse control utility cmd args
 
@@ -101,9 +97,7 @@ def update_db_auto(registry):
     :param registry:
     :return None:
     """
-    while True:
-        update_database(registry.log)
-        time.sleep(_UPDATES_CHECK_INTERVAL)
+    update_database(registry.log)
 
 
 def update_db_from_file(registry, argv: list):

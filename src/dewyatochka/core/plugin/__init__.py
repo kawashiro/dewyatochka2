@@ -16,15 +16,19 @@ Modules
 
 Functions
 =========
-    helper       -- Decorator for helper plugin
+    ctl          -- dewyatochkactl command handler decorator
+    daemon       -- Register this function as a background helper
+    bootstrap    -- Register this function to be executed once on application start
+    schedule     -- Register this function to be executed by a schedule
     chat_message -- Decorator for chat message plugin
     chat_command -- Decorator for chat command plugin
-    ctl          -- dewyatochkactl command handler decorator
+    chat_accost  -- Decorator for chat accost plugin
 """
 
 from .subsystem.helper.py_entry import *
 from .subsystem.message.py_entry import *
 from .subsystem.control.py_entry import *
 
-__all__ = ['loader', 'subsystem', 'base', 'exceptions',
-           'helper', 'chat_message', 'chat_command', 'ctl']
+__all__ = ['loader', 'subsystem', 'base', 'exceptions', 'ctl',
+           'daemon', 'bootstrap', 'schedule',
+           'chat_message', 'chat_command', 'chat_accost']

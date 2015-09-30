@@ -85,11 +85,66 @@ class Environment:
                 logger.error('Plugin %s failed: %s', self, e)
 
 
+class Wrapper:
+    """ Wraps a plugin into environment """
+
+    def __init__(self, service):
+        """ Create plugin wrapper for plugin service
+
+        :param Service service:
+        :return:
+        """
+        self._service = service
+
+    def _get_registry(self, entry: PluginEntry) -> Registry:
+        """ Create a registry for plugin
+
+        :param list dependencies:
+        :return registry:
+        """
+        plugin_registry = Registry()
+        services = entry.params.get('services')
+
+        if services is not None:
+            for service in services:
+                try:
+                    service_obj = self._service.application.registry.get_service(service)
+                    plugin_registry.add_service(service_obj)
+                    if isinstance(service, str) and service != service_obj.name():
+                        # Requested service by alias, so alias it for plugin too
+                        plugin_registry.add_service_alias(service_obj, service)
+
+                except Exception as e:
+                    raise PluginRegistrationError(
+                        'Failed to get add dependency %s for plugin %s: %s' % (repr(service), repr(entry.plugin), e)
+                    )
+
+        plugin_conf_section = entry.plugin.__module__.split('.')[-1]
+        plugin_conf_data = self._service.application.registry.extensions_config.section(plugin_conf_section)
+        config_container = PluginConfigService(self._service.application, plugin_conf_data)
+        plugin_registry.add_service(config_container)
+
+        plugin_registry.add_service(PluginLogService(self._service.application, entry.plugin))
+
+        return plugin_registry
+
+    def wrap(self, entry: PluginEntry) -> Environment:
+        """ Wrap plugin into it's environment
+
+        :param PluginEntry entry: Raw plugin entry
+        :return Environment:
+        """
+        return Environment(entry.plugin, self._get_registry(entry))
+
+
 class Service(AppService, metaclass=ABCMeta):
     """ Plugins container service
 
     Provides access to plugins collections loaded
     """
+
+    # Plugin wrapper class
+    _wrapper_class = Wrapper
 
     def __init__(self, application: Application):
         """ Create plugin container service
@@ -97,7 +152,9 @@ class Service(AppService, metaclass=ABCMeta):
         :param Application application:
         """
         super().__init__(application)
+
         self._plugins = None
+        self.__wrapper = None
 
     def load(self):
         """ Load plugins
@@ -105,19 +162,26 @@ class Service(AppService, metaclass=ABCMeta):
         :return None:
         """
         self._plugins = []
-        wrapper = self._wrapper
 
-        for loader in self.application.registry.plugins.loaders:
+        for loader in self.application.registry.plugins_loader.loaders:
             for entry in loader.load(self):
                 try:
-                    self._plugins.append(wrapper.wrap(entry))
+                    self._register_plugin(entry)
                 except Exception as e:
                     self.log.error('Failed to register plugin %s.%s: %s',
                                    entry.plugin.__module__,
                                    entry.plugin.__name__,
                                    e)
 
-        self.log.debug('Loaded %d %s plugins', len(self._plugins), self.name())
+        self.log.debug('Loaded %d %s plugins', len(self._plugins), self.name().split('_')[0])
+
+    def _register_plugin(self, entry: PluginEntry):
+        """ Register a single plugin
+
+        :param PluginEntry entry:
+        :return None:
+        """
+        self._plugins.append(self._wrapper.wrap(entry))
 
     @abstractproperty
     def accepts(self) -> list:  # pragma: no cover
@@ -133,7 +197,10 @@ class Service(AppService, metaclass=ABCMeta):
 
         :return Wrapper:
         """
-        return Wrapper(self)
+        if self.__wrapper is None:
+            self.__wrapper = self._wrapper_class(self)
+
+        return self.__wrapper
 
     @property
     def plugins(self) -> list:
@@ -158,54 +225,6 @@ class Loader(metaclass=ABCMeta):
         :return list: List of PluginEntry
         """
         pass
-
-
-class Wrapper:
-    """ Wraps a plugin into environment """
-
-    def __init__(self, service: Service):
-        """ Create plugin wrapper for plugin service
-
-        :param Service service:
-        :return:
-        """
-        self._service = service
-
-    def _get_registry(self, entry: PluginEntry) -> Registry:
-        """ Create a registry for plugin
-
-        :param list dependencies:
-        :return registry:
-        """
-        plugin_registry = Registry()
-        services = entry.params.get('services')
-
-        if services is not None:
-            for service in services:
-                try:
-                    service_obj = self._service.application.registry.get_service(service)
-                    plugin_registry.add_service(service_obj)
-                except Exception as e:
-                    raise PluginRegistrationError(
-                        'Failed to get add dependency %s for plugin %s: %s' % (repr(service), repr(entry.plugin), e)
-                    )
-
-        plugin_conf_section = entry.plugin.__module__.split('.')[-1]
-        plugin_conf_data = self._service.application.registry.extensions_config.section(plugin_conf_section)
-        config_container = PluginConfigService(self._service.application, plugin_conf_data)
-        plugin_registry.add_service(config_container)
-
-        plugin_registry.add_service(PluginLogService(self._service.application, entry.plugin))
-
-        return plugin_registry
-
-    def wrap(self, entry: PluginEntry) -> Environment:
-        """ Wrap plugin into it's environment
-
-        :param PluginEntry entry: Raw plugin entry
-        :return Environment:
-        """
-        return Environment(entry.plugin, self._get_registry(entry))
 
 
 class PluginLogService(AppService):

@@ -38,4 +38,4 @@ class LoaderService(Service):
 
         :return str:
         """
-        return 'plugins'
+        return 'plugins_loader'

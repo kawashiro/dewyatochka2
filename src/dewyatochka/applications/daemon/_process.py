@@ -4,22 +4,24 @@
 
 Classes
 =======
-    Helper      -- Manages helper threads required by plugins
+    Daemon      -- Manages daemon threads required by plugins
+    Scheduler   -- Launchers helper plugins on a schedule
     ChatManager -- Chat manager service implementation
+    Bootstrap   -- Launches bootstrap tasks
 """
 
+import time
 import threading
 from functools import reduce
+from abc import ABCMeta, abstractmethod
 
 from dewyatochka.core.application import Application, Service
 from dewyatochka.core.network.service import ConnectionManager
 from dewyatochka.core.network.service import ChatManager as ChatManager_
 from dewyatochka.core.network.entity import Message, GroupChat
 from dewyatochka.core.plugin.subsystem.helper.service import Environment
-from dewyatochka.core.plugin.subsystem.helper.service import Service as HService
-from dewyatochka.core.plugin.subsystem.message.service import Service as MService
 
-__all__ = ['Helper', 'ChatManager']
+__all__ = ['Scheduler', 'Daemon', 'ChatManager', 'Bootstrap']
 
 
 # Interval between helpers state checks
@@ -39,8 +41,8 @@ def _thread_wait(thread: threading.Thread, log=None):
         thread.join()
 
 
-class Helper(Service):
-    """ Manages helper threads required by plugins """
+class _HelperService(Service, metaclass=ABCMeta):
+    """ Abstract helper service """
 
     def __init__(self, application: Application):
         """ Initialize service & attach an application to it
@@ -49,10 +51,10 @@ class Helper(Service):
         """
         super().__init__(application)
 
-        self._thread = threading.Thread(name=self.name() + '[Monitor]', target=self._run)
+        self._thread = threading.Thread(name=self.name() + '[Main]', target=self._run)
 
     def start(self):
-        """ Start manager
+        """ Start service
 
         :return None:
         """
@@ -64,6 +66,94 @@ class Helper(Service):
         :return None:
         """
         _thread_wait(self._thread, self.log)
+
+    @abstractmethod
+    def _run(self):
+        """ Do job
+
+        :return None:
+        """
+        pass
+
+    def _launch_plugin(self, plugin: Environment) -> threading.Thread:
+        """ Start helper plugin fn in separate thread
+
+        :param Environment plugin:
+        :return threading.Thread:
+        """
+        thread = threading.Thread(
+            name=self._get_thread_name(plugin),
+            target=plugin,
+            kwargs={'logger': self.log},
+            daemon=True
+        )
+        thread.start()
+        return thread
+
+    @classmethod
+    def _get_thread_name(cls, plugin: Environment) -> str:
+        """ Get thread name for the helper
+
+        :param Environment env:
+        :return str:
+        """
+        return '%s[%s]' % (cls.name(), plugin)
+
+
+class Scheduler(_HelperService):
+    """ Launchers helper plugins on a schedule """
+
+    def _run(self):
+        """ Perform tasks
+
+        :return None:
+        """
+        try:
+            while True:
+                self.application.sleep(60 - time.time() % 60)
+                if not self.application.running:
+                    break
+                self._run_scheduled_tasks()
+
+        except Exception as e:
+            self.application.fatal_error(__name__, e)
+
+    def _run_scheduled_tasks(self):
+        """ Start registered scheduler tasks
+
+        :return None:
+        """
+        plugins_list = self.application \
+            .registry \
+            .helper_plugin_provider \
+            .schedule_plugins
+
+        for plugin in plugins_list:
+            self.log.debug('Starting scheduled task %s', plugin)
+            self._launch_plugin(plugin)
+
+    @classmethod
+    def name(cls) -> str:
+        """ Get service unique name
+
+        :return str:
+        """
+        return 'scheduler'
+
+
+class Daemon(_HelperService):
+    """ Manages daemon threads required by plugins """
+
+    @property
+    def _daemon_plugins(self) -> list:
+        """ Daemon plugins list
+
+        :return list:
+        """
+        return self.application \
+            .registry \
+            .helper_plugin_provider \
+            .daemon_plugins
 
     def _run(self):
         """ Perform helpers control
@@ -81,8 +171,9 @@ class Helper(Service):
 
         :return None:
         """
-        for helper_env in self.application.registry.get_service(HService).plugins:
-            self._start_helper(helper_env)
+        for plugin in self._daemon_plugins:
+            self.log.debug('Starting daemon %s', plugin)
+            self._launch_plugin(plugin)
 
     def _monitor(self):
         """ Monitor helpers state
@@ -93,39 +184,16 @@ class Helper(Service):
 
         while self.application.running:
             alive_threads = {thread.name for thread in threading.enumerate()}
-            self.log.debug('Checking helpers state')
+            self.log.debug('Checking daemons state')
 
-            for helper_env in self.application.registry.get_service(HService).plugins:
-                if self._get_thread_name(helper_env) not in alive_threads:
-                    self.log.warning('Helper %s died, trying to restart', helper_env)
-                    self._start_helper(helper_env)
+            for plugin in self._daemon_plugins:
+                if self._get_thread_name(plugin) not in alive_threads:
+                    self.log.warning('Daemon %s is down, trying to restart', plugin)
+                    self._launch_plugin(plugin)
                 else:
-                    self.log.debug('Helper %s is running', helper_env)
+                    self.log.debug('Daemon %s is running', plugin)
 
             self.application.sleep(_HELPER_PERSISTENT_CHECK_INTERVAL)
-
-    def _start_helper(self, helper_env):
-        """ Start helper
-
-        :param Environment helper_env:
-        :return None:
-        """
-        self.log.debug('Starting helper %s', helper_env)
-        threading.Thread(
-            name=self._get_thread_name(helper_env),
-            target=helper_env,
-            kwargs={'logger': self.log},
-            daemon=True
-        ).start()
-
-    @staticmethod
-    def _get_thread_name(env: Environment) -> str:
-        """ Get thread name for the helper
-
-        :param Environment env:
-        :return str:
-        """
-        return 'helper[%s]' % env
 
     @classmethod
     def name(cls) -> str:
@@ -133,7 +201,62 @@ class Helper(Service):
 
         :return str:
         """
-        return 'helper'
+        return 'daemon'
+
+
+class Bootstrap(_HelperService):
+    """ Launches bootstrap tasks """
+
+    def __init__(self, application: Application):
+        """ Initialize service & attach an application to it
+
+        :param Application application:
+        """
+        super().__init__(application)
+
+        self._plugins_threads = []
+
+    def _run(self):
+        """ Perform tasks
+
+        :return None:
+        """
+        plugins_list = self.application \
+            .registry \
+            .helper_plugin_provider \
+            .bootstrap_plugins
+
+        for plugin in plugins_list:
+            self.log.debug('Running bootstrap task %s', plugin)
+            thread = self._launch_plugin(plugin)
+            self._plugins_threads.append(thread)
+
+    def run(self):
+        """ Run in the  main thread
+
+        :return None:
+        """
+        self._run()
+        self.wait()
+
+    def wait(self):
+        """ Wait until stopped
+
+        :return None:
+        """
+        for thread in self._plugins_threads:
+            _thread_wait(thread, self.log)
+        self._plugins_threads = []
+
+        super().wait()
+
+    @classmethod
+    def name(cls) -> str:
+        """ Get service unique name
+
+        :return str:
+        """
+        return 'bootstrap'
 
 
 class ChatManager(ChatManager_):
@@ -212,7 +335,7 @@ class ChatManager(ChatManager_):
         :param Message message:
         :return None:
         """
-        message_plugins = self.application.registry.get_service(MService).plugins
+        message_plugins = self.application.registry.message_plugin_provider.plugins
 
         for plugin in message_plugins:
             self.log.debug('Passing message processing to a plugin %s', plugin)

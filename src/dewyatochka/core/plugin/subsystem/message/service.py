@@ -84,34 +84,6 @@ class Environment(BaseEnvironment):
         return output
 
 
-class Service(BaseService):
-    """ Message plugins container service """
-
-    @property
-    def accepts(self) -> list:
-        """ Get list of acceptable plugin types
-
-        :return list:
-        """
-        return PLUGIN_TYPES
-
-    @property
-    def _wrapper(self):
-        """ Get wrapper instance
-
-        :return Wrapper:
-        """
-        return Wrapper(self)
-
-    @classmethod
-    def name(cls) -> str:
-        """ Get service unique name
-
-        :return str:
-        """
-        return 'message'
-
-
 class Wrapper(BaseWrapper):
     """ Wraps a plugin into environment """
 
@@ -141,6 +113,39 @@ class Wrapper(BaseWrapper):
         matcher_ = self._get_matcher(entry)
 
         return Environment(entry.plugin, registry, c_manager, matcher_)
+
+
+class Service(BaseService):
+    """ Message plugins container service """
+
+    # Plugin wrapper class
+    _wrapper_class = Wrapper
+
+    @property
+    def accepts(self) -> list:
+        """ Get list of acceptable plugin types
+
+        :return list:
+        """
+        return PLUGIN_TYPES
+
+    @property
+    def config(self) -> dict:
+        """ Get related config section
+
+        Overridden for a prettier config format
+
+        :return dict:
+        """
+        return self.application.registry.config.section('message')
+
+    @classmethod
+    def name(cls) -> str:
+        """ Get service unique name
+
+        :return str:
+        """
+        return 'message_plugin_provider'
 
 
 class Output:

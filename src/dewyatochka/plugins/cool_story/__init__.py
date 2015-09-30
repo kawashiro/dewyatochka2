@@ -50,7 +50,7 @@ def keyword_story_selector(**kwargs):
     chat.keyword_story_selector(**kwargs)
 
 
-@plugin.helper
+@plugin.daemon
 def storage_helper(registry):
     """ Storage helper thread
 
@@ -61,7 +61,7 @@ def storage_helper(registry):
     StorageHelper(Storage(registry.config.get('db_path')))()
 
 
-@plugin.helper
+@plugin.schedule('0 */12 * * *')
 def stories_indexer(**kwargs):
     """ Live stories incremental indexer
 
