@@ -9,7 +9,7 @@ import threading
 from collections import defaultdict
 
 from dewyatochka.core import plugin
-from dewyatochka.core.utils import chat
+from dewyatochka.core.plugin.builtins import get_activity_info
 
 __all__ = []
 
@@ -95,9 +95,9 @@ def occasional_question(registry):
 
     log.debug('Checking conferences state')
     for conference in registry.bot.alive_chats:
-        last_message_ts = chat.get_activity_info(conference).last_message
+        last_message_ts = get_activity_info(conference).last_message
 
-        if last_message_ts + silence_interval < time.time():
+        if last_message_ts and last_message_ts + silence_interval < time.time():
             log.info('Conference %s is too silent (last msg.: %d), waking up', conference, last_message_ts)
             registry.bot.send_muc(_get_question(category, log), conference)
         else:

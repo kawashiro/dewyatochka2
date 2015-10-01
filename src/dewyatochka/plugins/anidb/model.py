@@ -22,7 +22,6 @@ from collections import namedtuple
 
 from sqlalchemy import Table, Column, Integer, String, UniqueConstraint, ForeignKey, desc
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm.exc import NoResultFound
 
 from dewyatochka.core.data.database import SQLIteStorage, StoreableObject, ObjectMeta
 from dewyatochka.core.data.database import StorageHelper as StorageHelperBase
@@ -119,9 +118,8 @@ class Storage(SQLIteStorage):
         :return Cartoon:
         """
         if self.__last_cartoon is None:
-            try:
-                self.__last_cartoon = self.db_session.query(Cartoon).order_by(desc(Cartoon.id)).first()
-            except NoResultFound:
+            self.__last_cartoon = self.db_session.query(Cartoon).order_by(desc(Cartoon.id)).first()
+            if self.__last_cartoon is None:
                 raise RuntimeError('Storage is empty')
 
         return self.__last_cartoon

@@ -7,15 +7,11 @@ on application startup so any third-party plugin must create
 an own module here and define all necessary entry points
 
 Has no members by default
-
-Modules
-=======
-    builtin -- Built-in chat / ctl commands accessible out of the box
 """
 
 import importlib
 
-__all__ = ['builtin']
+__all__ = []
 
 # Mega hack for plugins loading
 # to avoids random import errors on startup

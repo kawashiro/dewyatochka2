@@ -9,7 +9,6 @@ Functions
     update_db_from_file -- Update cartoons database from xml file specified
 """
 
-import time
 import argparse
 import threading
 

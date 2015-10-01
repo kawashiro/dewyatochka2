@@ -79,7 +79,7 @@ class CommandMatcher(AbstractMatcher):
         :param Message message: Chat message
         :return bool:
         """
-        return self._cmd_regexp.match(str(message)) is not None
+        return message.is_regular and self._cmd_regexp.match(str(message)) is not None
 
 
 class AccostMatcher(AbstractMatcher):
@@ -93,4 +93,4 @@ class AccostMatcher(AbstractMatcher):
         :param Message message: Chat message
         :return bool:
         """
-        return message.receiver.public_name in str(message)
+        return message.is_regular and message.receiver.public_name in str(message)

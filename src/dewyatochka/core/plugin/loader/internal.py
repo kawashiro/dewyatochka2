@@ -28,9 +28,6 @@ __all__ = ['Loader', 'entry_point']
 # Entry points dict grouped by entry point type
 _entry_points = defaultdict(lambda: [])
 
-# Flag if modules loading is completed
-_ready = False
-
 
 def entry_point(entry_point_type, **kwargs) -> callable:
     """ Plugin entry point decorator
@@ -68,6 +65,9 @@ class Loader(BaseLoader):
     # Python plugins auto loading path
     __PLUGINS_PATH = os.path.dirname(plugins.__file__)
 
+    # Flag if modules loading is completed
+    __ready = False
+
     def _get_modules(self, service: Service) -> list:
         """ Load optional plugin modules
 
@@ -87,8 +87,7 @@ class Loader(BaseLoader):
 
             try:
                 conf_name = load_name.split(self.__PKG_SEP)[-1]
-                if conf_name not in plugins.__all__:
-                    service.application.registry.extensions_config.section(conf_name, require=True)
+                service.application.registry.extensions_config.section(conf_name, require=True)
             except SectionRetrievingError:
                 service.application.registry.log(__name__).warning('Plugin %s is disabled', load_name)
                 continue
@@ -103,9 +102,10 @@ class Loader(BaseLoader):
         :param Service service: Reference to a service initiated load
         :return list: List of PluginEntry
         """
-        global _ready
+        if not self.__class__.__ready:
+            from dewyatochka.core.plugin import builtins
+            builtins.register_entry_points()
 
-        if not _ready:
             for load_name in self._get_modules(service):
                 try:
                     importlib.import_module(load_name)
@@ -113,7 +113,7 @@ class Loader(BaseLoader):
                 except Exception as e:
                     service.application.registry.log(__name__).error('Failed to load module %s: %s', load_name, e)
 
-            _ready = True
+            self.__class__.__ready = True
 
         return reduce(lambda res, p_type: res + (_entry_points[p_type] if p_type in service.accepts else []),
                       _entry_points, [])

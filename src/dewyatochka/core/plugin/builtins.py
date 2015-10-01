@@ -1,8 +1,19 @@
 # -*- coding: UTF-8
 
-""" Some chat / ctl commands accessible by default """
+""" Some chat / ctl commands accessible by default
+
+Classes
+=======
+    ActivityInfo -- Conference activity info structure
+
+Functions
+=========
+    get_activity_info     -- Get conference activity info
+    register_entry_points -- Register plugins entry points
+"""
 
 import time
+from collections import defaultdict
 
 from dewyatochka import __version__
 from dewyatochka.core.application import Registry
@@ -10,13 +21,65 @@ from dewyatochka.core.plugin import chat_message, chat_command, ctl
 from dewyatochka.core.plugin.loader import LoaderService
 from dewyatochka.core.plugin.subsystem.control.service import Service as CtlService
 from dewyatochka.core.plugin.subsystem.message.service import Service as MSysService
-from dewyatochka.core.utils.chat import get_activity_info
+from dewyatochka.core.network.entity import GroupChat
 
-__all__ = []
+__all__ = ['ActivityInfo', 'get_activity_info', 'register_entry_points']
 
 
-@chat_message(regular=True, own=True)
-def message_input(inp, **_):
+# Conference jid -> last activity
+_conference_last_activity = defaultdict(lambda key: ActivityInfo(key))
+
+
+class ActivityInfo(object):
+    """ Conference activity info structure """
+
+    def __init__(self, conference: GroupChat):
+        """ Create new activity info object with default values
+
+        :param JID conference:
+        """
+        self._conference = conference
+        self.last_message = 0
+        self.last_activity = 0
+
+    @property
+    def conference(self) -> GroupChat:
+        """ Conference getter
+
+        :return JID:
+        """
+        return self._conference
+
+
+def get_activity_info(conference: GroupChat) -> ActivityInfo:
+    """ Get conference activity info
+
+    :param JID conference: Conference JID
+    :return ActivityInfo:
+    """
+    bare = str(conference.bare)
+    if bare not in _conference_last_activity:
+        _conference_last_activity[bare] = ActivityInfo(conference.bare)
+
+    return _conference_last_activity[bare]
+
+
+def register_entry_points():
+    """ Register plugins entry points
+
+    :return None:
+    """
+    chat_message(regular=True, own=True)(_chat_on_message_input)
+    chat_message(system=True)(_chat_on_activity_input)
+
+    chat_command('version')(_chat_version_info)
+    chat_command('help', services=[LoaderService, MSysService])(_ChatHelpMessage)
+    chat_command('info', services=[LoaderService, MSysService])(_ChatHelpMessage)
+
+    ctl('list', _CtlCommandsList.DESCRIPTION, services=[LoaderService, CtlService])(_CtlCommandsList)
+
+
+def _chat_on_message_input(inp, **_):
     """ Collect messages stat
 
     :param inp:
@@ -28,8 +91,7 @@ def message_input(inp, **_):
     activity.last_activity = time.time()
 
 
-@chat_message(system=True)
-def activity_input(inp, **_):
+def _chat_on_activity_input(inp, **_):
     """ Collect activity stat
 
     :param inp:
@@ -39,9 +101,17 @@ def activity_input(inp, **_):
     get_activity_info(inp.sender.bare).last_activity = time.time()
 
 
-@chat_command('help', services=(LoaderService, MSysService))
-@chat_command('info', services=(LoaderService, MSysService))
-class HelpMessage:
+def _chat_version_info(outp, **_):
+    """ Show version
+
+    :param outp:
+    :param _:
+    :return None:
+    """
+    outp.say('dewyatochkad v.%s', __version__)
+
+
+class _ChatHelpMessage:
     """ Show help message """
 
     def __init__(self):
@@ -56,10 +126,10 @@ class HelpMessage:
         """
         if self.__commands is None:
             commands = []
-            prefix = registry.message.config['command_prefix']
-            for loader in registry.plugins.loaders:
+            prefix = registry.message_plugin_provider.config['command_prefix']
+            for loader in registry.plugins_loader.loaders:
                 commands += [prefix + entry.params['command']
-                             for entry in loader.load(registry.message)
+                             for entry in loader.load(registry.message_plugin_provider)
                              if 'command' in entry.params]
             self.__commands = frozenset(commands)
 
@@ -73,7 +143,7 @@ class HelpMessage:
         :param _:
         :return None:
         """
-        msg_format = registry.message.config.get('help_message')
+        msg_format = registry.message_plugin_provider.config.get('help_message')
         if msg_format:
             message = msg_format.format(user=inp.sender.public_name,
                                         version=__version__,
@@ -83,20 +153,11 @@ class HelpMessage:
             registry.log.warning('Help message is not configured, command ignored')
 
 
-@chat_command('version')
-def version(outp, **_):
-    """ Show version
-
-    :param outp:
-    :param _:
-    :return None:
-    """
-    outp.say('dewyatochkad v.%s', __version__)
-
-
-@ctl('list', 'List all the commands available', services=(LoaderService, CtlService))
-class CommandsList:
+class _CtlCommandsList:
     """ Show help message """
+
+    # Command description
+    DESCRIPTION = 'List all the commands available'
 
     def __init__(self):
         """ Init object """

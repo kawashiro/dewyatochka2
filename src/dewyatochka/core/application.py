@@ -51,7 +51,7 @@ class Application(metaclass=ABCMeta):
         """ Add a dependent service to a registry
 
         :param dependent_service: Subclass of Service
-        :param tuple aliases:
+        :param tuple aliases: Alternative service names
         :return None:
         """
         if isinstance(dependent_service, type):
