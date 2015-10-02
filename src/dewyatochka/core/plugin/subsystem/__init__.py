@@ -8,7 +8,7 @@ Packages
 ========
     message -- Message plugins sub-system
     helper  -- Helper plugins sub-system
-    control     -- Plugins for dewyatochkactl utility
+    control -- Plugins for dewyatochkactl utility
 """
 
 __all__ = ['message', 'helper', 'control']

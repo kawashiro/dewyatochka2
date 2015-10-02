@@ -146,4 +146,4 @@ class LoggingService(Service):
         :param str name: Module name to display in log
         :return LoggerWrapper:
         """
-        return LoggerWrapper(logging.getLogger(name))
+        return LoggerWrapper(logging.getLogger(name or self._log_name()))

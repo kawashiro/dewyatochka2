@@ -409,6 +409,8 @@ class Connection(ConnectionManager):
         :return None:
         """
         self.__try(self.client.connect)
+        self.__try(self._presence_helper.start)
+        self.__try(self._presence_helper.enter_all)
 
     @property
     def input_stream(self) -> Message:
@@ -419,19 +421,16 @@ class Connection(ConnectionManager):
 
         :return Message:
         """
-        with self.client:
-            self.__try(self._presence_helper.start)
-            self.__try(self._presence_helper.enter_all)
-
-            while self.application.running:
+        while True:
+            try:
                 msg = self.__try(self.client.read)
                 if msg is not None:
                     if msg.receiver == self.client.jid:
                         msg.receiver = self._presence_helper.get_presence_jid(msg.sender)
                     yield msg
 
-            self.__try(self._presence_helper.leave_all)
-            self.__try(self._presence_helper.stop)
+            except ClientDisconnectedError:
+                break
 
     def disconnect(self):
         """ Force disconnection
@@ -439,7 +438,11 @@ class Connection(ConnectionManager):
         :return None:
         """
         try:
+            self.__try(self._presence_helper.leave_all)
+            self.__try(self._presence_helper.stop)
+
             self.client.disconnect()
+
         except ClientDisconnectedError:
             pass
 

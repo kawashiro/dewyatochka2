@@ -30,10 +30,8 @@ Optional arguments
     --log            Use a configured logger to yield debug info
 """
 
-import sys
-
 from dewyatochka.applications import control
 
 if __name__ == '__main__':
     # Run, Dewyatochka, run! ^-^
-    control.Application().run(sys.argv)
+    control.main()

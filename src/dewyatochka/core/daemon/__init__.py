@@ -18,6 +18,5 @@ Functions
 """
 
 from ._daemon import *
-from ._lock import *
 
 __all__ = ['detach', 'ProcessLockedError', 'ProcessNotLockedError', 'acquire_lock', 'release_lock']

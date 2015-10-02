@@ -17,7 +17,7 @@ from collections import defaultdict
 
 from dewyatochka import __version__
 from dewyatochka.core.application import Registry
-from dewyatochka.core.plugin import chat_message, chat_command, ctl
+from dewyatochka.core.plugin import chat_message, chat_command, control
 from dewyatochka.core.plugin.loader import LoaderService
 from dewyatochka.core.plugin.subsystem.control.service import Service as CtlService
 from dewyatochka.core.plugin.subsystem.message.service import Service as MSysService
@@ -72,11 +72,12 @@ def register_entry_points():
     chat_message(regular=True, own=True)(_chat_on_message_input)
     chat_message(system=True)(_chat_on_activity_input)
 
-    chat_command('version')(_chat_version_info)
+    chat_command('version')(_version_info)
     chat_command('help', services=[LoaderService, MSysService])(_ChatHelpMessage)
     chat_command('info', services=[LoaderService, MSysService])(_ChatHelpMessage)
 
-    ctl('list', _CtlCommandsList.DESCRIPTION, services=[LoaderService, CtlService])(_CtlCommandsList)
+    control('list', _CtlCommandsList.DESCRIPTION, services=[LoaderService, CtlService])(_CtlCommandsList)
+    control('version', _version_info.DESCRIPTION)(_version_info)
 
 
 def _chat_on_message_input(inp, **_):
@@ -101,7 +102,7 @@ def _chat_on_activity_input(inp, **_):
     get_activity_info(inp.sender.bare).last_activity = time.time()
 
 
-def _chat_version_info(outp, **_):
+def _version_info(outp, **_):
     """ Show version
 
     :param outp:
@@ -109,6 +110,8 @@ def _chat_version_info(outp, **_):
     :return None:
     """
     outp.say('dewyatochkad v.%s', __version__)
+
+_version_info.DESCRIPTION = 'Show version'
 
 
 class _ChatHelpMessage:
@@ -171,21 +174,21 @@ class _CtlCommandsList:
         """
         if self.__commands is None:
             self.__commands = {}
-            for loader in registry.plugins.loaders:
+            for loader in registry.plugins_loader.loaders:
                 self.__commands.update({entry.params['name']: entry.params['description']
-                                        for entry in loader.load(registry.ctl)})
+                                        for entry in loader.load(registry.control_plugin_provider)})
         return self.__commands
 
-    def __call__(self, registry, **_):
+    def __call__(self, outp, registry, **_):
         """ Invoke command
 
+        :param outp:
         :param registry:
-        :param _:
         :return None:
         """
         commands = self._get_commands(registry)
         cmd_len = max(map(lambda s: len(s), commands.keys())) + 1
 
-        registry.log.info('Accessible commands:')
+        outp.log('Accessible commands:')
         for command in sorted(commands.keys()):
-            registry.log.info('    %s: %s' % (command.ljust(cmd_len), commands[command]))
+            outp.log('    %s: %s' % (command.ljust(cmd_len), commands[command]))

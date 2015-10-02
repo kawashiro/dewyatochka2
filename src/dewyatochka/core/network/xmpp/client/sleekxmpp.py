@@ -114,6 +114,7 @@ class Client(_base.Client):
         :return Message:
         """
         message = self._message_queue.get()
+        # FIXME: Do not mark task as completed immediately
         self._message_queue.task_done()
 
         if isinstance(message, Exception):

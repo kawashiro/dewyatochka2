@@ -4,10 +4,12 @@
 
 Classes
 =======
-    Daemon      -- Manages daemon threads required by plugins
-    Scheduler   -- Launchers helper plugins on a schedule
-    ChatManager -- Chat manager service implementation
-    Bootstrap   -- Launches bootstrap tasks
+    Daemon          -- Manages daemon threads required by plugins
+    Scheduler       -- Launchers helper plugins on a schedule
+    ChatManager     -- Chat manager service implementation
+    Bootstrap       -- Launches bootstrap tasks
+    CriticalService -- Critical service interface
+    Control         -- Listens for a control commands
 """
 
 import time
@@ -20,12 +22,10 @@ from dewyatochka.core.network.service import ConnectionManager
 from dewyatochka.core.network.service import ChatManager as ChatManager_
 from dewyatochka.core.network.entity import Message, GroupChat
 from dewyatochka.core.plugin.subsystem.helper.service import Environment
+from dewyatochka.core.plugin.subsystem.control.network import SocketListener
+from dewyatochka.core.plugin.subsystem.control.network import Message as CTLMessage
 
-__all__ = ['Scheduler', 'Daemon', 'ChatManager', 'Bootstrap']
-
-
-# Interval between helpers state checks
-_HELPER_PERSISTENT_CHECK_INTERVAL = 60
+__all__ = ['Scheduler', 'Daemon', 'ChatManager', 'Bootstrap', 'CriticalService', 'Control']
 
 
 def _thread_wait(thread: threading.Thread, log=None):
@@ -41,7 +41,19 @@ def _thread_wait(thread: threading.Thread, log=None):
         thread.join()
 
 
-class _HelperService(Service, metaclass=ABCMeta):
+class CriticalService(metaclass=ABCMeta):
+    """ Critical service interface """
+
+    @abstractmethod
+    def wait(self):
+        """ Wait until stopped
+
+        :return None:
+        """
+        pass
+
+
+class _HelperService(Service, CriticalService, metaclass=ABCMeta):
     """ Abstract helper service """
 
     def __init__(self, application: Application):
@@ -116,7 +128,7 @@ class Scheduler(_HelperService):
                 self._run_scheduled_tasks()
 
         except Exception as e:
-            self.application.fatal_error(__name__, e)
+            self.application.fatal_error(self._log_name(), e)
 
     def _run_scheduled_tasks(self):
         """ Start registered scheduler tasks
@@ -129,7 +141,6 @@ class Scheduler(_HelperService):
             .schedule_plugins
 
         for plugin in plugins_list:
-            self.log.debug('Starting scheduled task %s', plugin)
             self._launch_plugin(plugin)
 
     @classmethod
@@ -143,6 +154,9 @@ class Scheduler(_HelperService):
 
 class Daemon(_HelperService):
     """ Manages daemon threads required by plugins """
+
+    # Interval between helpers state checks
+    _CHECK_INTERVAL = 60
 
     @property
     def _daemon_plugins(self) -> list:
@@ -164,7 +178,7 @@ class Daemon(_HelperService):
             self._start_all()
             self._monitor()
         except Exception as e:
-            self.application.fatal_error(__name__, e)
+            self.application.fatal_error(self._log_name(), e)
 
     def _start_all(self):
         """ Start all the helpers
@@ -180,7 +194,7 @@ class Daemon(_HelperService):
 
         :return None:
         """
-        self.application.sleep(_HELPER_PERSISTENT_CHECK_INTERVAL)
+        self.application.sleep(self._CHECK_INTERVAL)
 
         while self.application.running:
             alive_threads = {thread.name for thread in threading.enumerate()}
@@ -193,7 +207,7 @@ class Daemon(_HelperService):
                 else:
                     self.log.debug('Daemon %s is running', plugin)
 
-            self.application.sleep(_HELPER_PERSISTENT_CHECK_INTERVAL)
+            self.application.sleep(self._CHECK_INTERVAL)
 
     @classmethod
     def name(cls) -> str:
@@ -259,7 +273,55 @@ class Bootstrap(_HelperService):
         return 'bootstrap'
 
 
-class ChatManager(ChatManager_):
+class Control(_HelperService):
+    """ Listens for a control commands """
+
+    def __init__(self, application: Application):
+        """ Initialize service & attach an application to it
+
+        :param Application application:
+        """
+        super().__init__(application)
+        self._listener = SocketListener(self.config.get('socket'))
+
+    def _run(self):
+        """ Do job
+
+        :return None:
+        """
+        try:
+            plugins_provider = self.application.registry.control_plugin_provider
+
+            with self._listener as listener:
+                for command in listener.commands:
+                    try:
+                        self.log.info('Received a control command "%s"', command.name)
+                        plugins_provider.get_command(command.name)(logger=self.log, command=command)
+
+                    except RuntimeError:
+                        command.source.send(CTLMessage(error='Command %s is not supported' % command.name).encode())
+
+        except Exception as e:
+            self.application.fatal_error(self._log_name(), e)
+
+    def wait(self):
+        """ Wait until stopped
+
+        :return None:
+        """
+        self._listener.close()
+        super().wait()
+
+    @classmethod
+    def name(cls) -> str:
+        """ Get service unique name
+
+        :return str:
+        """
+        return 'control'
+
+
+class ChatManager(ChatManager_, CriticalService):
     """ Chat manager service implementation """
 
     def __init__(self, application: Application):
@@ -312,7 +374,7 @@ class ChatManager(ChatManager_):
                 _thread_wait(self._reader_threads[i], self.log)
 
         except Exception as e:
-            self.application.fatal_error(__name__, e)
+            self.application.fatal_error(self._log_name(), e)
 
     def _read(self, connection_manager: ConnectionManager):
         """ Run process
@@ -327,7 +389,7 @@ class ChatManager(ChatManager_):
                 self._start_message_processing(message)
 
         except Exception as e:
-            self.application.fatal_error(__name__, e)
+            self.application.fatal_error(self._log_name(), e)
 
     def _start_message_processing(self, message: Message):
         """ Start message processing
@@ -338,7 +400,6 @@ class ChatManager(ChatManager_):
         message_plugins = self.application.registry.message_plugin_provider.plugins
 
         for plugin in message_plugins:
-            self.log.debug('Passing message processing to a plugin %s', plugin)
             threading.Thread(
                 name='message[%s][%x]' % (plugin, id(message)),
                 target=plugin,

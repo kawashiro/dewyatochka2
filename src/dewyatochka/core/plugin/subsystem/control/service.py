@@ -4,9 +4,10 @@
 
 Classes
 =======
-    Environment -- Ctl plugin environment
     Service     -- Ctl plugins container service
+    Output      -- Output wrapper
     Wrapper     -- Wraps a plugin into environment
+    Environment -- Environment for a ctl plugin
 
 Attributes
 ==========
@@ -14,12 +15,16 @@ Attributes
     PLUGIN_TYPES     -- All plugin types list
 """
 
-from dewyatochka.core.plugin.base import PluginEntry
-from dewyatochka.core.plugin.base import Environment as BaseEnvironment
+from dewyatochka.core.application import Application
 from dewyatochka.core.plugin.base import Service as BaseService
 from dewyatochka.core.plugin.base import Wrapper as BaseWrapper
+from dewyatochka.core.plugin.base import Environment as BaseEnvironment
+from dewyatochka.core.plugin.base import PluginEntry
+from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 
-__all__ = ['Environment', 'Service', 'Wrapper', 'PLUGIN_TYPE_CTL', 'PLUGIN_TYPES']
+from .network import Message
+
+__all__ = ['Service', 'Output', 'Wrapper', 'Environment', 'PLUGIN_TYPE_CTL', 'PLUGIN_TYPES']
 
 
 # Plugin types provided
@@ -27,20 +32,112 @@ PLUGIN_TYPE_CTL = 'ctl'
 PLUGIN_TYPES = [PLUGIN_TYPE_CTL]
 
 
-class Environment(BaseEnvironment):
-    """ ctl plugin environment """
+class Output:
+    """ Output wrapper
 
-    def __call__(self, **kwargs):
-        """ Let it be invokable too (as a plugin is)
+    Passed to each plugin to allow communication to client
+    """
 
-        :param dict kwargs:
+    def __init__(self, connection, logger):
+        """ Bind output wrapper to xmpp-client and a conference
+
+        :param socket connection:
+        :param logger:
+        """
+        self._connection = connection
+        self._log = logger
+
+    def __send(self, message: Message):
+        """ Send a message
+
+        :param Message message:
         :return None:
         """
-        self.invoke(**kwargs)
+        try:
+            self._connection.send(message.encode())
+        except BrokenPipeError:
+            raise RuntimeError('Control client disconnected before operation has completed')
+
+    def info(self, text: str, *args):
+        """ Send something
+
+        :param str text: Message content
+        :param tuple args: Args for message format
+        :return None:
+        """
+        self.__send(Message(self._connection, text=(text % args)))
+        self._log.info(text, *args)
+
+    def error(self, text: str, *args):
+        """ Send error message
+
+        :param str text: Message content
+        :param tuple args: Args for message format
+        :return None:
+        """
+        self.__send(Message(error=(text % args)))
+
+    def debug(self, text: str, *args):
+        """ Debug message
+
+        :param str text: Message content
+        :param tuple args: Args for message format
+        :return None:
+        """
+        self._log.debug(text, *args)
+
+    # Some useful aliases
+    log = say = info
+
+
+class Wrapper(BaseWrapper):
+    """ Wraps a plugin into environment """
+
+    def wrap(self, entry: PluginEntry):
+        """ Wrap plugin into it's environment
+
+        :param PluginEntry entry: Raw plugin entry
+        :return Environment:
+        """
+        return Environment(entry.plugin, self._get_registry(entry))
+
+
+class Environment(BaseEnvironment):
+    """ Environment for a ctl plugin """
+
+    def invoke(self, *, command=None, **kwargs):
+        """ Invoke plugin in environment registered
+
+        :param .network.Message command: Message to process
+        :param dict kwargs: Params to path to a plugin
+        :return None:
+        """
+        if command is None:
+            raise TypeError('`command` keyword argument is required')
+
+        output = Output(command.source, self._registry.log)
+
+        try:
+            super().invoke(inp=command, outp=output, **kwargs)
+        except Exception as e:
+            output.error('%s', e)
+            raise
 
 
 class Service(BaseService):
     """ Ctl plugins container service """
+
+    # Plugin wrapper class
+    _wrapper_class = Wrapper
+
+    def __init__(self, application: Application):
+        """ Create plugin container service
+
+        :param Application application:
+        """
+        super().__init__(application)
+
+        self._commands = {}
 
     @property
     def accepts(self) -> list:
@@ -50,61 +147,38 @@ class Service(BaseService):
         """
         return PLUGIN_TYPES
 
-    def load(self):
-        """ Load plugins
+    def _register_plugin(self, entry: PluginEntry):
+        """ Register a single plugin
 
+        :param PluginEntry entry:
         :return None:
         """
-        self._plugins = {}
-        wrapper = self._wrapper
+        wrapped = self._wrapper.wrap(entry)
 
-        for loader in self.application.registry.plugins.loaders:
-            for entry in loader.load(self):
-                try:
-                    self._plugins[entry.params['name']] = wrapper.wrap(entry)
-                except Exception as e:
-                    self.log.error('Failed to register command %s (%s.%s): %s',
-                                   entry.params['name'], entry.plugin.__module__,
-                                   entry.plugin.__name__, e)
+        if entry.params['name'] in self._commands:
+            raise PluginRegistrationError('ctl command "%s" is already in use' % entry.params['name'])
 
-        self.log.debug('Loaded %d %s plugins', len(self._plugins), self.name())
+        self._commands[entry.params['name']] = wrapped
+        self._plugins.append(wrapped)
 
-    def get_command(self, name: str) -> Environment:
+    def get_command(self, name: str):
         """ Get command to use
 
         :param str name: Registered command name
         :return Environment:
         """
-        if self._plugins and name in self._plugins:
-            return self._plugins[name]
+        if self._plugins is None:
+            raise RuntimeError('Plugins are not loaded')
 
-        raise RuntimeError('Command %s is not registered' % name)
+        if name not in self._commands:
+            raise RuntimeError('Command %s is not registered' % name)
 
-    @property
-    def plugins(self) -> list:
-        """ Get plugins list
+        return self._commands[name]
 
-        :return list:
+    @classmethod
+    def name(cls) -> str:
+        """ Get service unique name
+
+        :return str:
         """
-        # noinspection PyUnresolvedReferences
-        return super().plugins.values()
-
-    @property
-    def _wrapper(self):
-        """ Get wrapper instance
-
-        :return Wrapper:
-        """
-        return Wrapper(self)
-
-
-class Wrapper(BaseWrapper):
-    """ Wraps a plugin into environment """
-
-    def wrap(self, entry: PluginEntry) -> Environment:
-        """ Wrap plugin into it's environment
-
-        :param PluginEntry entry: Raw plugin entry
-        :return Environment:
-        """
-        return Environment(entry.plugin, self._get_registry(entry))
+        return 'control_plugin_provider'

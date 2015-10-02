@@ -15,29 +15,34 @@ from .output import *
 
 __all__ = ['get_daemon_logger', 'get_console_logger']
 
+# Default path to the log file
+_DEFAULT_LOG_FILE_PATH = '/var/log/dewyatochka/dewyatochkad.log'
 
 # Default message on logging start
 _INIT_MESSAGE = 'Logging started'
 
 # Log line formats
-_FORMAT_DAEMON_DEFAULT = '%(asctime)s :: %(levelname)-8s :: %(message)s'
-_FORMAT_DAEMON_DEBUG = '%(asctime)s :: %(levelname)-8s :: %(name)s :: %(message)s'
-_FORMAT_CONSOLE_DEFAULT = '%(levelname).1s: %(message)s'
+_FORMAT_DAEMON_DEFAULT = '%(asctime)s :: %(levelname)-8s :: [%(name)s] %(message)s'
+_FORMAT_DAEMON_DEBUG = _FORMAT_DAEMON_DEFAULT
+_FORMAT_CONSOLE_DEFAULT = '%(levelname)s: %(message)s'
 _FORMAT_CONSOLE_DEBUG = _FORMAT_DAEMON_DEBUG
 
 
-def get_daemon_logger(application: Application, file=None) -> LoggingService:
+def get_daemon_logger(application: Application, use_stdout=False) -> LoggingService:
     """ Get configured logger instance for daemonizeable apps
 
     :param Application application: Application instance to configure logger for
-    :param str file: Set to None if application has stdout to attach stdout handler instead of file one
+    :param bool use_stdout: Set to True to use STDOUT instead of log file configured
     :return LoggingService:
     """
     logger = LoggingService(application)
+
     log_format = _FORMAT_DAEMON_DEBUG if logger.logging_level == 'DEBUG' else _FORMAT_DAEMON_DEFAULT
+    log_file = application.registry.config.section('log').get('file', _DEFAULT_LOG_FILE_PATH)
 
     try:
-        logger.register_handler(STDOUTHandler(log_format) if file is None else FileHandler(log_format, file))
+        handler = STDOUTHandler(log_format) if use_stdout else FileHandler(log_format, log_file)
+        logger.register_handler(handler)
         logger().info(_INIT_MESSAGE)
     except:
         # Something wrong with default log handler using null as a fallback

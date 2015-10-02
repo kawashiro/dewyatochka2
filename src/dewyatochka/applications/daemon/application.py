@@ -13,37 +13,28 @@ import sys
 import argparse
 
 from dewyatochka.core import daemon
+
 from dewyatochka.core.application import Application
+from dewyatochka.core.application import EXIT_CODE_TERM
 from dewyatochka.core.log import get_daemon_logger
 from dewyatochka.core.config import get_common_config, get_conferences_config, get_extensions_config
 from dewyatochka.core.config.factory import COMMON_CONFIG_DEFAULT_PATH
 from dewyatochka.core.network.xmpp import service as xmpp
+from dewyatochka.core.plugin.loader import LoaderService
 from dewyatochka.core.plugin.subsystem.message import service as m_service
 from dewyatochka.core.plugin.subsystem.helper import service as h_service
-from dewyatochka.core.plugin.loader import LoaderService
+from dewyatochka.core.plugin.subsystem.control import service as c_service
 
-from . import _process
+from . import process
 
 __all__ = ['DaemonApp']
-
-
-# App exit codes
-_EXIT_CODE_OK = 0
-_EXIT_CODE_ERROR = 1
-_EXIT_CODE_TERM = 2
-
-# Default path to the log file
-_DEFAULT_LOG_FILE_PATH = '/var/log/dewyatochka/dewyatochkad.log'
-
-# Path to the lock-file if none is specified
-_DEFAULT_LOCK_FILE_PATH = '/var/run/dewyatochka/dewyatochkad.pid'
 
 
 class DaemonApp(Application):
     """ Application implementation """
 
     @staticmethod
-    def _parse_args(args: list):
+    def __parse_args(args: list):
         """ Parse known arguments
 
         :param list args:
@@ -66,13 +57,11 @@ class DaemonApp(Application):
         :return None:
         """
         try:
-            params = self._parse_args(args)
+            params = self.__parse_args(args)
 
             self.depend(get_common_config(self, params.config))
 
-            log_file = None if params.nodaemon \
-                else self.registry.config.section('log').get('file', _DEFAULT_LOG_FILE_PATH)
-            self.depend(get_daemon_logger(self, log_file))
+            self.depend(get_daemon_logger(self, params.nodaemon))
 
             self.depend(get_conferences_config(self))
             self.depend(get_extensions_config(self))
@@ -80,42 +69,43 @@ class DaemonApp(Application):
             self.depend(LoaderService)
             self.depend(m_service.Service)
             self.depend(h_service.Service)
+            self.depend(c_service.Service)
 
-            self.depend(_process.Bootstrap)
-            self.depend(_process.Scheduler)
-            self.depend(_process.Daemon)
-            self.depend(_process.ChatManager, 'bot')
+            self.depend(process.Bootstrap)
+            self.depend(process.Scheduler)
+            self.depend(process.Daemon)
+            self.depend(process.Control)
+            self.depend(process.ChatManager, 'bot')
             self.depend(xmpp.Connection)
 
             self.registry.message_plugin_provider.load()
             self.registry.helper_plugin_provider.load()
+            self.registry.control_plugin_provider.load()
 
             self.registry.bootstrap.run()
             self.registry.daemon.start()
             self.registry.scheduler.start()
             self.registry.chat_manager.start()
+            self.registry.control.start()
 
             if not params.nodaemon:
-                daemon.detach(lambda *_: self.stop(_EXIT_CODE_OK))
-                daemon.acquire_lock(self.registry.config.global_section.get('lock', _DEFAULT_LOCK_FILE_PATH))
+                daemon.detach(self.stop)
+                daemon.acquire_lock(self.registry.config.global_section.get('lock'))
 
             self.wait()
 
         except (KeyboardInterrupt, SystemExit):
             self.registry.log(__name__).warning('Interrupted by user')
-            self.stop(_EXIT_CODE_TERM)
+            self.stop(EXIT_CODE_TERM)
 
         except Exception as e:
             self.fatal_error(__name__, e)
-            self.stop(_EXIT_CODE_ERROR)
 
         finally:
             # Stop threads if needed
-            for critical_svc in _process.ChatManager, _process.Scheduler, _process.Daemon:
-                try:
-                    self.registry.get_service(critical_svc).wait()
-                except RuntimeError:
-                    pass
+            for critical_svc in self.registry.all:
+                if isinstance(critical_svc, process.CriticalService):
+                    critical_svc.wait()
             # Release process lock if needed
             try:
                 daemon.release_lock()

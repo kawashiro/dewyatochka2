@@ -29,10 +29,8 @@ Optional arguments
     --nodaemon       Do not detach process from console
 """
 
-import sys
-
 from dewyatochka.applications import daemon
 
 if __name__ == '__main__':
     # Run, Dewyatochka, run! ^-^
-    daemon.Application().run(sys.argv)
+    daemon.main()

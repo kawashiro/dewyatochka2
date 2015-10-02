@@ -21,4 +21,4 @@ Modules
     application -- Something like "framework" to build all dewyatochka apps on
 """
 
-__all__ = ['application', 'config', 'daemon', 'log', 'network', 'plugin', 'utils']
+__all__ = ['application', 'config', 'daemon', 'data', 'log', 'network', 'plugin', 'utils']

@@ -5,32 +5,28 @@
 Classes
 =======
     Application -- Application class
+
+Functions
+=========
+    main -- Main routine
 """
 
 import sys
 import argparse
 
 from dewyatochka.core.application import Application as BaseApplication
-from dewyatochka.core.config import get_common_config, get_extensions_config
-from dewyatochka.core.config.factory import COMMON_CONFIG_DEFAULT_PATH
+from dewyatochka.core.application import EXIT_CODE_TERM
 from dewyatochka.core.log import get_console_logger
-from dewyatochka.core.plugin.loader import LoaderService
-from dewyatochka.core.plugin.subsystem.control import service as ctl_service
+from dewyatochka.core.plugin.subsystem.control.network import Client, Message, DEFAULT_SOCKET_PATH
 
-__all__ = ['Application']
-
-
-# App exit codes
-_EXIT_CODE_OK = 0
-_EXIT_CODE_ERROR = 1
-_EXIT_CODE_TERM = 2
+__all__ = ['Application', 'main']
 
 
 class Application(BaseApplication):
     """ dewyatochkactl impl """
 
     @staticmethod
-    def _parse_args(args: list):
+    def __parse_args(args: list) -> tuple:
         """ Parse known arguments
 
         :param list args:
@@ -40,11 +36,34 @@ class Application(BaseApplication):
         args_parser.add_argument('command',
                                  metavar='command',
                                  help='Command name(s) comma separated. Run dewyatochkactl list to see them')
-        args_parser.add_argument('--config',
-                                 help='Path to config file to use',
-                                 default=COMMON_CONFIG_DEFAULT_PATH)
+        args_parser.add_argument('--socket',
+                                 help='Path to daemon\'s control socket',
+                                 default=DEFAULT_SOCKET_PATH)
 
         return args_parser.parse_known_args(args[1:])
+
+    def __communicate(self, socket: str, command: str, optional: dict):
+        """ Communicate with daemon
+
+        :param str socket:
+        :param str command:
+        :param dict optional:
+        :return None:
+        """
+        log = self.registry.log(__name__)
+
+        with Client(socket) as ctl_client:
+            ctl_client.send(Message(name=command, args=optional or {}))
+
+            for msg in ctl_client.input:
+                if msg.error:
+                    log.error('Server error: %s', msg.error)
+
+                elif msg.text:
+                    print(msg.text)
+
+                else:
+                    log.error('Unhandled message: %s', str(msg.data))
 
     def run(self, args: list):
         """ Run application
@@ -53,26 +72,32 @@ class Application(BaseApplication):
         :return None:
         """
         try:
-            params, cmd_args = self._parse_args(args)
+            params, cmd_args = self.__parse_args(args)
 
-            self.depend(get_common_config(self, params.config))
-            self.depend(get_extensions_config(self))
             self.depend(get_console_logger(self))
 
-            self.depend(LoaderService)
-            self.depend(ctl_service.Service)
-
-            plugins_loaders = self.registry.plugins.loaders
-            self.registry.ctl.load(plugins_loaders, ctl_service.Wrapper(self.registry.ctl))
-            self.registry.ctl.get_command(params.command)(argv=cmd_args)
+            try:
+                parsed_args = dict(arg.split('=', 2) for arg in cmd_args)
+                self.__communicate(params.socket, params.command, parsed_args)
+            except Exception as e:
+                raise RuntimeError(
+                    'Failed to communicate with daemon process at %s: %s' % (params.socket or '[DEFAULT]', e)
+                )
 
         except (KeyboardInterrupt, SystemExit):
-            self.registry.log(__name__).warning('Interrupted by user')
-            self.stop(_EXIT_CODE_TERM)
+            self.stop(EXIT_CODE_TERM)
 
         except Exception as e:
             self.fatal_error(__name__, e)
-            self.stop(_EXIT_CODE_ERROR)
 
         finally:
             sys.exit(self._exit_code)
+
+
+def main():
+    """ Main routine
+
+    :return None:
+    """
+    app = Application()
+    app.run(sys.argv)

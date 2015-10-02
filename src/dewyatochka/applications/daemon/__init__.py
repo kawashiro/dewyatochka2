@@ -7,8 +7,23 @@ Serves conferences and takes a talk with other people
 Classes
 =======
     Application -- dewyatochkad application
+
+Functions
+=========
+    main -- Main routine
 """
 
-from ._application import DaemonApp as Application  # Alias for a common interface
+from .application import DaemonApp as Application
 
-__all__ = ['Application']
+__all__ = ['Application', 'main']
+
+
+def main():
+    """ Main routine
+
+    :return None:
+    """
+    import sys
+
+    app = Application()
+    app.run(sys.argv)

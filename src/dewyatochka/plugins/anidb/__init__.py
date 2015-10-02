@@ -4,77 +4,101 @@
 
 Modules
 =======
-    entry    -- Plugin entry points
-    model    -- SQLite storage, common logic
-    importer -- AniDB import logic
+    model -- SQLite storage, common logic
 """
 
+import time
+
 from dewyatochka.core import plugin
+from dewyatochka.core.config.exception import SectionRetrievingError
 
-__all__ = ['entry', 'model', 'importer']
+from . import model
+
+__all__ = ['model']
 
 
-@plugin.ctl('import-file', 'Update cartoons database from xml file specified')
-def import_file(**kwargs):
+@plugin.bootstrap
+def init_storage(registry):
+    """ Set storage params
+
+    :param registry:
+    :return None:
+    """
+    db_path = registry.config.get('db_path')
+    if db_path:
+        model.Storage().path = db_path
+
+    model.Storage().create()
+
+
+@plugin.control('import-file', 'Update cartoons database from xml file specified')
+def import_file(inp, outp, **_):
     """ Update cartoons database from xml file specified
 
-    :param dict kwargs: Plugin args
+    :param inp:
+    :param outp:
+    :param _:
     :return None:
     """
-    from . import entry
-    entry.update_db_from_file(**kwargs)
+    data_source = model.XmlDataSource(inp.args.get('xml'))
+
+    outp.say('Importing cartoons from file "%s"', data_source.file)
+    cartoons_total = model.import_data(data_source)
+    outp.say('Imported %d cartoons', cartoons_total)
 
 
-@plugin.ctl('recreate', 'Create a new empty cartoons db')
-def recreate(**kwargs):
+@plugin.control('recreate', 'Create a new empty cartoons db')
+def recreate(outp, **_):
     """ Create a new empty db
 
-    :param dict kwargs: Plugin args
+    :param outp:
+    :param _:
     :return None:
     """
-    from . import entry
-    entry.recreate_storage(**kwargs)
-
-
-@plugin.ctl('update', 'Update database')
-def recreate(**kwargs):
-    """ Create a new empty db
-
-    :param dict kwargs: Plugin args
-    :return None:
-    """
-    from . import entry
-    entry.update_db_manual(**kwargs)
-
-
-@plugin.daemon
-def storage_helper(**kwargs):
-    """ Daemon helper to check for updates
-
-    :param dict kwargs: Plugin args
-    :return None:
-    """
-    from .model import Storage, StorageHelper
-    StorageHelper(Storage(kwargs['registry'].config.get('db_path')))()
+    model.Storage().recreate()
+    outp.say('Cartoons storage successfully recreated at %s', model.Storage().path)
 
 
 @plugin.schedule('@daily')
-def updates_helper(**kwargs):
-    """ Daemon helper to check for updates
+@plugin.control('update', 'Update database')
+def update(**kwargs):
+    """ Update DB
 
-    :param dict kwargs: Plugin args
+    :param dict kwargs: Entry point dependent
     :return None:
     """
-    from . import entry
-    entry.update_db_auto(**kwargs)
+    log = kwargs.get('outp') or kwargs.get('registry').log
+    current_time = int(time.time())
+
+    data_source = model.WebXMLDataSource()
+    interval_checker = model.SyncIntervalChecker(data_source.file)
+
+    if interval_checker.is_outdated(current_time):
+        log.info('Updating cartoons DB from web')
+        data_source.download()
+        cartoons_total = model.import_data(data_source)
+        interval_checker.modified_at = current_time
+        log.info('Imported %d cartoons', cartoons_total)
+
+    else:
+        log.info('Only %d seconds passed after the last successful cartoons sync',
+                 current_time - interval_checker.modified_at)
 
 
 @plugin.chat_command('cartoon')
-def cartoon_command_handler(**kwargs):
+def cartoon_command_handler(inp, outp, registry):
     """ Yield a random cartoon
 
-    :param dict kwargs: Plugin args
+    :param inp:
+    :param outp:
+    :param registry:
     :return None:
     """
-    from . import entry
-    entry.cartoon_command_handler(**kwargs)
+    template = registry.config.get('message')
+    if not template:
+        raise SectionRetrievingError('`message` config param is required for AniDB plugin')
+
+    cartoon = model.Storage().random_cartoon
+    msg_params = {'user': inp.sender.resource, 'title': cartoon.primary_title, 'url': cartoon.url}
+
+    outp.say(template.format(**msg_params))

@@ -11,24 +11,101 @@ Classes
     StorageMeta         -- Abstract metaclass for storage implementations
     AbstractStorage     -- Very abstract storage
     SQLIteStorage       -- SQLIte based storage
-    StorageHelper       -- Sync one-threaded storage wrapper
+    ThreadSafeSingleton -- Abstract metaclass for singletons implementations
+
+Functions
+=========
+    readable_query      -- Readable query decorator
+    writable_query      -- Writable query decorator
 """
 
 import os
 import threading
-import queue
 from abc import ABCMeta, abstractproperty
+from functools import wraps
 
 from sqlalchemy import Table, MetaData, create_engine
 from sqlalchemy.orm import mapper, sessionmaker, Session, reconstructor
 
 __all__ = ['ObjectMeta', 'StoreableObject', 'CacheableObject', 'UnmappedFieldError',
-           'StorageMeta', 'AbstractStorage', 'SQLIteStorage', 'StorageHelper']
+           'StorageMeta', 'AbstractStorage', 'SQLIteStorage', 'ThreadSafeSingleton',
+           'readable_query', 'writable_query']
+
+
+def __sync_wrapper(method: callable, lock_attrs=()) -> callable:
+    """ Wrap a method in thread-safe wrapper
+
+    :param callable method:
+    :param tuple lock_attrs:
+    :return:
+    """
+    @wraps(method)
+    def _wrapper(self_, *args, **kwargs):
+        locks = []
+        for lock_attr in lock_attrs:
+            try:
+                lock = getattr(self_, lock_attr)
+            except AttributeError:
+                lock = threading.RLock()
+                setattr(self_, lock_attr, lock)
+            locks.append(lock)
+
+        try:
+            for l in locks:
+                l.acquire()
+            return method(self_, *args, **kwargs)
+        finally:
+            for l in locks:
+                l.release()
+
+    return _wrapper
+
+
+def readable_query(method: callable) -> callable:
+    """ Readable query decorator
+
+    :param callable method: Storage method
+    :return: callable
+    """
+    return __sync_wrapper(method, ('__w_lock',))
+
+
+def writable_query(method: callable) -> callable:
+    """ Writable query decorator
+
+    :param callable method: Storage method
+    :return: callable
+    """
+    return __sync_wrapper(method, ('__w_lock', '__r_lock'))
 
 
 class UnmappedFieldError(AttributeError):
     """ Error on access to undefined object field """
     pass
+
+
+class ThreadSafeSingleton(type):
+    """ Abstract metaclass for singletons implementations """
+
+    def __init__(cls, what, bases=None, dict_=None):
+        """ Create metadata instance
+
+        :param str what:
+        :param type bases:
+        :param dict dict_:
+        """
+        super().__init__(what, bases, dict_)
+
+        cls.__instance = None
+        cls.__instantiation = threading.Lock()
+
+    def __call__(cls):
+        """ Singleton impl """
+        with cls.__instantiation:
+            if cls.__instance is None:
+                cls.__instance = super().__call__()
+
+            return cls.__instance
 
 
 class ObjectMeta(type, metaclass=ABCMeta):
@@ -141,7 +218,7 @@ class CacheableObject(StoreableObject):
 
         :return dict:
         """
-        return cls._cache
+        return cls._cache or {}
 
     def __new__(cls, **kwargs):
         """ Get cached tag instance instead of creating a new one
@@ -159,7 +236,7 @@ class CacheableObject(StoreableObject):
         return super().__new__(cls)
 
 
-class StorageMeta(ABCMeta):
+class StorageMeta(ThreadSafeSingleton, ABCMeta):
     """ Abstract metaclass for storage implementations """
 
     def __init__(cls, what, bases=None, dict_=None):
@@ -197,7 +274,7 @@ class AbstractStorage(metaclass=StorageMeta):
         """
         if self.__db_session is None:
             self.__db_session = sessionmaker(
-                bind=create_engine(self._dsn)
+                bind=create_engine(self._dsn, connect_args=self._connect_args)
             )()
 
         return self.__db_session
@@ -210,41 +287,55 @@ class AbstractStorage(metaclass=StorageMeta):
         """
         pass
 
-    def recreate(self):
-        """ Recreate engine
+    @property
+    def _connect_args(self) -> dict:
+        """ Additional connection args (engine specific)
+
+        :return dict:
+        """
+        return {}
+
+    @writable_query
+    def commit(self):
+        """ Commit changes
 
         :return None:
         """
+        self.db_session.commit()
+
+    def close(self):
+        """ Close DB connection
+
+        :return None:
+        """
+        if self.__db_session:
+            self.__db_session.close()
+            self.__db_session = None
+
+    @writable_query
+    def create(self):
+        """ Create engine
+
+        :return None:
+        """
+        self.close()
         # noinspection PyUnresolvedReferences
         self.__class__.metadata.create_all(bind=self.db_session.get_bind())
-
-    def __enter__(self):
-        """ __enter__()
-
-        :return Storage:
-        """
-        return self
-
-    def __exit__(self, *_) -> bool:
-        """ Close session on exit
-
-        :param tuple _:
-        :return bool:
-        """
-        self.db_session.close()
-        return False
 
 
 class SQLIteStorage(AbstractStorage):
     """ SQLIte based storage """
 
-    def __init__(self, file):
-        """ Init sqlite storage
+    # Default path to db file
+    _DEFAULT_DB_PATH = None
 
-        :param str file:
-        """
+    def __init__(self):
+        """ Init sqlite storage """
         super().__init__()
-        self.__file = os.path.realpath(file)
+
+        self.__file = None
+        if self._DEFAULT_DB_PATH:
+            self.path = self._DEFAULT_DB_PATH
 
     @property
     def _dsn(self) -> str:
@@ -255,6 +346,17 @@ class SQLIteStorage(AbstractStorage):
         return 'sqlite:///%s' % self.__file
 
     @property
+    def _connect_args(self) -> dict:
+        """ Additional connection args (engine specific)
+
+        :return dict:
+        """
+        # ACHTUNG! Extremely undocumented and experimental feature
+        # Originally PySQLite is not thread-safe so all the queries
+        # MUST be mutexed by __sync_wrapper decorator
+        return dict(check_same_thread=False)
+
+    @property
     def path(self) -> str:
         """ Get path to db
 
@@ -262,123 +364,36 @@ class SQLIteStorage(AbstractStorage):
         """
         return self.__file
 
+    @path.setter
+    def path(self, file: str):
+        """ File path setter
+
+        :param str file: DB file path
+        :return None:
+        """
+        new_path = os.path.realpath(file)
+        if new_path != self.path:
+            self.close()
+            self.__file = new_path
+
+    @writable_query
+    def create(self):
+        """ Create engine
+
+        :return None:
+        """
+        if not os.path.isfile(self.path):
+            super().create()
+
+    @writable_query
     def recreate(self):
         """ Recreate engine
 
         :return None:
         """
-        self.db_session.close()
+        self.close()
 
         if os.path.isfile(self.path):
             os.unlink(self.path)
 
-        super().recreate()
-
-
-class StorageHelper:
-    """ Sync one-threaded storage wrapper
-
-    Processes storage requests queue
-    """
-
-    # Tasks queue
-    _queue = None
-
-    # Event if helper is not temporary locked and can perform tasks
-    _enabled = None
-
-    class Task:
-        """ Storage helper task """
-        def __init__(self, callback):
-            """ Init a new task with non result assigned
-
-            :param callable callback:
-            """
-            self.__ready = threading.Event()
-            self.__action = callback
-            self.__result = None
-
-        def run(self, storage_instance: AbstractStorage):
-            """ Set task result
-
-            :param Storage storage_instance: Storage instance
-            :return None:
-            """
-            self.__result = self.__action(storage_instance)
-            self.__ready.set()
-
-        def get_result(self, timeout=None):
-            """ Wait for a task is ready and get a result
-
-            :param timeout:
-            :return object:
-            """
-            self.__ready.wait(timeout)
-            return self.__result
-
-    def __init__(self, storage=None):
-        """ Override storage path if needed
-
-        :param Storage storage: Pre-instantiated storage instance to be served
-        """
-        self._storage = storage
-
-    @classmethod
-    def run_task(cls, callback, background=False):
-        """ Get random post
-
-        :param callable callback: Function to run. Accepts a storage instance as the first argument
-        :param bool background: Do not wait until task is completed, return None any way
-        :return object:
-        """
-        task = cls.Task(callback)
-        cls._queue.put(task)
-
-        return None if background else task.get_result()
-
-    @classmethod
-    def stop(cls):
-        """ Disable helper queue processing
-
-        :return None:
-        """
-        cls._enabled.clear()
-        cls.run_task(lambda s: None)  # Add void task to release queue if it is locked
-
-    @classmethod
-    def resume(cls):
-        """ Enable running
-
-        :return None:
-        """
-        cls._enabled.set()
-
-    @classmethod
-    def wait(cls):
-        """ Wait until queue is empty
-
-        :return None:
-        """
-        cls._queue.join()
-
-    def __call__(self):
-        """ Helper is invokable
-
-        :return None:
-        """
-        self._enabled.set()
-        with self._storage as storage:
-            while True:
-                self._enabled.wait()
-                task = self._queue.get()
-                task.run(storage)
-                self._queue.task_done()
-
-    def __new__(cls, *args):
-        """ Create new class instance """
-        if cls._queue is None:
-            cls._queue = queue.Queue()
-        if cls._enabled is None:
-            cls._enabled = threading.Event()
-
-        return super().__new__(cls)
+        super().create()

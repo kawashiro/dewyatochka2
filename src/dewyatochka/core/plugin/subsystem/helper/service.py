@@ -4,7 +4,6 @@
 
 Classes
 =======
-    Environment         -- Helper plugin environment (using basic implementation)
     Service             -- Helper plugins container service
     ScheduleEnvironment -- Environment for a schedule plugin
     Wrapper             -- Wraps a plugin into environment
@@ -26,7 +25,7 @@ from dewyatochka.core.plugin.base import Service as BaseService
 
 from .schedule import Schedule
 
-__all__ = ['Environment', 'Service', 'ScheduleEnvironment', 'Wrapper',
+__all__ = ['Service', 'ScheduleEnvironment', 'Wrapper',
            'PLUGIN_TYPES', 'PLUGIN_TYPE_SCHEDULE', 'PLUGIN_TYPE_BOOTSTRAP', 'PLUGIN_TYPE_DAEMON']
 
 

@@ -9,6 +9,12 @@ Classes
     Service               -- Abstract registrable service
     VoidApplication       -- Empty application, generally for test purposes
     UndefinedServiceError -- Error on unknown service
+
+Attributes
+==========
+    EXIT_CODE_OK    -- Normal exit
+    EXIT_CODE_ERROR -- Exit on error
+    EXIT_CODE_TERM  -- Exit on user terminate
 """
 
 import sys
@@ -16,7 +22,14 @@ from abc import ABCMeta, abstractmethod
 from threading import Event
 from logging import Logger
 
-__all__ = ['Application', 'Registry', 'Service', 'VoidApplication']
+__all__ = ['Application', 'Registry', 'Service', 'VoidApplication',
+           'EXIT_CODE_OK', 'EXIT_CODE_ERROR', 'EXIT_CODE_TERM']
+
+
+# App exit codes
+EXIT_CODE_OK = 0
+EXIT_CODE_ERROR = 1
+EXIT_CODE_TERM = 2
 
 
 class UndefinedServiceError(RuntimeError):
@@ -36,7 +49,7 @@ class Application(metaclass=ABCMeta):
         :param Registry registry: External registry instance or create internal one
         """
         self._registry = registry or Registry()
-        self._exit_code = 0
+        self._exit_code = EXIT_CODE_OK
         self._stop_event = Event()
 
     @property
@@ -86,7 +99,7 @@ class Application(metaclass=ABCMeta):
         """
         self._stop_event.wait(time)
 
-    def stop(self, exit_code=0):
+    def stop(self, exit_code=EXIT_CODE_OK):
         """ Stop app
 
         :param int exit_code: Exit code
@@ -109,7 +122,7 @@ class Application(metaclass=ABCMeta):
             # and try at least to echo what really happened
             print('Error at %s: %s' % (module_name, exception), file=sys.stderr)
 
-        self.stop(1)
+        self.stop(EXIT_CODE_ERROR)
 
     @property
     def running(self) -> bool:
@@ -162,14 +175,21 @@ class Service:
         """
         return self.application.registry.config.section(self.name())
 
+    @classmethod
+    def _log_name(cls):
+        """ Format name to be displayed in log messages
+
+        :return str:
+        """
+        return 'SVC::%s' % cls.name()
+
     @property
     def log(self) -> Logger:
         """ Get related logger instance
 
         :return Logger:
         """
-        logger_name = '.'.join((self.__class__.__module__, self.__class__.__name__))
-        return self.application.registry.log(logger_name)
+        return self.application.registry.log(self._log_name())
 
     @classmethod
     def name(cls) -> str:
@@ -229,6 +249,18 @@ class Registry:
             return self._services[name]
         except KeyError:
             raise UndefinedServiceError('Service "%s" is not registered' % name)
+
+    @property
+    def all(self) -> list:
+        """ Get all unique services
+
+        :return list:
+        """
+        res = []
+        for service in self._services.values():
+            if service not in res:
+                res.append(service)
+        return res
 
     def __getattr__(self, item: str) -> Service:
         """ Get registered service
