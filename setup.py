@@ -40,6 +40,7 @@ setup(
               'dewyatochka.core.network.xmpp.client',
               'dewyatochka.core.plugin',
               'dewyatochka.core.plugin.loader',
+              'dewyatochka.core.plugin.subsystem',
               'dewyatochka.core.plugin.subsystem.control',
               'dewyatochka.core.plugin.subsystem.helper',
               'dewyatochka.core.plugin.subsystem.message',
@@ -48,7 +49,6 @@ setup(
               'dewyatochka.plugins',
               'dewyatochka.plugins.anidb',
               'dewyatochka.plugins.cool_story',
-              'dewyatochka.plugins.cool_story.entry',
               'dewyatochka.plugins.cool_story.parser'],
     # Python extensions
     ext_modules=[Extension('dewyatochka.core.daemon._utils', ['src/ext/daemon/utilsmodule.c'])],

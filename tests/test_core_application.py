@@ -166,17 +166,6 @@ class TestService(unittest.TestCase):
         self.assertEqual(service_config, service.config)
         registry_mock.config.section.assert_called_once_with(service_name)
 
-    @patch.object(_EmptyService, 'name')
-    def test_log(self, name_method):
-        """ Test service config getter """
-        service_name = 'foo_service'
-
-        name_method.side_effect = (service_name,)
-        registry_mock = PropertyMock()
-
-        self.assertIsInstance(_EmptyService(VoidApplication(registry_mock)).log, MagicMock)
-        registry_mock.log.assert_called_once_with(__name__)
-
     def test_name(self):
         """ Test default name property """
         self.assertEqual('test_core_application._EmptyService', _EmptyService.name())

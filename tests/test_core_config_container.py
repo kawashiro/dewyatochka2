@@ -48,11 +48,3 @@ class TestConferencesConfig(unittest.TestCase):
     def test_get_name(self):
         """ Test service name getter """
         self.assertEqual('conferences_config', ConferencesConfig.name())
-
-
-class TestExtensionsConfig(unittest.TestCase):
-    """ Covers dewyatochka.core.config.container.ConferencesConfig """
-
-    def test_get_name(self):
-        """ Test service name getter """
-        self.assertEqual('ext_config', ExtensionsConfig.name())
