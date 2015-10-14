@@ -99,6 +99,6 @@ def occasional_question(registry):
 
         if last_message_ts and last_message_ts + silence_interval < time.time():
             log.info('Conference %s is too silent (last msg.: %d), waking up', conference, last_message_ts)
-            registry.bot.send_muc(_get_question(category, log), conference)
+            registry.bot.send(_get_question(category, log), conference)
         else:
             log.debug('Conference %s postponed (last msg.: %d)', conference, last_message_ts)
