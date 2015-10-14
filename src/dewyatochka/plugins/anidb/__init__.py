@@ -56,7 +56,7 @@ def recreate(outp, **_):
     :return None:
     """
     model.Storage().recreate()
-    outp.say('Cartoons storage successfully recreated at %s', model.Storage().path)
+    outp.info('Cartoons storage successfully recreated at %s', model.Storage().path)
 
 
 @plugin.schedule('@daily')
@@ -74,6 +74,7 @@ def update(**kwargs):
     interval_checker = model.SyncIntervalChecker(data_source.file)
 
     if interval_checker.is_outdated(current_time):
+        recreate(outp=log)
         log.info('Updating cartoons DB from web')
         data_source.download()
         cartoons_total = model.import_data(data_source)
