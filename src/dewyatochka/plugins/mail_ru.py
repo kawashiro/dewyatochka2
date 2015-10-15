@@ -3,7 +3,6 @@
 """ Ask a question from mail.ru """
 
 import time
-import logging
 import random
 import threading
 from collections import defaultdict

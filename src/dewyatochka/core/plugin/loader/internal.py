@@ -126,7 +126,7 @@ class Loader(BaseLoader):
         :return bool:
         """
         return os.path.isfile(path) and path.endswith(cls.__MODULE_EXT) \
-            and not (os.path.basename(path) == cls.__PKG_INIT)
+            and not os.path.basename(path) == cls.__PKG_INIT
 
     @classmethod
     def __is_package(cls, path) -> bool:

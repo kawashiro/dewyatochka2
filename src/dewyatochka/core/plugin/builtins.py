@@ -26,10 +26,6 @@ from dewyatochka.core.network.entity import GroupChat
 __all__ = ['ActivityInfo', 'get_activity_info', 'register_entry_points']
 
 
-# Conference jid -> last activity
-_conference_last_activity = defaultdict(lambda key: ActivityInfo(key))
-
-
 class ActivityInfo(object):
     """ Conference activity info structure """
 
@@ -49,6 +45,10 @@ class ActivityInfo(object):
         :return JID:
         """
         return self._conference
+
+
+# Conference jid -> last activity
+_conference_last_activity = defaultdict(ActivityInfo)
 
 
 def get_activity_info(conference: GroupChat) -> ActivityInfo:
@@ -187,7 +187,7 @@ class _CtlCommandsList:
         :return None:
         """
         commands = self._get_commands(registry)
-        cmd_len = max(map(lambda s: len(s), commands.keys())) + 1
+        cmd_len = max(map(len, commands.keys())) + 1
 
         outp.log('Accessible commands:')
         for command in sorted(commands.keys()):

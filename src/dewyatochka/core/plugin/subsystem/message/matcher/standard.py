@@ -69,7 +69,7 @@ class CommandMatcher(AbstractMatcher):
         :param str prefix:
         :param str command:
         """
-        self._cmd_regexp = re.compile('^%s([\t\s]+.*|$)' % re.escape(prefix + command), re.I)
+        self._cmd_regexp = re.compile(r'^%s([\t\s]+.*|$)' % re.escape(prefix + command), re.I)
 
     def match(self, message: TextMessage) -> bool:
         """ Check message

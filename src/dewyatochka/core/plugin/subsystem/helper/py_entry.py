@@ -38,11 +38,12 @@ def bootstrap(fn=None, *, services=None) -> callable:
     return entry_point_fn(fn) if fn is not None else entry_point_fn
 
 
-def schedule(schedule_: str, *, services=None) -> callable:
+def schedule(schedule_: str, *, services=None, lock=True) -> callable:
     """ Register this function to be executed by a schedule
 
     :param str schedule_: Schedule expression
     :param list services: Function to register
+    :param bool lock: Forbid concurrent tasks run or not
     :return callable:
     """
-    return entry_point(PLUGIN_TYPE_SCHEDULE, services=services, schedule=schedule_)
+    return entry_point(PLUGIN_TYPE_SCHEDULE, services=services, schedule=schedule_, lock=lock)

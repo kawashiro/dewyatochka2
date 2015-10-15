@@ -61,8 +61,8 @@ def _parse_content_type_enc(content_type: str, default=None) -> str:
         item = item.strip()
         if item.startswith('charset='):
             return item[8:]
-    else:
-        return default
+
+    return default
 
 
 def _get_http_encoding(headers: dict, default='UTF-8') -> str:

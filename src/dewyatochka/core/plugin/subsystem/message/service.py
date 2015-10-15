@@ -15,7 +15,7 @@ Attributes
 """
 
 from dewyatochka.core.application import Registry
-from dewyatochka.core.network.entity import Message, GroupChat
+from dewyatochka.core.network.entity import GroupChat
 from dewyatochka.core.network.service import ChatManager
 from dewyatochka.core.plugin.base import Environment as BaseEnvironment
 from dewyatochka.core.plugin.base import Service as BaseService

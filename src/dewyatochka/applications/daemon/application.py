@@ -50,6 +50,54 @@ class DaemonApp(Application):
 
         return args_parser.parse_args(args[1:])
 
+    def _init(self, config_file: str, daemon_mode=True):
+        """ Init dependent services
+
+        :param str config_file:
+        :param bool daemon_mode:
+        :return:
+        """
+        self.depend(get_common_config(self, config_file))
+
+        self.depend(get_daemon_logger(self, not daemon_mode))
+
+        self.depend(get_conferences_config(self))
+        self.depend(get_extensions_config(self))
+
+        self.depend(LoaderService)
+        self.depend(m_service.Service)
+        self.depend(h_service.Service)
+        self.depend(c_service.Service)
+
+        self.depend(process.Bootstrap)
+        self.depend(process.Scheduler)
+        self.depend(process.Daemon)
+        self.depend(process.Control)
+        self.depend(process.ChatManager, 'bot')
+        self.depend(xmpp.Connection)
+
+    def _run(self, daemon_mode=True):
+        """ Actually run app
+
+        :param bool daemon_mode:
+        :return None:
+        """
+        if daemon_mode:
+            daemon.acquire_lock(self.registry.config.global_section.get('lock'))
+            daemon.detach(lambda *_: self.stop())
+
+        self.registry.message_plugin_provider.load()
+        self.registry.helper_plugin_provider.load()
+        self.registry.control_plugin_provider.load()
+
+        self.registry.bootstrap.run()
+        self.registry.daemon.start()
+        self.registry.scheduler.start()
+        self.registry.chat_manager.start()
+        self.registry.control.start()
+
+        self.wait()
+
     def run(self, args: list):
         """ Run application
 
@@ -59,40 +107,8 @@ class DaemonApp(Application):
         try:
             params = self.__parse_args(args)
 
-            self.depend(get_common_config(self, params.config))
-
-            self.depend(get_daemon_logger(self, params.nodaemon))
-
-            self.depend(get_conferences_config(self))
-            self.depend(get_extensions_config(self))
-
-            self.depend(LoaderService)
-            self.depend(m_service.Service)
-            self.depend(h_service.Service)
-            self.depend(c_service.Service)
-
-            self.depend(process.Bootstrap)
-            self.depend(process.Scheduler)
-            self.depend(process.Daemon)
-            self.depend(process.Control)
-            self.depend(process.ChatManager, 'bot')
-            self.depend(xmpp.Connection)
-
-            self.registry.message_plugin_provider.load()
-            self.registry.helper_plugin_provider.load()
-            self.registry.control_plugin_provider.load()
-
-            self.registry.bootstrap.run()
-            self.registry.daemon.start()
-            self.registry.scheduler.start()
-            self.registry.chat_manager.start()
-            self.registry.control.start()
-
-            if not params.nodaemon:
-                daemon.detach(self.stop)
-                daemon.acquire_lock(self.registry.config.global_section.get('lock'))
-
-            self.wait()
+            self._init(params.config, not params.nodaemon)
+            self._run(not params.nodaemon)
 
         except (KeyboardInterrupt, SystemExit):
             self.registry.log(__name__).warning('Interrupted by user')

@@ -263,12 +263,12 @@ class SocketListener:
                 pass
 
     def __enter__(self):
-            """ Open socket on enter
+        """ Open socket on enter
 
-            :return self:
-            """
-            self.open()
-            return self
+        :return self:
+        """
+        self.open()
+        return self
 
     def __exit__(self, *_):
         """ Close on exit
