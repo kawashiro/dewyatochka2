@@ -35,36 +35,14 @@ class InvalidMessageError(ValueError):
 class Message:
     """ Abstract client request """
 
-    def __init__(self, source=None, raw=None, **payload):
-        """ Init received request
+    def __init__(self, **payload):
+        """ Init received data
 
         :param socket.socket source: Socket the message was received from
         :param bytes raw: Raw data to be parsed instead of args
         :param dict payload: Data to fill message with
         """
-        self._data = None
-        self._source = source
-
-        if payload:
-            self._data = payload
-        else:
-            self._data = self._parse(raw)
-
-    @staticmethod
-    def _parse(raw_data: bytes) -> dict:
-        """ Parse network message
-
-        :param bytes raw_data:
-        :return dict:
-        """
-        if not raw_data:
-            raise InvalidMessageError()
-
-        try:
-            return json.loads(raw_data.decode()) or {}
-
-        except ValueError:
-            raise InvalidMessageError()
+        self._data = payload
 
     @property
     def data(self) -> dict:
@@ -73,14 +51,6 @@ class Message:
         :return dict:
         """
         return self._data
-
-    @property
-    def source(self) -> socket.socket:
-        """ Source socket getter
-
-        :return socket.socket:
-        """
-        return self._source
 
     def encode(self) -> bytes:
         """ Serialize message
@@ -104,10 +74,30 @@ class Message:
         :param any value:
         :return None:
         """
-        if key.startswith('_'):
+        if key == '_data':
             super().__setattr__(key, value)
         else:
             self.data[key] = value
+
+    @classmethod
+    def from_bytes(cls, raw_data: bytes):
+        """ Create message from bytes array
+
+        :param bytes raw_data: Raw data byte array
+        :return Message:
+        """
+        if not raw_data:
+            raise InvalidMessageError()
+
+        try:
+            if raw_data.endswith(b'\0'):
+                raw_data = raw_data[:-1]
+
+            message = cls(**(json.loads(raw_data.decode().strip()) or {}))
+            return message
+
+        except ValueError:
+            raise InvalidMessageError()
 
 
 class StreamReader:
@@ -153,7 +143,7 @@ class StreamReader:
             if ~delimiter_pos:
                 # Chunk is a complete message
                 chunk, self.__tail = chunk[:delimiter_pos], chunk[delimiter_pos+1:]
-                message = Message(self.__sock, chunk)
+                message = Message.from_bytes(chunk)
                 break
 
             # Message end is not reached, continue
@@ -231,7 +221,7 @@ class SocketListener:
                 command = StreamReader(connection).read_message()
                 if not command.name:
                     raise InvalidMessageError()
-                yield command
+                yield command, connection
 
             except socket.timeout:
                 pass

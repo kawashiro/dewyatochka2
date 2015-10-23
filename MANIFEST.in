@@ -1,8 +1,8 @@
 include INSTALL
 include LICENSE
 include README.md
-include tests.py
+include test.py
 recursive-include src/ext *
 recursive-include pkg *
-recursive-include tests *
-recursive-exclude tests *.pyc
+recursive-include test *
+recursive-exclude test *.pyc

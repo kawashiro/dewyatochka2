@@ -32,33 +32,67 @@ __all__ = ['ObjectMeta', 'StoreableObject', 'CacheableObject', 'UnmappedFieldErr
            'readable_query', 'writable_query']
 
 
-def __sync_wrapper(method: callable, lock_attrs=()) -> callable:
-    """ Wrap a method in thread-safe wrapper
+def __sync_wrapper_get_attr(obj, attr: str, default, modifier=None):
+    """ Get attribute value
 
-    :param callable method:
-    :param tuple lock_attrs:
-    :return:
+    Create attribute if it does not exist
+
+    :param any obj: Target object
+    :param str attr: Attribute name
+    :param any default: Default value to be assigned
+    :param callable modifier: Function to modify existing or default value before set / return
+    :return any:
     """
-    @wraps(method)
-    def _wrapper(self_, *args, **kwargs):
-        locks = []
-        for lock_attr in lock_attrs:
-            try:
-                lock = getattr(self_, lock_attr)
-            except AttributeError:
-                lock = threading.RLock()
-                setattr(self_, lock_attr, lock)
-            locks.append(lock)
-
+    with __sync_wrapper_get_attr.lock:
         try:
-            for l in locks:
-                l.acquire()
-            return method(self_, *args, **kwargs)
-        finally:
-            for l in locks:
-                l.release()
+            val = getattr(obj, attr)
+        except AttributeError:
+            val = default
+        if modifier:
+            val = modifier(val)
+        setattr(obj, attr, val)
+    return val
 
-    return _wrapper
+# Global lock to be used in __sync_wrapper_get_attr()
+__sync_wrapper_get_attr.lock = threading.RLock()
+
+
+def __sync_write_completed_event(obj) -> threading.Event:
+    """ Get "write completed" event
+
+    This event is set when no writable operations are pending and
+    new readable and/or writable query can be evaluated
+
+    :param any obj:
+    :return threading.Event:
+    """
+    w_completed_event = threading.Event()
+    w_completed_event.set()
+    return __sync_wrapper_get_attr(obj, '__w_completed', w_completed_event)
+
+
+def __sync_read_completed_event(obj) -> threading.Event:
+    """ Get "write completed" event
+
+    This event is set when no no operations are pending and
+    new _writable_ query can be evaluated
+
+    :param any obj:
+    :return threading.Event:
+    """
+    r_completed_event = threading.Event()
+    r_completed_event.set()
+    return __sync_wrapper_get_attr(obj, '__r_completed', r_completed_event)
+
+
+def __inc_read_count(obj, delta: int) -> int:
+    """ Increase / decrease readable queries count
+
+    :param any obj:
+    :param int delta:
+    :return int:
+    """
+    return __sync_wrapper_get_attr(obj, '__r_cnt', 0, lambda v: v + delta)
 
 
 def readable_query(method: callable) -> callable:
@@ -67,7 +101,25 @@ def readable_query(method: callable) -> callable:
     :param callable method: Storage method
     :return: callable
     """
-    return __sync_wrapper(method, ('__w_lock',))
+    @wraps(method)
+    def _wrapper(self_, *args, **kwargs):
+        w_completed_event = __sync_write_completed_event(self_)
+        r_completed_event = __sync_read_completed_event(self_)
+
+        try:
+            w_completed_event.wait()
+            r_completed_event.clear()
+            __inc_read_count(self_, 1)
+
+            res = method(self_, *args, **kwargs)
+
+        finally:
+            if __inc_read_count(self_, -1) == 0:
+                r_completed_event.set()
+
+        return res
+
+    return _wrapper
 
 
 def writable_query(method: callable) -> callable:
@@ -76,7 +128,24 @@ def writable_query(method: callable) -> callable:
     :param callable method: Storage method
     :return: callable
     """
-    return __sync_wrapper(method, ('__w_lock', '__r_lock'))
+    @wraps(method)
+    def _wrapper(self_, *args, **kwargs):
+        w_completed_event = __sync_write_completed_event(self_)
+        r_completed_event = __sync_read_completed_event(self_)
+
+        try:
+            r_completed_event.wait()
+            w_completed_event.wait()
+            w_completed_event.clear()
+
+            res = method(self_, *args, **kwargs)
+
+        finally:
+            w_completed_event.set()
+
+        return res
+
+    return _wrapper
 
 
 class UnmappedFieldError(AttributeError):
@@ -130,7 +199,7 @@ class ObjectMeta(type, metaclass=ABCMeta):
         return {}
 
     @abstractproperty
-    def _table(cls) -> Table:
+    def _table(cls) -> Table:  # pragma: nocover
         """ Get table associated with metadata
 
         :param type cls: Obj class
@@ -200,7 +269,10 @@ class CacheableObject(StoreableObject):
 
         :return None:
         """
-        self._cache[getattr(self, str(self._key))] = self
+        try:
+            self._cache[getattr(self, str(self._key))] = self
+        except AttributeError:
+            pass
 
     def free(self):
         """ Remove from cache
@@ -209,7 +281,7 @@ class CacheableObject(StoreableObject):
         """
         try:
             del self._cache[getattr(self, str(self._key))]
-        except KeyError:
+        except (KeyError, AttributeError):
             pass
 
     @classmethod
@@ -280,7 +352,7 @@ class AbstractStorage(metaclass=StorageMeta):
         return self.__db_session
 
     @abstractproperty
-    def _dsn(self) -> str:
+    def _dsn(self) -> str:  # pragma: nocover
         """ Get db connection dsn
 
         :return str:
@@ -320,7 +392,7 @@ class AbstractStorage(metaclass=StorageMeta):
         """
         self.close()
         # noinspection PyUnresolvedReferences
-        self.__class__.metadata.create_all(bind=self.db_session.get_bind())
+        self.metadata.create_all(bind=self.db_session.get_bind())
 
 
 class SQLIteStorage(AbstractStorage):

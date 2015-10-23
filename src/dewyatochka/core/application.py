@@ -22,7 +22,7 @@ from abc import ABCMeta, abstractmethod
 from threading import Event
 from logging import Logger
 
-__all__ = ['Application', 'Registry', 'Service', 'VoidApplication',
+__all__ = ['Application', 'Registry', 'Service', 'VoidApplication', 'UndefinedServiceError',
            'EXIT_CODE_OK', 'EXIT_CODE_ERROR', 'EXIT_CODE_TERM']
 
 

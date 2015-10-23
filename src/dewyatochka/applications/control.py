@@ -17,7 +17,8 @@ import argparse
 from dewyatochka.core.application import Application as BaseApplication
 from dewyatochka.core.application import EXIT_CODE_TERM
 from dewyatochka.core.log import get_console_logger
-from dewyatochka.core.plugin.subsystem.control.network import Client, Message, DEFAULT_SOCKET_PATH
+from dewyatochka.core.plugin.subsystem.control.network import DEFAULT_SOCKET_PATH
+from dewyatochka.core.plugin.subsystem.control.service import ClientService
 
 __all__ = ['Application', 'main']
 
@@ -26,7 +27,7 @@ class Application(BaseApplication):
     """ dewyatochkactl impl """
 
     @staticmethod
-    def __parse_args(args: list) -> tuple:
+    def _parse_args(args: list) -> tuple:
         """ Parse known arguments
 
         :param list args:
@@ -40,30 +41,35 @@ class Application(BaseApplication):
                                  help='Path to daemon\'s control socket',
                                  default=DEFAULT_SOCKET_PATH)
 
-        return args_parser.parse_known_args(args[1:])
+        params, cmd_args = args_parser.parse_known_args(args[1:])
+        parsed_args = dict(arg.split('=', 2) for arg in cmd_args)
 
-    def __communicate(self, socket: str, command: str, optional: dict):
-        """ Communicate with daemon
+        return params, parsed_args
+
+    def _init(self):
+        """ Init dependent services
+
+        :return None:
+        """
+        self.depend(get_console_logger(self))
+        self.depend(ClientService)
+
+    def _run(self, socket: str, command: str, optional: dict):
+        """ Actually run app
 
         :param str socket:
         :param str command:
         :param dict optional:
         :return None:
         """
-        log = self.registry.log(__name__)
+        try:
+            client = self.registry.control_client
 
-        with Client(socket) as ctl_client:
-            ctl_client.send(Message(name=command, args=optional or {}))
+            client.socket = socket
+            client.communicate(command, optional)
 
-            for msg in ctl_client.input:
-                if msg.error:
-                    log.error('Server error: %s', msg.error)
-
-                elif msg.text:
-                    print(msg.text)
-
-                else:
-                    log.error('Unhandled message: %s', str(msg.data))
+        except Exception as e:
+            raise RuntimeError('Failed to communicate with daemon process at %s: %s' % (socket or '[DEFAULT]', e))
 
     def run(self, args: list):
         """ Run application
@@ -72,17 +78,10 @@ class Application(BaseApplication):
         :return None:
         """
         try:
-            params, cmd_args = self.__parse_args(args)
+            params, cmd_args = self._parse_args(args)
 
-            self.depend(get_console_logger(self))
-
-            try:
-                parsed_args = dict(arg.split('=', 2) for arg in cmd_args)
-                self.__communicate(params.socket, params.command, parsed_args)
-            except Exception as e:
-                raise RuntimeError(
-                    'Failed to communicate with daemon process at %s: %s' % (params.socket or '[DEFAULT]', e)
-                )
+            self._init()
+            self._run(params.socket, params.command, cmd_args)
 
         except (KeyboardInterrupt, SystemExit):
             self.stop(EXIT_CODE_TERM)

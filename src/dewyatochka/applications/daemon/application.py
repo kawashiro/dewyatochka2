@@ -34,7 +34,7 @@ class DaemonApp(Application):
     """ Application implementation """
 
     @staticmethod
-    def __parse_args(args: list):
+    def _parse_args(args: list):
         """ Parse known arguments
 
         :param list args:
@@ -55,7 +55,7 @@ class DaemonApp(Application):
 
         :param str config_file:
         :param bool daemon_mode:
-        :return:
+        :return None:
         """
         self.depend(get_common_config(self, config_file))
 
@@ -74,7 +74,7 @@ class DaemonApp(Application):
         self.depend(process.Daemon)
         self.depend(process.Control)
         self.depend(process.ChatManager, 'bot')
-        self.depend(xmpp.Connection)
+        self.depend(xmpp.XMPPConnectionManager)
 
     def _run(self, daemon_mode=True):
         """ Actually run app
@@ -105,7 +105,7 @@ class DaemonApp(Application):
         :return None:
         """
         try:
-            params = self.__parse_args(args)
+            params = self._parse_args(args)
 
             self._init(params.config, not params.nodaemon)
             self._run(not params.nodaemon)

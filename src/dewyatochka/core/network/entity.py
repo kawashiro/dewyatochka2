@@ -22,7 +22,7 @@ class _Entity(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # pragma: nocover
         """ Convert participant object to string
 
         :return str:
@@ -42,14 +42,24 @@ class _Entity(metaclass=ABCMeta):
 
         :return int:
         """
-        return hash('%s://%s' % (self.__class__, self))
+        module = self.__class__.__module__
+        class_ = self.__class__.__name__
+
+        return hash('%s.%s::%s' % (module, class_, self))
+
+    def __repr__(self) -> str:
+        """ Representative form
+
+        :return str:
+        """
+        return '%s(%s)' % (self.__class__.__name__, str(self))
 
 
 class Participant(_Entity, metaclass=ABCMeta):
     """ Chat participant info container """
 
     @abstractproperty
-    def public_name(self) -> str:
+    def public_name(self) -> str:  # pragma: nocover
         """ Get public name displayed in chat
 
         :return str:
@@ -61,7 +71,7 @@ class GroupChat(_Entity, metaclass=ABCMeta):
     """ Group chat params container """
 
     @abstractproperty
-    def self(self) -> Participant:
+    def self(self) -> Participant:  # pragma: nocover
         """ Get self identification
 
         :return Participant:

@@ -4,10 +4,11 @@
 
 Classes
 =======
-    Service     -- Ctl plugins container service
-    Output      -- Output wrapper
-    Wrapper     -- Wraps a plugin into environment
-    Environment -- Environment for a ctl plugin
+    Service       -- Ctl plugins container service
+    ClientService -- Control client service impl
+    Output        -- Output wrapper
+    Wrapper       -- Wraps a plugin into environment
+    Environment   -- Environment for a ctl plugin
 
 Attributes
 ==========
@@ -16,15 +17,16 @@ Attributes
 """
 
 from dewyatochka.core.application import Application
-from dewyatochka.core.plugin.base import Service as BaseService
+from dewyatochka.core.application import Service as BaseService
+from dewyatochka.core.plugin.base import Service as BasePluginService
 from dewyatochka.core.plugin.base import Wrapper as BaseWrapper
 from dewyatochka.core.plugin.base import Environment as BaseEnvironment
 from dewyatochka.core.plugin.base import PluginEntry
 from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 
-from .network import Message
+from .network import Message, Client
 
-__all__ = ['Service', 'Output', 'Wrapper', 'Environment', 'PLUGIN_TYPE_CTL', 'PLUGIN_TYPES']
+__all__ = ['Service', 'Output', 'Wrapper', 'Environment', 'PLUGIN_TYPE_CTL', 'PLUGIN_TYPES', 'Cli']
 
 
 # Plugin types provided
@@ -105,17 +107,20 @@ class Wrapper(BaseWrapper):
 class Environment(BaseEnvironment):
     """ Environment for a ctl plugin """
 
-    def invoke(self, *, command=None, **kwargs):
+    def invoke(self, *, command=None, source=None, **kwargs):
         """ Invoke plugin in environment registered
 
         :param .network.Message command: Message to process
+        :param socket.socket source: Message source
         :param dict kwargs: Params to path to a plugin
         :return None:
         """
         if command is None:
             raise TypeError('`command` keyword argument is required')
+        if source is None:
+            raise TypeError('`source` keyword argument is required')
 
-        output = Output(command.source, self._registry.log)
+        output = Output(source, self._registry.log)
 
         try:
             super().invoke(inp=command, outp=output, **kwargs)
@@ -124,7 +129,7 @@ class Environment(BaseEnvironment):
             raise
 
 
-class Service(BaseService):
+class Service(BasePluginService):
     """ Ctl plugins container service """
 
     # Plugin wrapper class
@@ -182,3 +187,43 @@ class Service(BaseService):
         :return str:
         """
         return 'control_plugin_provider'
+
+
+class ClientService(BaseService):
+    """ Control client service impl """
+
+    def __init__(self, application: Application):
+        """ Initialize service & attach an application to it
+
+        :param Application application:
+        """
+        super().__init__(application)
+
+        self.socket = None
+
+    def communicate(self, command: str, optional: dict):
+        """ Communicate with daemon
+
+        :param str command: Command name
+        :param dict optional: Optional command args
+        :return None:
+        """
+        with Client(self.socket) as ctl_client:
+            ctl_client.send(Message(name=command, args=optional or {}))
+            for msg in ctl_client.input:
+                if msg.error:
+                    self.log.error('Server error: %s', msg.error)
+
+                elif msg.text:
+                    self.log.info(msg.text)
+
+                else:
+                    self.log.error('Unhandled message: %s', str(msg.data))
+
+    @classmethod
+    def name(cls) -> str:
+        """ Get service unique name
+
+        :return str:
+        """
+        return 'control_client'

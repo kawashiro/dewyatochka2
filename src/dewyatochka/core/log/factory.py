@@ -23,9 +23,7 @@ _INIT_MESSAGE = 'Logging started'
 
 # Log line formats
 _FORMAT_DAEMON_DEFAULT = '%(asctime)s :: %(levelname)-8s :: [%(name)s] %(message)s'
-_FORMAT_DAEMON_DEBUG = _FORMAT_DAEMON_DEFAULT
 _FORMAT_CONSOLE_DEFAULT = '%(levelname)s: %(message)s'
-_FORMAT_CONSOLE_DEBUG = _FORMAT_DAEMON_DEBUG
 
 
 def get_daemon_logger(application: Application, use_stdout=False) -> LoggingService:
@@ -37,7 +35,7 @@ def get_daemon_logger(application: Application, use_stdout=False) -> LoggingServ
     """
     logger = LoggingService(application)
 
-    log_format = _FORMAT_DAEMON_DEBUG if logger.logging_level == 'DEBUG' else _FORMAT_DAEMON_DEFAULT
+    log_format = _FORMAT_DAEMON_DEFAULT
     log_file = application.registry.config.section('log').get('file', _DEFAULT_LOG_FILE_PATH)
 
     try:
@@ -58,12 +56,6 @@ def get_console_logger(application: Application) -> LoggingService:
     :return LoggingService:
     """
     logger = LoggingService(application)
-    log_format = _FORMAT_CONSOLE_DEBUG if logger.logging_level == 'DEBUG' else _FORMAT_CONSOLE_DEFAULT
-
-    try:
-        logger.register_handler(STDOUTHandler(log_format))
-    except:
-        # Something wrong with default log handler using null as a fallback
-        logger.register_handler(NullHandler(log_format))
+    logger.register_handler(STDOUTHandler(_FORMAT_CONSOLE_DEFAULT))
 
     return logger

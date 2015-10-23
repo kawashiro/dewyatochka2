@@ -69,18 +69,6 @@ class LoggerWrapper:
         """
         self._logger.log(LEVEL_PROGRESS, template, *args, **kwargs)
 
-    def __new__(cls, inner_logger: logging.Logger):
-        """ Get new instance
-
-        :param type cls:
-        :param logging.Logger inner_logger:
-        :return LoggerWrapper:
-        """
-        if inner_logger.name not in cls.__instances:
-            cls.__instances[inner_logger.name] = super().__new__(cls)
-
-        return cls.__instances[inner_logger.name]
-
 
 class LoggingService(Service):
     """ Logging app service """

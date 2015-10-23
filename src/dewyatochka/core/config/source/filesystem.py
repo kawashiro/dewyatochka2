@@ -41,7 +41,7 @@ class Filesystem(ConfigSource, metaclass=ABCMeta):
         :return list:
         """
         if path.isfile(self._path):
-            files = [self._path]
+            files = {self._path}
         elif path.isdir(self._path):
             files = {file for file
                      in map(lambda f: path.sep.join((self._path, f)), listdir(self._path))

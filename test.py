@@ -12,6 +12,6 @@ if __name__ == '__main__':
 
     # Some dirty hack to run it such shortened way
     sys.path.insert(0, home_dir + '/src')
-    unittest_args = [__file__, 'discover', '-s', home_dir + '/tests'] + sys.argv[1:]
+    unittest_args = [__file__, 'discover', '-s', home_dir + '/test/cases'] + sys.argv[1:]
 
     unittest.main(argv=unittest_args, module=None)

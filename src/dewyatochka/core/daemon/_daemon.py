@@ -56,7 +56,7 @@ def acquire_lock(lock_file=None):
         raise ProcessLockedError('Another process is already running')
 
     if lock_file is None:
-        lock_file = _DEFAULT_LOCK_FILE_PATH
+        lock_file = _DEFAULT_LOCK_FILE_PATH  # pragma: nocover
 
     _lock_file_obj = open(lock_file, 'w')
     fcntl.flock(_lock_file_obj.fileno(), fcntl.LOCK_EX)
@@ -81,7 +81,7 @@ def release_lock():
     _lock_file_obj = None
 
 
-def detach(sigterm_handler=None):
+def detach(sigterm_handler=None):  # pragma: nocover
     """ Detach a process from console
 
     :param callable sigterm_handler: SIGTERM handler

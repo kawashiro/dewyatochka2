@@ -293,13 +293,13 @@ class Control(_HelperService):
             plugins_provider = self.application.registry.control_plugin_provider
 
             with self._listener as listener:
-                for command in listener.commands:
+                for command, source in listener.commands:
                     try:
                         self.log.info('Received a control command "%s"', command.name)
-                        plugins_provider.get_command(command.name)(logger=self.log, command=command)
+                        plugins_provider.get_command(command.name)(logger=self.log, command=command, source=source)
 
                     except RuntimeError:
-                        command.source.send(CTLMessage(error='Command %s is not supported' % command.name).encode())
+                        source.send(CTLMessage(error='Command %s is not supported' % command.name).encode())
 
         except Exception as e:
             self.application.fatal_error(self._log_name(), e)

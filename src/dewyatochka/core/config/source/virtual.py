@@ -31,9 +31,12 @@ class Predefined(ConfigSource):
         return self._data
 
 
-class Empty(Predefined):
+class Empty(ConfigSource):
     """ Empty config implementation """
 
-    def __init__(self):
-        """ Create an empty predefined config """
-        super().__init__({})
+    def read(self) -> dict:
+        """ Read data and return dict-like object {'section': <...>}
+
+        :return dict:
+        """
+        return {}

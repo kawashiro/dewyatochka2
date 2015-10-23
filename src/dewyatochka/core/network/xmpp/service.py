@@ -4,9 +4,10 @@
 
 Classes
 =======
-    Connection            -- Serves xmpp-connection
+    XMPPConnectionManager -- Serves xmpp-connection
     ConnectionConfigError -- Error on invalid xmpp connection config
     ConferenceConfigError -- Error on invalid conference config
+    PresenceHelper        -- Serves presence in conferences
 """
 
 import time
@@ -17,13 +18,12 @@ from dewyatochka.core.application import Application
 from dewyatochka.core.config.exception import ConfigError
 
 from ..service import ConnectionManager
-from ..entity import Message
 
 from . import client
 from .entity import Conference, JID
 from .exception import *
 
-__all__ = ['Connection', 'ConnectionConfigError', 'ConferenceConfigError']
+__all__ = ['XMPPConnectionManager', 'ConnectionConfigError', 'ConferenceConfigError', 'PresenceHelper']
 
 
 # Seconds to wait between multiple connections attempts
@@ -46,7 +46,7 @@ class ConferenceConfigError(ConfigError):
     pass
 
 
-class _PresenceHelper:
+class PresenceHelper:
     """ Serves presence in conferences """
 
     # Conference reconnect task structure
@@ -61,20 +61,20 @@ class _PresenceHelper:
         self._connection_manager = connection_manager
 
         self._alive_conferences = set()
+        self._alive_nicknames = {}
         self._alive_set_lock = threading.Lock()
         self._reconnect_queue = []
 
         self.__configured_conferences = None
+        self.__configured_conferences_lock = threading.Lock()
 
         self._reconnect_thread = threading.Thread(
             name=self._connection_manager.name() + '[PresenceHelper][Reenter]',
-            target=self._do_reconnect,
-            daemon=True
+            target=self._do_reconnect
         )
         self._ping_thread = threading.Thread(
             name=self._connection_manager.name() + '[PresenceHelper][Ping]',
-            target=self._do_s2s_ping,
-            daemon=True
+            target=self._do_s2s_ping
         )
         self._running = False
 
@@ -83,9 +83,9 @@ class _PresenceHelper:
 
         :return None:
         """
+        self._running = True
         self._reconnect_thread.start()
         self._ping_thread.start()
-        self._running = True
 
     def stop(self):
         """ Stop a reconnection thread if it has been started
@@ -94,6 +94,9 @@ class _PresenceHelper:
         """
         self.__assert_started()
         self._running = False
+
+        self._ping_thread.join()
+        self._reconnect_thread.join()
 
     def enter(self, conference: Conference):
         """ Enter a conference
@@ -109,25 +112,26 @@ class _PresenceHelper:
                 log.info('Entering into conference %s as %s', conference.bare.jid, conference.resource)
                 self._connection_manager.client.chat.enter(conference.bare, conference.resource)
                 self._alive_conferences.add(conference.bare)
+                self._alive_nicknames[conference.bare] = conference.resource
             else:
                 log.debug('Discarded to enter to a conference %s while it is marked as alive', str(conference))
 
     def leave(self, conference: Conference):
         """ Leave conference
 
-        :param Conference conference: Conference jid with nick
+        :param Conference conference: Conference jid
         :return:
         """
         with self._alive_set_lock:
             self.__assert_started()
             log = self._connection_manager.log
+            conference = conference.bare
 
-            if conference in self._alive_conferences:
+            if conference in self._alive_conferences and conference in self._alive_nicknames:
                 log.info('Leaving conference %s', str(conference))
-                for c_conference in self._configured_conferences:
-                    if c_conference.bare == conference:
-                        self._connection_manager.client.chat.leave(conference, c_conference.resource)
+                self._connection_manager.client.chat.leave(conference, self._alive_nicknames[conference])
                 self._alive_conferences.remove(conference)
+                del self._alive_nicknames[conference]
             else:
                 log.debug('Discarded to leave conference %s while it is not marked as alive', str(conference))
 
@@ -138,6 +142,7 @@ class _PresenceHelper:
         """
         with self._alive_set_lock:
             self._alive_conferences.clear()
+            self._alive_nicknames.clear()
             self._reconnect_queue.clear()
 
     def enter_all(self):
@@ -171,27 +176,24 @@ class _PresenceHelper:
 
         with self._alive_set_lock:
             try:
-                self._alive_conferences.remove(conference)
+                self._alive_conferences.remove(conference.bare)
             except KeyError:
                 # Failed on the first connection attempt
                 pass
             self._reconnect_queue.append(self.__ReconnectTask(self.get_presence_jid(conference), time.time()))
 
-    def get_presence_jid(self, conference: JID) -> JID:
+    def get_presence_jid(self, conference: Conference) -> Conference:
         """ Get full conference presence JID
 
-        :param JID conference: Full or bare JID
-        :return JID:
+        :param Conference conference: Full or bare JID
+        :return Conference:
         """
         try:
-            full_conf_resource = [c.resource for c in self._configured_conferences if c.bare == conference.bare][0]
-            full_conf = JID(conference.login, conference.server, full_conf_resource)
+            full_conf_resource = self._alive_nicknames[conference.bare]
+            return Conference(conference.login, conference.server, full_conf_resource)
 
-        except IndexError:
-            self._connection_manager.log.warn('Conference %s is marked as alive but is not configured', conference)
-            full_conf = conference
-
-        return full_conf
+        except KeyError:
+            raise XMPPError('Unable to get presence JID for offline conference')
 
     def is_alive(self, conference: Conference) -> bool:
         """ Check if conference is alive
@@ -215,19 +217,21 @@ class _PresenceHelper:
 
         :return set of Conference:
         """
-        if self.__configured_conferences is None:
-            try:
+        with self.__configured_conferences_lock:
+            if self.__configured_conferences is None:
                 self.__configured_conferences = set()
                 config = self._connection_manager.application.registry.conferences_config
+
                 for conf_name in config:
-                    conf_config = config.section(conf_name)
-                    if not conf_config.get('nick') or not conf_config.get('room'):
-                        self._connection_manager.log.warn('Conference [%s] is not configured properly', conf_name)
-                    else:
+                    try:
+                        conf_config = config.section(conf_name)
+                        if not conf_config.get('nick') or not conf_config.get('room'):
+                            raise ValueError
                         self.__configured_conferences.add(Conference.from_config(**conf_config))
 
-            except ValueError as e:
-                raise ConferenceConfigError('Invalid conference entry found (%s)' % e)
+                    except ValueError:
+                        self._connection_manager.log.error('Conference [%s] is not configured properly', conf_name)
+
         return self.__configured_conferences
 
     def _do_reconnect(self):
@@ -238,10 +242,13 @@ class _PresenceHelper:
         try:
             app = self._connection_manager.application
 
-            while True:
+            while app.running and self._running:
                 postponed = []
                 while app.running and self._running and self._reconnect_queue:
                     task = self._reconnect_queue.pop(0)
+                    if task.conference.bare in self._alive_conferences:
+                        continue  # Conference is alive (task dup)
+
                     try:
                         if task.died_at + _XMPP_RECONNECT_INTERVAL < time.time():
                             self.enter(task.conference)
@@ -255,6 +262,7 @@ class _PresenceHelper:
                 if postponed:
                     self._reconnect_queue.extend(postponed)
                 app.sleep(1)
+
         except Exception as e:
             self._connection_manager.application.fatal_error(__name__, e)
 
@@ -268,7 +276,7 @@ class _PresenceHelper:
             app = self._connection_manager.application
             app.sleep(_XMPP_CHECK_INTERVAL)
 
-            while True:
+            while app.running and self._running:
                 for conference in self._alive_conferences.copy():
                     if not app.running or not self._running:
                         break
@@ -296,24 +304,46 @@ class _PresenceHelper:
         if not self._running:
             raise RuntimeError('Presence management is not started')
 
+    def __enter__(self):
+        """ Using as a context manager
 
-class Connection(ConnectionManager):
+        :return PresenceHelper:
+        """
+        if not self._running:
+            self.start()
+
+        return self
+
+    def __exit__(self, *_) -> bool:
+        """ Stop on exit
+
+        :param _ tuple:
+        :return bool:
+        """
+        if self._running:
+            self.stop()
+
+        return False
+
+
+class XMPPConnectionManager(ConnectionManager):
     """ Serves xmpp-connection
 
     Check connections state and provides
     a single stable input stream to work with
     """
 
-    def __init__(self, application: Application, presence_helper=None):
+    def __init__(self, application: Application, presence_helper=None, xmpp_client=None):
         """ Initialize service & attach an application to it
 
         :param Application application:
         :param PresenceHelper presence_helper:
+        :param client.Client xmpp_client:
         """
         super().__init__(application)
 
-        self.__client = None
-        self._presence_helper = presence_helper or _PresenceHelper(self)
+        self.__client = xmpp_client
+        self._presence_helper = presence_helper or PresenceHelper(self)
 
     @property
     def _connection_config(self) -> dict:
@@ -365,10 +395,10 @@ class Connection(ConnectionManager):
         return success
 
     @property
-    def client(self):
+    def client(self) -> client.Client:
         """ XMPP client instance getter
 
-        :return:
+        :return client.Client:
         """
         if self.__client is None:
             self.__client = client.create(**self._connection_config)
@@ -413,7 +443,7 @@ class Connection(ConnectionManager):
         self.__try(self._presence_helper.enter_all)
 
     @property
-    def input_stream(self) -> Message:
+    def input_stream(self):
         """ Wrapper over xmpp client input stream
 
         Implements auto reconnection and conferences re-enter
@@ -440,9 +470,11 @@ class Connection(ConnectionManager):
         try:
             self.__try(self._presence_helper.leave_all)
             self.__try(self._presence_helper.stop)
+        except RuntimeError:
+            pass
 
+        try:
             self.client.disconnect()
-
         except ClientDisconnectedError:
             pass
 

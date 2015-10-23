@@ -30,7 +30,7 @@ class JID(Participant):
         self._resource = resource
 
         self._jid = '{}@{}{}'.format(login, server, ('/%s' % resource) if resource else '')
-        self._bare = JID(login, server) if resource else self
+        self._bare = self.__class__(login, server) if resource else self
 
     @property
     def login(self) -> str:

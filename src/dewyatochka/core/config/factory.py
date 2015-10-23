@@ -37,10 +37,7 @@ def _get_file_config_instance(cls: type, application: Application, path: str) ->
     :param str path:
     :return ConfigContainer:
     """
-    config = cls(application)
-    config.load(INIFiles(path))
-
-    return config
+    return cls(application).load(INIFiles(path))
 
 
 def get_common_config(application: Application, path=None) -> CommonConfig:

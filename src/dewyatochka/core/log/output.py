@@ -36,8 +36,8 @@ class Handler(metaclass=ABCMeta):
 
         :param str log_format:
         """
-        self._handler = None
-        self.handler.setFormatter(logging.Formatter(log_format))
+        self._handler = self._create_handler()
+        self._handler.setFormatter(logging.Formatter(log_format))
 
         self._lock = Lock()
 
@@ -102,14 +102,11 @@ class Handler(metaclass=ABCMeta):
             self.handler.handle(record)
 
     @property
-    def handler(self) -> logging.StreamHandler:
+    def handler(self):
         """ Get inner handler instance
 
         :return logging.Handler:
         """
-        if not self._handler:
-            self._handler = self._create_handler()
-
         return self._handler
 
     @abstractmethod

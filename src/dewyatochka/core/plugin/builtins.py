@@ -13,7 +13,6 @@ Functions
 """
 
 import time
-from collections import defaultdict
 
 from dewyatochka import __version__
 from dewyatochka.core.application import Registry
@@ -29,10 +28,10 @@ __all__ = ['ActivityInfo', 'get_activity_info', 'register_entry_points']
 class ActivityInfo(object):
     """ Conference activity info structure """
 
-    def __init__(self, conference: GroupChat):
+    def __init__(self, conference):
         """ Create new activity info object with default values
 
-        :param JID conference:
+        :param GroupChat conference:
         """
         self._conference = conference
         self.last_message = 0
@@ -48,20 +47,19 @@ class ActivityInfo(object):
 
 
 # Conference jid -> last activity
-_conference_last_activity = defaultdict(ActivityInfo)
+_conference_last_activity = {}
 
 
 def get_activity_info(conference: GroupChat) -> ActivityInfo:
     """ Get conference activity info
 
-    :param JID conference: Conference JID
+    :param GroupChat conference: Conference identity
     :return ActivityInfo:
     """
-    bare = str(conference.bare)
-    if bare not in _conference_last_activity:
-        _conference_last_activity[bare] = ActivityInfo(conference.bare)
+    if conference.self not in _conference_last_activity:
+        _conference_last_activity[conference.self] = ActivityInfo(conference.self)
 
-    return _conference_last_activity[bare]
+    return _conference_last_activity[conference.self]
 
 
 def register_entry_points():

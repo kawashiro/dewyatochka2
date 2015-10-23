@@ -8,6 +8,10 @@ Modules
 =======
     sleekxmpp -- sleekxmpp lib based client
 
+Classes
+=======
+    Client -- Abstract XMPP client
+
 Functions
 =========
     create -- Get configured client instance
@@ -15,7 +19,7 @@ Functions
 
 from ._base import Client
 
-__all__ = ['create', 'sleekxmpp']
+__all__ = ['create', 'sleekxmpp', 'Client']
 
 
 def create(host: str, login: str, password: str, port=5222, location='') -> Client:
