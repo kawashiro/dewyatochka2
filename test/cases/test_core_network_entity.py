@@ -23,31 +23,20 @@ class _Participant(Participant):
         """ str() representation """
         return self.public_name
 
+    @property
+    def chat(self):
+        """ Chat getter stub """
+        return self
+
 
 class TestEntity(unittest.TestCase):
     """ Tests suite for dewyatochka.core.network.entity._Entity """
 
-    class _Class(GroupChat):
-        """ Entity child class mock """
-
-        def __init__(self, uid: str):
-            """ Set unique ID for hashing """
-            self.__uid = uid
-
-        def __str__(self) -> str:
-            """ str() representation """
-            return self.__uid
-
-        @property
-        def self(self) -> Participant:
-            """ Just a mock """
-            raise NotImplemented()
-
     def test_eq(self):
         """ Test '==' operator """
-        v1 = self._Class('foo')
-        v2 = self._Class('bar')
-        v3 = self._Class('foo')
+        v1 = _Participant('foo')
+        v2 = _Participant('bar')
+        v3 = _Participant('foo')
 
         self.assertEqual(v1, v3)
         self.assertNotEqual(v1, v2)
@@ -55,13 +44,13 @@ class TestEntity(unittest.TestCase):
 
     def test_hashing(self):
         """ Check if equal objects are the same """
-        set_ = {self._Class('foo'), self._Class('bar'), self._Class('foo')}
+        set_ = {_Participant('foo'), _Participant('bar'), _Participant('foo')}
 
         self.assertEqual(len(set_), 2)
 
     def test_repr(self):
         """ Test entity representative form """
-        self.assertEqual(repr(self._Class('foo')), '_Class(foo)')
+        self.assertEqual(repr(_Participant('foo')), '_Participant(foo)')
 
 
 class TestMessage(unittest.TestCase):

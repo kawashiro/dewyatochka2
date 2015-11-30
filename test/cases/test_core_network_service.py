@@ -5,7 +5,7 @@
 import unittest
 
 from dewyatochka.core.network.service import *
-from dewyatochka.core.network.entity import GroupChat
+from dewyatochka.core.network.entity import Participant
 from dewyatochka.core.application import Application, VoidApplication
 
 
@@ -27,7 +27,7 @@ class _ChatManagerImpl(ChatManager):
         """
         return frozenset()
 
-    def send(self, message: str, chat: GroupChat):
+    def send(self, message: str, chat: Participant):
         """ Send a message to groupchat
 
         :param str message: Message content
@@ -69,7 +69,7 @@ class _ConnectionManagerImpl(ConnectionManager):
         """
         return frozenset()
 
-    def send(self, message: str, chat: GroupChat):
+    def send(self, message: str, chat: Participant):
         """ Send a message to groupchat
 
         :param str message: Message content

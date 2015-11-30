@@ -182,15 +182,15 @@ class PresenceHelper:
                 pass
             self._reconnect_queue.append(self.__ReconnectTask(self.get_presence_jid(conference), time.time()))
 
-    def get_presence_jid(self, conference: Conference) -> Conference:
+    def get_presence_jid(self, participant: JID) -> Conference:
         """ Get full conference presence JID
 
-        :param Conference conference: Full or bare JID
+        :param JID participant: Full or bare JID
         :return Conference:
         """
         try:
-            full_conf_resource = self._alive_nicknames[conference.bare]
-            return Conference(conference.login, conference.server, full_conf_resource)
+            full_conf_resource = self._alive_nicknames[participant.chat]
+            return Conference(participant.login, participant.server, full_conf_resource)
 
         except KeyError:
             raise XMPPError('Unable to get presence JID for offline conference')

@@ -31,6 +31,14 @@ class JID(Participant):
 
         self._jid = '{}@{}{}'.format(login, server, ('/%s' % resource) if resource else '')
         self._bare = self.__class__(login, server) if resource else self
+        self._chat = self._lookup_chat()
+
+    def _lookup_chat(self):
+        """ Define chat instance
+
+        :return Conference:
+        """
+        return Conference.from_string(str(self.bare))
 
     @property
     def login(self) -> str:
@@ -80,6 +88,14 @@ class JID(Participant):
         """
         return self.resource
 
+    @property
+    def chat(self):
+        """ Get related chat identity
+
+        :return Conference:
+        """
+        return self._chat
+
     def __str__(self) -> str:
         """ Convert JID object to string
 
@@ -106,16 +122,8 @@ class JID(Participant):
             raise ValueError('Invalid JID (%s)' % repr(jid))
 
 
-class Conference(JID, GroupChat):
+class Conference(JID):
     """ XMPP conference """
-
-    @property
-    def self(self) -> JID:
-        """ Get self identification
-
-        :return Participant:
-        """
-        return self.bare
 
     @property
     def public_name(self) -> str:
@@ -135,6 +143,13 @@ class Conference(JID, GroupChat):
         """
         room, server = room.split('@')
         return cls(room, server, nick)
+
+    def _lookup_chat(self):
+        """ Define chat instance
+
+        :return Conference:
+        """
+        return self.bare
 
 
 class ChatSubject(TextMessage):

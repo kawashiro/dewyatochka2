@@ -20,12 +20,12 @@ from dewyatochka.core.plugin import chat_message, chat_command, control
 from dewyatochka.core.plugin.loader import LoaderService
 from dewyatochka.core.plugin.subsystem.control.service import Service as CtlService
 from dewyatochka.core.plugin.subsystem.message.service import Service as MSysService
-from dewyatochka.core.network.entity import GroupChat
+from dewyatochka.core.network.entity import Participant
 
 __all__ = ['ActivityInfo', 'get_activity_info', 'register_entry_points']
 
 
-class ActivityInfo(object):
+class ActivityInfo:
     """ Conference activity info structure """
 
     def __init__(self, conference):
@@ -38,7 +38,7 @@ class ActivityInfo(object):
         self.last_activity = 0
 
     @property
-    def conference(self) -> GroupChat:
+    def conference(self) -> Participant:
         """ Conference getter
 
         :return JID:
@@ -50,16 +50,16 @@ class ActivityInfo(object):
 _conference_last_activity = {}
 
 
-def get_activity_info(conference: GroupChat) -> ActivityInfo:
+def get_activity_info(participant: Participant) -> ActivityInfo:
     """ Get conference activity info
 
-    :param GroupChat conference: Conference identity
+    :param GroupChat participant: Conference identity
     :return ActivityInfo:
     """
-    if conference.self not in _conference_last_activity:
-        _conference_last_activity[conference.self] = ActivityInfo(conference.self)
+    if participant.chat not in _conference_last_activity:
+        _conference_last_activity[participant.chat] = ActivityInfo(participant.chat)
 
-    return _conference_last_activity[conference.self]
+    return _conference_last_activity[participant.chat]
 
 
 def register_entry_points():

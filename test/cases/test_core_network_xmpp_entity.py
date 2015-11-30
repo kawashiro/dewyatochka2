@@ -21,6 +21,7 @@ class TestJID(unittest.TestCase):
         self.assertEqual(jid.jid, 'login@server.com/resource')
         self.assertEqual(jid.public_name, 'resource')
         self.assertEqual(str(jid), 'login@server.com/resource')
+        self.assertEqual(jid.chat, Conference.from_string('login@server.com'))
 
     def test_empty_resource(self):
         """ Test properties for JID with no resource """
@@ -46,9 +47,8 @@ class TestConference(unittest.TestCase):
     def test_properties(self):
         """ Test conference properties """
         conf = Conference.from_string('room@conference.example.com/nickname')
-
-        self.assertEqual(conf.self, JID.from_string('room@conference.example.com'))
         self.assertEqual(conf.public_name, 'room@conference.example.com')
+        self.assertEqual(conf.chat, conf.bare)
 
     def test_from_config(self):
         """ Test instantiating from separated room & nick values """

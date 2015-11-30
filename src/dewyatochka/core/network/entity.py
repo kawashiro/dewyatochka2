@@ -7,12 +7,11 @@ Classes
     Participant -- Chat participant info container
     Message     -- Common chat message params container
     TextMessage -- Chat text message params container
-    GroupChat   -- Group chat params container
 """
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 
-__all__ = ['Participant', 'Message', 'TextMessage', 'GroupChat']
+__all__ = ['Participant', 'Message', 'TextMessage']
 
 
 class _Entity(metaclass=ABCMeta):
@@ -66,13 +65,9 @@ class Participant(_Entity, metaclass=ABCMeta):
         """
         pass
 
-
-class GroupChat(_Entity, metaclass=ABCMeta):
-    """ Group chat params container """
-
     @abstractproperty
-    def self(self) -> Participant:  # pragma: nocover
-        """ Get self identification
+    def chat(self):  # pragma: nocover
+        """ Get related chat identity
 
         :return Participant:
         """

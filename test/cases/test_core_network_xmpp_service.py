@@ -16,7 +16,7 @@ from dewyatochka.core.network.xmpp.client import Client
 from dewyatochka.core.network.xmpp.entity import TextMessage, JID, Conference
 from dewyatochka.core.network.xmpp.exception import *
 from dewyatochka.core.network.service import ChatManager, ConnectionManager
-from dewyatochka.core.network.entity import GroupChat
+from dewyatochka.core.network.entity import Participant
 
 
 class _ChatManagerImpl(ChatManager):
@@ -29,7 +29,7 @@ class _ChatManagerImpl(ChatManager):
         """
         return frozenset()
 
-    def send(self, message: str, chat: GroupChat):
+    def send(self, message: str, chat: Participant):
         """ Send a message to group chat
 
         :param str message: Message content

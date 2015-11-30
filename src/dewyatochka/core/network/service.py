@@ -12,7 +12,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 
 from dewyatochka.core.application import Application, Service
 
-from .entity import GroupChat
+from .entity import Participant
 
 __all__ = ['ChatManager', 'ConnectionManager']
 
@@ -72,7 +72,7 @@ class ConnectionManager(Service, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def send(self, message: str, chat: GroupChat):  # pragma: nocover
+    def send(self, message: str, chat: Participant):  # pragma: nocover
         """ Send a message to groupchat
 
         :param str message: Message content
@@ -94,7 +94,7 @@ class ChatManager(Service, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def send(self, message: str, chat: GroupChat):  # pragma: nocover
+    def send(self, message: str, chat: Participant):  # pragma: nocover
         """ Send a message to groupchat
 
         :param str message: Message content

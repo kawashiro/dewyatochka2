@@ -5,7 +5,7 @@
 import unittest
 
 from dewyatochka.core.plugin.builtins import *
-from dewyatochka.core.network.xmpp.entity import Conference
+from dewyatochka.core.network.xmpp.entity import JID
 from dewyatochka.core.plugin.loader import internal
 
 
@@ -14,10 +14,10 @@ class TestActivityInfo(unittest.TestCase):
 
     def test_get_activity_info(self):
         """ Test activity info registration """
-        chat = Conference.from_string('foo@bar/baz')
-        activity_info = get_activity_info(chat)
-        self.assertEqual(get_activity_info(chat), activity_info)
-        self.assertEqual(activity_info.conference, chat.self)
+        participant = JID.from_string('foo@bar/baz')
+        activity_info = get_activity_info(participant)
+        self.assertEqual(get_activity_info(participant), activity_info)
+        self.assertEqual(activity_info.conference, participant.chat)
 
 
 class TestRegisterEntryPoints(unittest.TestCase):

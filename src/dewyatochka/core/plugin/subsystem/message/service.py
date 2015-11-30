@@ -15,7 +15,7 @@ Attributes
 """
 
 from dewyatochka.core.application import Registry
-from dewyatochka.core.network.entity import GroupChat
+from dewyatochka.core.network.entity import Participant
 from dewyatochka.core.network.service import ChatManager
 from dewyatochka.core.plugin.base import Environment as BaseEnvironment
 from dewyatochka.core.plugin.base import Service as BaseService
@@ -67,18 +67,18 @@ class Environment(BaseEnvironment):
             raise TypeError('`message` keyword argument is required')
 
         if self._matcher.match(message):
-            super().invoke(inp=message, outp=self._get_output_wrapper(message.sender.bare), **kwargs)
+            super().invoke(inp=message, outp=self._get_output_wrapper(message.sender), **kwargs)
 
-    def _get_output_wrapper(self, destination: GroupChat):
+    def _get_output_wrapper(self, destination: Participant):
         """ Get output wrapper for a conference
 
         :param JID destination:
         :return None:
         """
         try:
-            output = self._output_wrappers[str(destination)]
+            output = self._output_wrappers[str(destination.chat)]
         except KeyError:
-            output = Output(self._chat_manager, destination)
+            output = Output(self._chat_manager, destination.chat)
             self._output_wrappers[str(destination)] = output
 
         return output
@@ -155,7 +155,7 @@ class Output:
     to allow plugin to communicate through xmpp
     """
 
-    def __init__(self, chat_manager: ChatManager, conference: GroupChat):
+    def __init__(self, chat_manager: ChatManager, conference: Participant):
         """ Bind output wrapper to xmpp-client and a conference
 
         :param ChatManager chat_manager:

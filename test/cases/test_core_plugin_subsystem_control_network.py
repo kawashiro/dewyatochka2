@@ -27,8 +27,8 @@ class TestMessage(unittest.TestCase):
 
     def test_encode(self):
         """ Test data encoding """
-        message = Message(**self._test_data).encode()
-        self.assertEqual(message, b'{"foo": "bar", "baz": 42}\0')
+        message = Message(foo='bar').encode()
+        self.assertEqual(message, b'{"foo": "bar"}\0')
 
     def test_decode(self):
         """ Test serialized message decoding """

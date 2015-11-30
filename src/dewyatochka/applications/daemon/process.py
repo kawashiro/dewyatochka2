@@ -20,7 +20,7 @@ from abc import ABCMeta, abstractmethod
 from dewyatochka.core.application import Application, Service
 from dewyatochka.core.network.service import ConnectionManager
 from dewyatochka.core.network.service import ChatManager as ChatManager_
-from dewyatochka.core.network.entity import Message, GroupChat
+from dewyatochka.core.network.entity import Message, Participant
 from dewyatochka.core.plugin.subsystem.helper.service import Environment
 from dewyatochka.core.plugin.subsystem.control.network import SocketListener
 from dewyatochka.core.plugin.subsystem.control.network import Message as CTLMessage
@@ -429,7 +429,7 @@ class ChatManager(ChatManager_, CriticalService):
         """
         return reduce(lambda val, conn: val.union(conn.alive_chats), self._connections, frozenset())
 
-    def send(self, message: str, chat: GroupChat):
+    def send(self, message: str, chat: Participant):
         """ Send a message to groupchat
 
         :param str message: Message content
