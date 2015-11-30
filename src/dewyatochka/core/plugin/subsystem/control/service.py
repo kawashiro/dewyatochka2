@@ -67,7 +67,7 @@ class Output:
         :param tuple args: Args for message format
         :return None:
         """
-        self.__send(Message(self._connection, text=(text % args)))
+        self.__send(Message(text=(text % args)))
         self._log.info(text, *args)
 
     def error(self, text: str, *args):
