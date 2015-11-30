@@ -381,7 +381,7 @@ class TestPresenceHelper(unittest.TestCase):
             connection_manager.client.chat.enter.reset_mock()
             connection_manager.client.chat.enter.side_effect = XMPPError
             presence_helper.schedule_reenter(conference)
-            time.sleep(0.05)
+            time.sleep(0.1)
             connection_manager.client.chat.enter.assert_has_calls([
                 call(conference.bare, conference.resource), call(conference.bare, conference.resource)
             ])
