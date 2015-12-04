@@ -22,7 +22,7 @@ class AbstractMatcher(metaclass=ABCMeta):
     """ Abstract matcher """
 
     @abstractmethod
-    def match(self, message: Message):
+    def match(self, message: Message) -> bool:  # pragma: nocover
         """ Check message
 
         Return True if message matches this matcher

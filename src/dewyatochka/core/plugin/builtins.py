@@ -34,14 +34,14 @@ class ActivityInfo:
         :param GroupChat conference:
         """
         self._conference = conference
-        self.last_message = 0
-        self.last_activity = 0
+        self.last_message = 0.0
+        self.last_activity = 0.0
 
     @property
     def conference(self) -> Participant:
         """ Conference getter
 
-        :return JID:
+        :return Participant:
         """
         return self._conference
 
@@ -85,7 +85,7 @@ def _chat_on_message_input(inp, **_):
     :param _:
     :return None:
     """
-    activity = get_activity_info(inp.sender.bare)
+    activity = get_activity_info(inp.sender)
     activity.last_message = time.time()
     activity.last_activity = time.time()
 
@@ -97,7 +97,7 @@ def _chat_on_activity_input(inp, **_):
     :param _:
     :return None:
     """
-    get_activity_info(inp.sender.bare).last_activity = time.time()
+    get_activity_info(inp.sender).last_activity = time.time()
 
 
 def _version_info(outp, **_):
@@ -148,7 +148,7 @@ class _ChatHelpMessage:
         if msg_format:
             message = msg_format.format(user=inp.sender.public_name,
                                         version=__version__,
-                                        commands=', '.join(self._get_commands(registry)))
+                                        commands=', '.join(sorted(self._get_commands(registry))))
             outp.say(message)
         else:
             registry.log.warning('Help message is not configured, command ignored')

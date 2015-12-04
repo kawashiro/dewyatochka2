@@ -51,7 +51,7 @@ class TestEnvironment(unittest.TestCase):
 
         plugin_exc = Exception('error')
         invokable.side_effect = plugin_exc
-        environment()
+        self.assertRaises(Exception, lambda: environment())
         environment(logger=logger)
         logger.error.assert_called_once_with('Plugin %s failed: %s', environment, plugin_exc)
 

@@ -39,7 +39,7 @@ class Component(metaclass=ABCMeta):
         self._now = timestamp
 
     @abstractproperty
-    def min(self) -> int:
+    def min(self) -> int:  # pragma: nocover
         """ Minimal numeric value
 
         :return int:
@@ -47,7 +47,7 @@ class Component(metaclass=ABCMeta):
         pass
 
     @abstractproperty
-    def max(self) -> int:
+    def max(self) -> int:  # pragma: nocover
         """ Maximal numeric value
 
         :return int:
@@ -55,7 +55,7 @@ class Component(metaclass=ABCMeta):
         pass
 
     @abstractproperty
-    def current(self) -> int:
+    def current(self) -> int:  # pragma: nocover
         """ Current value
 
         :return int:
@@ -174,7 +174,7 @@ class Matcher(metaclass=ABCMeta):
         return self._component.current in self._values
 
     @abstractmethod
-    def _parse_format(self, format_: str) -> set:
+    def _parse_format(self, format_: str) -> set:  # pragma: nocover
         """ Parse string
 
         :param str format_:
@@ -246,7 +246,7 @@ class AbbreviationMatcher(SequenceMatcher, metaclass=ABCMeta):
     """ Matcher supporting simple abbreviations """
 
     @abstractproperty
-    def _abbreviations(self) -> dict:
+    def _abbreviations(self) -> dict:  # pragma: nocover
         """ Abbreviations to numeric values (dict of int)
 
         :return dict:
@@ -290,6 +290,8 @@ class DayOfWeekMatcher(AbbreviationMatcher):
 
         if 7 in values:
             values.add(0)  # Sunday juggling
+        elif 0 in values:
+            values.add(7)
 
         return values
 
@@ -356,10 +358,11 @@ class Schedule:
         return all([m.valid for m in self._matchers])
 
     @classmethod
-    def from_string(cls, string: str):
+    def from_string(cls, string: str, now=None):
         """ Create a schedule from string
 
         :param str string: Schedule specification
+        :param int now: Current timestamp override
         :return Schedule:
         """
         try:
@@ -375,11 +378,11 @@ class Schedule:
                 raise ValueError('Schedule should contain exactly 5 components')
 
             return cls([
-                SequenceMatcher(schedule.min, Minute()),
-                SequenceMatcher(schedule.hour, Hour()),
-                SequenceMatcher(schedule.mday, DayOfMonth()),
-                MonthMatcher(schedule.mon, Month()),
-                DayOfWeekMatcher(schedule.wday, DayOfWeek()),
+                SequenceMatcher(schedule.min, Minute(now)),
+                SequenceMatcher(schedule.hour, Hour(now)),
+                SequenceMatcher(schedule.mday, DayOfMonth(now)),
+                MonthMatcher(schedule.mon, Month(now)),
+                DayOfWeekMatcher(schedule.wday, DayOfWeek(now)),
             ])
 
         except ValueError as e:

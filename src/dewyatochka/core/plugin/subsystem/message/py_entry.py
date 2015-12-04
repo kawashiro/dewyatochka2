@@ -49,7 +49,7 @@ def chat_command(command, *, services=None) -> callable:
     return entry_point(PLUGIN_TYPE_COMMAND, services=services, command=command)
 
 
-def chat_accost(fn, *, services=None) -> callable:
+def chat_accost(fn=None, *, services=None) -> callable:
     """ Register handler for a chat personal accost
 
     :param callable fn: Function if decorator is invoked directly

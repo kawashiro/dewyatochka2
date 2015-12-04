@@ -83,6 +83,8 @@ class Environment:
         except Exception as e:
             if logger is not None:
                 logger.error('Plugin %s failed: %s', self, e)
+            else:
+                raise
 
 
 class Wrapper:

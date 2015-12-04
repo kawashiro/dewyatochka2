@@ -17,7 +17,7 @@ __all__ = []
 # to avoids random import errors on startup
 __modules_preload = ('lxml', 'lxml.etree', 'sqlalchemy')
 
-for module in __modules_preload:
+for module in __modules_preload:  # pragma: nocover
     try:
         importlib.import_module(module)
     except ImportError as e:

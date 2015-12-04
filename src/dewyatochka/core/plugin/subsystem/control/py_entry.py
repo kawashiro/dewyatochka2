@@ -5,27 +5,18 @@
 Functions
 =========
     control -- Decorator for ctl-plugin
-
-Classes
-=======
-    CtlInputError -- Error on invalid args in input data
 """
 
 from dewyatochka.core.plugin.loader.internal import entry_point
-from dewyatochka.core.plugin.exceptions import PluginRegistrationError, PluginError
+from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 
 from .service import PLUGIN_TYPE_CTL
 
-__all__ = ['control', 'CtlInputError']
+__all__ = ['control']
 
 
 # Commands already in use
 _used_commands = set()
-
-
-class CtlInputError(PluginError):
-    """ Error on invalid args in input data """
-    pass
 
 
 def control(name: str, description: str, *, services=None) -> callable:

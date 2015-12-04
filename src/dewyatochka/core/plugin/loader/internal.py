@@ -119,6 +119,16 @@ class Loader(BaseLoader):
                       _entry_points, [])
 
     @classmethod
+    def lock_state(cls):
+        """ Set internal loader state to ready
+
+        WARNING: Changes loader state, use it on your own risk!
+
+        :return None:
+        """
+        cls.__ready = True
+
+    @classmethod
     def __is_module(cls, path) -> bool:
         """ Check if file is a python module
 

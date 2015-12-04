@@ -279,7 +279,8 @@ class PresenceHelper:
             while app.running and self._running:
                 for conference in self._alive_conferences.copy():
                     if not app.running or not self._running:
-                        break
+                        # Ignored from coverage cause cycle may end on while condition check
+                        break  # pragma: nocover
 
                     try:
                         log.debug('Ping %s', conference)

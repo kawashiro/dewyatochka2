@@ -26,7 +26,7 @@ __all__ = ['WebClient']
 try:
     from pyquery import PyQuery
 
-except ImportError:
+except ImportError:  # pragma: nocover
     class PyQuery:
         """ Just a stub """
         def __init__(self, html):
@@ -135,7 +135,7 @@ def _html_parser(content, headers: dict) -> PyQuery:
     str_content = content.decode(http_encoding, 'ignore')
 
     # Try to get encoding from html-doc and if it differs use it for strict decoding
-    html_parser = _HTMLParser()
+    html_parser = _HTMLParser(convert_charrefs=False)
     html_parser.feed(str_content)
     if html_parser.encoding and html_parser.encoding != http_encoding:
         str_content = content.decode(html_parser.encoding)
@@ -229,6 +229,7 @@ class WebClient:
 
         :return None:
         """
+        self.connect()
         return self
 
     def __exit__(self, *_) -> bool:

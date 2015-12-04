@@ -15,10 +15,6 @@ Modules
     exceptions -- Plugin registration related exceptions
     builtins   -- Some chat / ctl commands accessible by default
 
-Classes
-=======
-    CtlInputError -- Error on invalid args in input data (ctl plugin)
-
 Functions
 =========
     control      -- dewyatochkactl command handler decorator
@@ -36,4 +32,4 @@ from .subsystem.control.py_entry import *
 
 __all__ = ['loader', 'subsystem', 'base', 'builtins', 'exceptions',
            'control', 'daemon', 'bootstrap', 'schedule',
-           'chat_message', 'chat_command', 'chat_accost', 'CtlInputError']
+           'chat_message', 'chat_command', 'chat_accost']

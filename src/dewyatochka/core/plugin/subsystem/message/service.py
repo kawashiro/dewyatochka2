@@ -56,16 +56,13 @@ class Environment(BaseEnvironment):
         self._chat_manager = chat_manager
         self._output_wrappers = {}
 
-    def invoke(self, *, message=None, **kwargs):
+    def invoke(self, *, message, **kwargs):
         """ Invoke plugin in environment registered
 
         :param Message message: Message to process
         :param dict kwargs: Params to path to a plugin
         :return None:
         """
-        if message is None:
-            raise TypeError('`message` keyword argument is required')
-
         if self._matcher.match(message):
             super().invoke(inp=message, outp=self._get_output_wrapper(message.sender), **kwargs)
 

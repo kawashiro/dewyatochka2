@@ -26,7 +26,7 @@ from dewyatochka.core.plugin.exceptions import PluginRegistrationError
 
 from .network import Message, Client
 
-__all__ = ['Service', 'Output', 'Wrapper', 'Environment', 'PLUGIN_TYPE_CTL', 'PLUGIN_TYPES', 'Cli']
+__all__ = ['Service', 'Output', 'Wrapper', 'Environment', 'ClientService', 'PLUGIN_TYPE_CTL', 'PLUGIN_TYPES']
 
 
 # Plugin types provided
@@ -56,9 +56,12 @@ class Output:
         :return None:
         """
         try:
-            self._connection.send(message.encode())
+            if self._connection:
+                self._connection.send(message.encode())
+
         except BrokenPipeError:
-            raise RuntimeError('Control client disconnected before operation has completed')
+            self._log.warning('Control client disconnected before operation has completed')
+            self._connection = None
 
     def info(self, text: str, *args):
         """ Send something
@@ -78,6 +81,7 @@ class Output:
         :return None:
         """
         self.__send(Message(error=(text % args)))
+        self._log.error(text, *args)
 
     def debug(self, text: str, *args):
         """ Debug message
@@ -107,7 +111,7 @@ class Wrapper(BaseWrapper):
 class Environment(BaseEnvironment):
     """ Environment for a ctl plugin """
 
-    def invoke(self, *, command=None, source=None, **kwargs):
+    def invoke(self, *, command, source, **kwargs):
         """ Invoke plugin in environment registered
 
         :param .network.Message command: Message to process
@@ -115,11 +119,6 @@ class Environment(BaseEnvironment):
         :param dict kwargs: Params to path to a plugin
         :return None:
         """
-        if command is None:
-            raise TypeError('`command` keyword argument is required')
-        if source is None:
-            raise TypeError('`source` keyword argument is required')
-
         output = Output(source, self._registry.log)
 
         try:
