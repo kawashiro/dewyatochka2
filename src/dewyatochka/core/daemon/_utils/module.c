@@ -7,7 +7,7 @@
 /* Close STDIN / STDOUT / STDERR */
 static PyObject* daemon_utils_close_io(PyObject* self, PyObject* args)
 {
-    char *err_msg;
+    char *err_msg = NULL;
     char *stdout_file_name = NULL;
     FILE *stdout_file;
 
