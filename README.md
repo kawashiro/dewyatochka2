@@ -13,9 +13,9 @@ Dependencies
 ------------
 * [Python 3.3](https://www.python.org/ "Python") or higher
 * [SleekXMPP 1.2](https://github.com/fritzy/SleekXMPP "SleekXMPP") or higher
-* [PyQuery](https://github.com/gawel/pyquery "PyQuery") (recommended)
+* [PyQuery 1.2](https://github.com/gawel/pyquery "PyQuery") or higher (recommended)
 * [pyasn1_modules](http://pypi.python.org/pypi/pyasn1-modules) (recommended)
-* [lxml](http://lxml.de/) (recommended)
+* [lxml 3.4](http://lxml.de/) or higher (recommended)
 
 Installing
 ----------

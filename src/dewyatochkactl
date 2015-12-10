@@ -20,14 +20,16 @@ Copyright (C) 2015 Kawashiro Nitori
 
 Usage
 =====
-    dewyatochkactl [-h] [--config CONFIG] command
+    dewyatochkactl [-h] [--socket SOCKET] command
+
+Required arguments
+==================
+    command  Command to execute
 
 Optional arguments
 ==================
-    command          Command to execute
     -h, --help       Show this help message and exit
-    --config CONFIG  Path to config file to use
-    --log            Use a configured logger to yield debug info
+    --socket SOCKET  Path to daemon socket
 """
 
 from dewyatochka.applications import control

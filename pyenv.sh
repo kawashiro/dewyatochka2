@@ -13,7 +13,7 @@ python_path()
 
 python_dependencies()
 {
-    run "$1" -c "import setup; print(' '.join(setup.DEPENDS))" 2>/dev/null
+    run "$1" -Bc "import setup; print(' '.join(setup.DEPENDS))" 2>/dev/null
 }
 
 error_exit()
@@ -34,10 +34,10 @@ run_tests=true
 
 while getopts ":p:i:ht" option; do
     case "${option}" in
-        i)
+        p)
             env_path=$(echo "$OPTARG" | sed -e "s|/+$||")
             ;;
-        p)
+        i)
             interpreter=$(python_path ${OPTARG}) || error_exit "Invalid interpreter path"
             ;;
         t)

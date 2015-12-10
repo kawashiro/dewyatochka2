@@ -1,6 +1,7 @@
 include INSTALL
 include LICENSE
 include README.md
+include pyenv.sh
 include test.py
 recursive-include src/ext *
 recursive-include pkg *
