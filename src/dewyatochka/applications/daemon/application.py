@@ -83,8 +83,8 @@ class DaemonApp(Application):
         :return None:
         """
         if daemon_mode:
-            daemon.acquire_lock(self.registry.config.global_section.get('lock'))
             daemon.detach(lambda *_: self.stop())
+            daemon.acquire_lock(self.registry.config.global_section.get('lock'))
 
         self.registry.message_plugin_provider.load()
         self.registry.helper_plugin_provider.load()
