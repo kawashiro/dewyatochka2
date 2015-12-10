@@ -88,7 +88,9 @@ def configure_python_packages() -> dict:
 
 def configure_c_packages() -> dict:
     """ Configure extensions """
-    return {'ext_modules': [Extension(p, [_abs(SRC_DIR, p.replace('.', os.sep), 'module.c')]) for p in C_PACKAGES]}
+    return {
+        'ext_modules': [Extension(p, [os.sep.join([SRC_DIR, p.replace('.', os.sep), 'module.c'])]) for p in C_PACKAGES]
+    }
 
 
 def configure_scripts() -> dict:
