@@ -18,7 +18,6 @@ import os
 import signal
 import fcntl
 
-# noinspection PyUnresolvedReferences
 from . import _utils
 
 __all__ = ['ProcessLockedError', 'ProcessNotLockedError', 'acquire_lock', 'release_lock', 'detach']

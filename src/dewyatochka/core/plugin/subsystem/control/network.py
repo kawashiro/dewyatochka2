@@ -18,6 +18,7 @@ Attributes
 import os
 import socket
 import json
+import time
 from threading import Lock
 
 __all__ = ['Message', 'SocketListener', 'Client', 'StreamReader', 'InvalidMessageError', 'DEFAULT_SOCKET_PATH']
@@ -142,7 +143,7 @@ class StreamReader:
             delimiter_pos = chunk.find(self.MSG_DELIMITER)
             if ~delimiter_pos:
                 # Chunk is a complete message
-                chunk, self.__tail = chunk[:delimiter_pos], chunk[delimiter_pos+1:]
+                chunk, self.__tail = chunk[:delimiter_pos], chunk[delimiter_pos + 1:]
                 message = Message.from_bytes(chunk)
                 break
 
@@ -193,7 +194,7 @@ class SocketListener:
         :return None:
         """
         with self.__status_change:
-            self._socket.settimeout(0.5)
+            self._socket.settimeout(0.45)
             self._socket.bind(self.__address)
             self._socket.listen(self.__backlog)
             self.__opened = True
@@ -213,6 +214,11 @@ class SocketListener:
         while True:
             connection = None
             try:
+                # Black magic
+                # For some reason unable to acquire lock in another tread
+                # on slow hardware without this small delay
+                time.sleep(0.05)
+
                 with self.__status_change:
                     if not self.__opened:
                         break

@@ -32,7 +32,7 @@ __all__ = ['ObjectMeta', 'StoreableObject', 'CacheableObject', 'UnmappedFieldErr
            'readable_query', 'writable_query']
 
 
-def __sync_wrapper_get_attr(obj, attr: str, default, modifier=None):
+def __sync_wrapper_get_attr(obj, attr: str, default):
     """ Get attribute value
 
     Create attribute if it does not exist
@@ -40,7 +40,6 @@ def __sync_wrapper_get_attr(obj, attr: str, default, modifier=None):
     :param any obj: Target object
     :param str attr: Attribute name
     :param any default: Default value to be assigned
-    :param callable modifier: Function to modify existing or default value before set / return
     :return any:
     """
     with __sync_wrapper_get_attr.lock:
@@ -48,8 +47,6 @@ def __sync_wrapper_get_attr(obj, attr: str, default, modifier=None):
             val = getattr(obj, attr)
         except AttributeError:
             val = default
-        if modifier:
-            val = modifier(val)
         setattr(obj, attr, val)
     return val
 
@@ -57,7 +54,74 @@ def __sync_wrapper_get_attr(obj, attr: str, default, modifier=None):
 __sync_wrapper_get_attr.lock = threading.RLock()
 
 
-def __sync_write_completed_event(obj) -> threading.Event:
+class _SyncFreeDbEvent(threading.Event):
+    """ Event on free database
+
+    This event is set when no concurrent operations are evaluating now and
+    new readable and/or writable query can be evaluated
+    """
+    def __init__(self):
+        """ Override inner lock class and default flag value
+
+        Assuming that no query is running on event instantiation
+        """
+        super().__init__()
+        self._cond = threading.Condition()
+        self._owner = None
+        self._flag = True
+
+    def clear(self):
+        """Set the internal flag to true
+
+        :return None:
+        """
+        with self._cond:
+            super().clear()
+            self._owner = threading.get_ident()
+
+    def wait(self, timeout=None):
+        """ Block until the internal flag is true
+
+        :param int timeout: Block timeout
+        :return None:
+        """
+        with self._cond:
+            if self._owner != threading.get_ident():
+                super().wait(timeout)
+
+
+class _SyncRFreeDbEvent(_SyncFreeDbEvent):
+    """ Repeatable event
+
+    Should be cleared as many times as it has been set before
+    """
+    def __init__(self):
+        """ Init inner reading operations counter """
+        super().__init__()
+        self._clearing_cnt = 0
+
+    def set(self):
+        """Set the internal flag to true
+
+        :return None:
+        """
+        with self._cond:
+            self._clearing_cnt -= 1
+            if self._clearing_cnt <= 0:
+                self._clearing_cnt = 0
+                super().set()
+
+    def clear(self):
+        """Reset the internal flag to false
+
+        :return None:
+        """
+        with self._cond:
+            super().clear()
+            self._clearing_cnt += 1
+
+
+def __sync_write_completed_event(obj) -> _SyncFreeDbEvent:
     """ Get "write completed" event
 
     This event is set when no writable operations are pending and
@@ -66,33 +130,19 @@ def __sync_write_completed_event(obj) -> threading.Event:
     :param any obj:
     :return threading.Event:
     """
-    w_completed_event = threading.Event()
-    w_completed_event.set()
-    return __sync_wrapper_get_attr(obj, '__w_completed', w_completed_event)
+    return __sync_wrapper_get_attr(obj, '__w_completed', _SyncFreeDbEvent())
 
 
-def __sync_read_completed_event(obj) -> threading.Event:
-    """ Get "write completed" event
+def __sync_read_completed_event(obj) -> _SyncRFreeDbEvent:
+    """ Get "read completed" event
 
-    This event is set when no no operations are pending and
+    This event is set when no operations are pending and
     new _writable_ query can be evaluated
 
     :param any obj:
     :return threading.Event:
     """
-    r_completed_event = threading.Event()
-    r_completed_event.set()
-    return __sync_wrapper_get_attr(obj, '__r_completed', r_completed_event)
-
-
-def __inc_read_count(obj, delta: int) -> int:
-    """ Increase / decrease readable queries count
-
-    :param any obj:
-    :param int delta:
-    :return int:
-    """
-    return __sync_wrapper_get_attr(obj, '__r_cnt', 0, lambda v: v + delta)
+    return __sync_wrapper_get_attr(obj, '__r_completed', _SyncRFreeDbEvent())
 
 
 def readable_query(method: callable) -> callable:
@@ -109,13 +159,11 @@ def readable_query(method: callable) -> callable:
         try:
             w_completed_event.wait()
             r_completed_event.clear()
-            __inc_read_count(self_, 1)
 
             res = method(self_, *args, **kwargs)
 
         finally:
-            if __inc_read_count(self_, -1) == 0:
-                r_completed_event.set()
+            r_completed_event.set()
 
         return res
 
@@ -392,7 +440,7 @@ class AbstractStorage(metaclass=StorageMeta):
         """
         self.close()
         # noinspection PyUnresolvedReferences
-        self.metadata.create_all(bind=self.db_session.get_bind())
+        self.__class__.metadata.create_all(bind=self.db_session.get_bind())
 
 
 class SQLIteStorage(AbstractStorage):

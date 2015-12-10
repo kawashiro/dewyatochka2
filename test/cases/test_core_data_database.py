@@ -42,6 +42,11 @@ class TestSyncWrapper(unittest.TestCase):
             """ Writable query emulation """
             self.__exec(*args)
 
+        @writable_query
+        def inner_write_method(self, *args):
+            """ Writable query emulation """
+            self.write_method(*args)
+
         @property
         def callee(self):
             """ Get callee """
@@ -63,7 +68,7 @@ class TestSyncWrapper(unittest.TestCase):
 
         self.__async(barrier, class_.read_method, 'read #1')
         self.__async(barrier, class_.write_method, 'write')
-        self.__async(barrier, class_.write_method, 'write')
+        self.__async(barrier, class_.inner_write_method, 'write')
         self.__async(barrier, class_.read_method, 'read #2')
 
         barrier.wait()
@@ -226,13 +231,16 @@ class TestAbstractStorage(unittest.TestCase):
 
     def test_create(self):
         """ Test storage create """
-        class _Storage(AbstractStorage):
-            _dsn = 'dsn://'
+        class _StorageMeta(StorageMeta):
             metadata = Mock()
+
+        class _Storage(AbstractStorage, metaclass=_StorageMeta):
+            _dsn = 'dsn://'
             db_session = Mock()
 
         _Storage().create()
-        _Storage().metadata.create_all.assert_called_once_with(bind=_Storage.db_session.get_bind())
+        # noinspection PyUnresolvedReferences
+        _Storage().__class__.metadata.create_all.assert_called_once_with(bind=_Storage.db_session.get_bind())
 
 
 class TestSQLIteStorage(unittest.TestCase):
