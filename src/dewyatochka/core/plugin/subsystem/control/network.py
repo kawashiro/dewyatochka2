@@ -240,6 +240,7 @@ class SocketListener:
 
             finally:
                 if connection:
+                    time.sleep(0.05)
                     connection.shutdown(socket.SHUT_RDWR)
                     connection.close()
 
