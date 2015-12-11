@@ -1,0 +1,36 @@
+# Copyright 2014-Infinity Kawashiro Nitori
+# Distributed under the terms of the GNU General Public License v3
+
+EAPI=5
+PYTHON_COMPAT=( python{{3_3,3_4,3_5}} )
+
+inherit eutils distutils-r1 git-2 user
+
+DESCRIPTION="{long_description}"
+HOMEPAGE="{url}"
+EGIT_REPO_URI="{url}.git"
+
+LICENSE="{license}"
+SLOT="0"
+KEYWORDS=""
+
+DEPEND=">=dev-python/sleekxmpp-1.2[$PYTHON_USEDEP]
+        >=dev-python/pyquery-1.2[$PYTHON_USEDEP]
+        >=dev-python/lxml-3.4[$PYTHON_USEDEP]
+        dev-python/pyasn1-modules[$PYTHON_USEDEP]"
+
+src_install()
+{{
+    distutils-r1_src_install
+    newinitd "$FILESDIR"/dewyatochkad.initd dewyatochkad
+    dodir /var/lib/dewyatochka
+    dodir /var/log/dewyatochka
+}}
+
+pkg_postinst()
+{{
+    enewgroup dewyatochka
+    enewuser dewyatochka -1 -1 -1 dewyatochka
+    chown dewyatochka:dewyatochka /var/lib/dewyatochka
+    chown dewyatochka:dewyatochka /var/log/dewyatochka
+}}

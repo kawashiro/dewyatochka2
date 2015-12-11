@@ -1,0 +1,9 @@
+Package: {pkg_name}
+Version: {pkg_version}
+Maintainer: {maintainer} <{maintainer_email}>
+Architecture: {pkg_platform}
+Section: misc
+Description: {description}
+ {long_description}
+Depends: python3 (>= 3.3), libc6, python3-sleekxmpp (>= 1.2), python3-pyquery (>=1.2), python3-lxml (>=3.4), python3-pyasn1-modules
+Origin: {url}
