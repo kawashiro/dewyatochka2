@@ -17,6 +17,7 @@ KEYWORDS=""
 DEPEND=">=dev-python/sleekxmpp-1.2[$PYTHON_USEDEP]
         >=dev-python/pyquery-1.2[$PYTHON_USEDEP]
         >=dev-python/lxml-3.4[$PYTHON_USEDEP]
+        >=dev-python/sqlalchemy-1.0[$PYTHON_USEDEP]
         dev-python/pyasn1-modules[$PYTHON_USEDEP]"
 
 src_install()

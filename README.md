@@ -16,6 +16,7 @@ Dependencies
 * [PyQuery 1.2](https://github.com/gawel/pyquery "PyQuery") or higher (recommended)
 * [pyasn1_modules](http://pypi.python.org/pypi/pyasn1-modules) (recommended)
 * [lxml 3.4](http://lxml.de/) or higher (recommended)
+* [SQLAlchemy 1.0](http://www.sqlalchemy.org/) or higher (recommended)
 
 Installing
 ----------
