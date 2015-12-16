@@ -45,7 +45,7 @@ do_start()
 	chown dewyatochka:dewyatochka $(dirname "$PIDFILE") 2>/dev/null
 	start-stop-daemon --start --quiet --user dewyatochka --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
 		|| return 1
-	start-stop-daemon --start --quiet --user dewyatochka --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS \
+	start-stop-daemon --start --quiet --user dewyatochka --chuid dewyatochka:dewyatochka --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS \
 		|| return 2
 
 	return 0
