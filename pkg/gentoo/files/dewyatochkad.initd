@@ -9,7 +9,7 @@ depend()
 
 start()
 {
-    checkpath -d /var/lib/dewyatochka -m 755 -o dewyatochka
+    checkpath -d /var/run/dewyatochka -m 755 -o dewyatochka
 
     ebegin "Starting Dewyatochka daemon"
     start-stop-daemon --start --quiet --user dewyatochka:dewyatochka \
