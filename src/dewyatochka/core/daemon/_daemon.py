@@ -51,11 +51,11 @@ def acquire_lock(lock_file=None):
     if _lock_file_obj is not None:
         raise ProcessLockedError('Current process is already locked')
 
-    if os.path.isfile(lock_file):
-        raise ProcessLockedError('Another process is already running')
-
     if lock_file is None:
         lock_file = _DEFAULT_LOCK_FILE_PATH  # pragma: nocover
+
+    if os.path.isfile(lock_file):
+        raise ProcessLockedError('Another process is already running')
 
     _lock_file_obj = open(lock_file, 'w')
     fcntl.flock(_lock_file_obj.fileno(), fcntl.LOCK_EX)
