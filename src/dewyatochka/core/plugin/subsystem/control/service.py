@@ -70,7 +70,8 @@ class Output:
         :param tuple args: Args for message format
         :return None:
         """
-        self.__send(Message(text=(text % args)))
+        formatted_text = (text % args) if args else text
+        self.__send(Message(text=formatted_text))
         self._log.info(text, *args)
 
     def error(self, text: str, *args):
@@ -80,7 +81,8 @@ class Output:
         :param tuple args: Args for message format
         :return None:
         """
-        self.__send(Message(error=(text % args)))
+        formatted_text = (text % args) if args else text
+        self.__send(Message(error=formatted_text))
         self._log.error(text, *args)
 
     def debug(self, text: str, *args):

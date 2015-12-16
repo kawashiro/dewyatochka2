@@ -3,7 +3,7 @@
 """ Tests suite for dewyatochka.core.plugin.subsystem.message.service """
 
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 from dewyatochka.core.plugin.subsystem.message.service import *
 
@@ -143,8 +143,12 @@ class TestOutput(unittest.TestCase):
 
         output = Output(_ChatManagerImpl(VoidApplication()), conference)
         output.say('say(%s, %s)', 'arg1', 'arg2')
+        output.say('say(%s, %s)')
 
-        _ChatManagerImpl.send.assert_called_once_with('say(arg1, arg2)', conference)
+        _ChatManagerImpl.send.assert_has_calls([
+            call('say(arg1, arg2)', conference),
+            call('say(%s, %s)', conference)
+        ])
 
 
 class TestService(unittest.TestCase):

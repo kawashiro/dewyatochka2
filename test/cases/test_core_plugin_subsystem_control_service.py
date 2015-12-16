@@ -28,21 +28,27 @@ class TestOutput(unittest.TestCase):
         output_wrapper.info('info(%s)', 'arg1')
         output_wrapper.debug('debug(%s)', 'arg2')
         output_wrapper.error('error(%s)', 'arg3')
+        output_wrapper.error('no_args_error(%s)')
         output_wrapper.log('log(%s)', 'arg4')
         output_wrapper.say('say(%s)', 'arg5')
+        output_wrapper.say('no_args_say(%s)')
 
         socket_mock.assert_has_calls([
             call.send(b'{"text": "info(arg1)"}\x00'),
             call.send(b'{"error": "error(arg3)"}\x00'),
+            call.send(b'{"error": "no_args_error(%s)"}\x00'),
             call.send(b'{"text": "log(arg4)"}\x00'),
-            call.send(b'{"text": "say(arg5)"}\x00')
+            call.send(b'{"text": "say(arg5)"}\x00'),
+            call.send(b'{"text": "no_args_say(%s)"}\x00'),
         ])
         logger_mock.assert_has_calls([
             call.info('info(%s)', 'arg1'),
             call.debug('debug(%s)', 'arg2'),
             call.error('error(%s)', 'arg3'),
+            call.error('no_args_error(%s)'),
             call.info('log(%s)', 'arg4'),
-            call.info('say(%s)', 'arg5')
+            call.info('say(%s)', 'arg5'),
+            call.info('no_args_say(%s)'),
         ])
 
     def test_disconnected_client(self):

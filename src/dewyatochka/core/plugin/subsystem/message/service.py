@@ -168,4 +168,5 @@ class Output:
         :param tuple args: Args for message format
         :return None:
         """
-        self._chat_manager.send(text % args, self._conference)
+        formatted_text = (text % args) if args else text
+        self._chat_manager.send(formatted_text, self._conference)
