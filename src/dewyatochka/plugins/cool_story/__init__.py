@@ -68,22 +68,6 @@ def cool_joke_command_handler(outp, **_):
     outp.say(post.text)
 
 
-@plugin.chat_message
-def keyword_story_selector(inp, outp, **_):
-    """ Find a story by keyword and yield it
-
-    :param inp:
-    :param outp:
-    :param _:
-    :return None:
-    """
-    for tag in model.Storage().tags.keys():
-        if tag in inp.text.lower():  # TODO: Implement tokenizer
-            post = model.Storage().get_random_post_by_tag(tag)
-            outp.say(post.text)
-            break
-
-
 @plugin.schedule('0 */12 * * *')
 @plugin.control('update', 'Check for updates')
 def index(**kwargs):
