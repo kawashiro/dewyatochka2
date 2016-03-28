@@ -177,10 +177,17 @@ class PresenceHelper:
         with self._alive_set_lock:
             try:
                 self._alive_conferences.remove(conference.bare)
+                del self._alive_nicknames[conference.bare]
             except KeyError:
                 # Failed on the first connection attempt
                 pass
-            self._reconnect_queue.append(self.__ReconnectTask(self.get_presence_jid(conference), time.time()))
+
+            for conference_ in self._configured_conferences:
+                if conference.chat == conference_.chat:
+                    self._reconnect_queue.append(self.__ReconnectTask(conference_, time.time()))
+                    break
+            else:
+                log.debug('Discarded attempt to schedule re-enter to not configured conference: %s', str(conference))
 
     def get_presence_jid(self, participant: JID) -> Conference:
         """ Get full conference presence JID
@@ -291,7 +298,7 @@ class PresenceHelper:
                         self.schedule_reenter(conference)
 
                     except Exception as e:
-                        log.warn('Failed to ping %s: %s', conference, e)
+                        log.warning('Failed to ping %s: %s', conference, e)
 
                 app.sleep(_XMPP_CHECK_INTERVAL)
         except Exception as e:

@@ -362,12 +362,18 @@ class TestPresenceHelper(unittest.TestCase):
     def test_schedule_reenter(self):
         """ Test conference re-enter scheduling """
         connection_manager = self.create_connection_manager()
+        connection_manager.application.registry.conferences_config = \
+            ConferencesConfig(VoidApplication()).load(Predefined({
+                'conference1': {'room': 'conference@server.com', 'nick': 'username'},
+            }))
+
         with PresenceHelper(connection_manager) as presence_helper:
             conference = Conference.from_string('conference@server.com/username')
 
             # Normal re-enter
             presence_helper.enter(conference)
             presence_helper.schedule_reenter(conference)
+            presence_helper.schedule_reenter(Conference.from_string('conference@unconfigured.com/username'))
             time.sleep(0.02)
             connection_manager.client.chat.enter.assert_has_calls([
                 call(conference.bare, conference.resource)
@@ -408,6 +414,13 @@ class TestPresenceHelper(unittest.TestCase):
     def test_ping(self):
         """ Test conferences pinging """
         connection_manager = self.create_connection_manager()
+        connection_manager.application.registry.conferences_config = \
+            ConferencesConfig(VoidApplication()).load(Predefined({
+                'conference1': {'room': 'conference@server1.com', 'nick': 'username'},
+                'conference2': {'room': 'conference@server2.com', 'nick': 'username'},
+                'conference3': {'room': 'conference@server3.com', 'nick': 'username'},
+            }))
+
         with PresenceHelper(connection_manager) as presence_helper:
             conference1 = Conference.from_string('conference@server1.com/username')
             conference2 = Conference.from_string('conference@server2.com/username')
