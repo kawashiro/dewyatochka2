@@ -191,7 +191,7 @@ class TestClientService(unittest.TestCase):
         client.socket = self._SOCKET_PATH
 
         daemon.start()
-        time.sleep(0.2)
+        time.sleep(0.05)
         client.communicate('foo', {'bar': 'baz'})
         daemon.join()
 
