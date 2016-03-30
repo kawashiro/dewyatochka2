@@ -82,7 +82,7 @@ class TestLoggingService(unittest.TestCase):
 
         wrapper1 = service()
         self.assertIsInstance(wrapper1, LoggerWrapper)
-        self.assertEqual(wrapper1.name, 'SVC::log')
+        self.assertEqual(wrapper1.name, 'dewyatochka.log')
 
         wrapper2 = service('foo')
         self.assertEqual(wrapper2.name, 'foo')

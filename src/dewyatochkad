@@ -20,13 +20,14 @@ Copyright (C) 2015 Kawashiro Nitori
 
 Usage
 =====
-    dewyatochkad [-h] [--config CONFIG] [--nodaemon]
+    dewyatochkad [-h] [--config CONFIG] [--nodaemon] [--pidfile PIDFILE]
 
 Optional arguments
 ==================
     -h, --help       Show this help message and exit
     --config CONFIG  Path to config file to use
     --nodaemon       Do not detach process from console
+    --pidfile PIDFILE  Path to lock-file
 """
 
 from dewyatochka.applications import daemon

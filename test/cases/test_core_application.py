@@ -153,5 +153,5 @@ class TestService(unittest.TestCase):
 
         log = Service(app).log
 
-        _FakeLogService.mock.assert_called_once_with('SVC::dewyatochka.core.application.Service')
+        _FakeLogService.mock.assert_called_once_with('dewyatochka.core.application.Service')
         self.assertEqual(log, _FakeLogService.fake_logger)

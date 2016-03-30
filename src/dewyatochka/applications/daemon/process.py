@@ -8,16 +8,15 @@ Classes
     Scheduler       -- Launchers helper plugins on a schedule
     ChatManager     -- Chat manager service implementation
     Bootstrap       -- Launches bootstrap tasks
-    CriticalService -- Critical service interface
     Control         -- Listens for a control commands
 """
 
 import time
 import threading
 from functools import reduce
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
-from dewyatochka.core.application import Application, Service
+from dewyatochka.core.application import Application, StandaloneService
 from dewyatochka.core.network.service import ConnectionManager
 from dewyatochka.core.network.service import ChatManager as ChatManager_
 from dewyatochka.core.network.entity import Message, Participant
@@ -25,67 +24,11 @@ from dewyatochka.core.plugin.subsystem.helper.service import Environment
 from dewyatochka.core.plugin.subsystem.control.network import SocketListener
 from dewyatochka.core.plugin.subsystem.control.network import Message as CTLMessage
 
-__all__ = ['Scheduler', 'Daemon', 'ChatManager', 'Bootstrap', 'CriticalService', 'Control']
+__all__ = ['Scheduler', 'Daemon', 'ChatManager', 'Bootstrap', 'Control']
 
 
-def _thread_wait(thread: threading.Thread, log=None):
-    """ Waiting for thread to complete
-
-    :param threading.Thread thread:
-    :param logging.Logger log:
-    :return None:
-    """
-    if thread.is_alive():
-        if log:
-            log.debug('Waiting for thread "%s"', thread.name)
-        thread.join()
-
-
-class CriticalService(metaclass=ABCMeta):
-    """ Critical service interface """
-
-    @abstractmethod
-    def wait(self):
-        """ Wait until stopped
-
-        :return None:
-        """
-        pass
-
-
-class _HelperService(Service, CriticalService, metaclass=ABCMeta):
+class _HelperService(StandaloneService, metaclass=ABCMeta):
     """ Abstract helper service """
-
-    def __init__(self, application: Application):
-        """ Initialize service & attach an application to it
-
-        :param Application application:
-        """
-        super().__init__(application)
-
-        self._thread = threading.Thread(name=self.name() + '[Main]', target=self._run)
-
-    def start(self):
-        """ Start service
-
-        :return None:
-        """
-        self._thread.start()
-
-    def wait(self):
-        """ Wait until stopped
-
-        :return None:
-        """
-        _thread_wait(self._thread, self.log)
-
-    @abstractmethod
-    def _run(self):
-        """ Do job
-
-        :return None:
-        """
-        pass
 
     def _launch_plugin(self, plugin: Environment) -> threading.Thread:
         """ Start helper plugin fn in separate thread
@@ -104,9 +47,9 @@ class _HelperService(Service, CriticalService, metaclass=ABCMeta):
 
     @classmethod
     def _get_thread_name(cls, plugin: Environment) -> str:
-        """ Get thread name for the helper
+        """ Get thread name for the helper plugin
 
-        :param Environment env:
+        :param Environment plugin:
         :return str:
         """
         return '%s[%s]' % (cls.name(), plugin)
@@ -115,7 +58,7 @@ class _HelperService(Service, CriticalService, metaclass=ABCMeta):
 class Scheduler(_HelperService):
     """ Launchers helper plugins on a schedule """
 
-    def _run(self):
+    def run(self):
         """ Perform tasks
 
         :return None:
@@ -169,7 +112,7 @@ class Daemon(_HelperService):
             .helper_plugin_provider \
             .daemon_plugins
 
-    def _run(self):
+    def run(self):
         """ Perform helpers control
 
         :return None:
@@ -259,8 +202,8 @@ class Bootstrap(_HelperService):
         :return None:
         """
         for thread in self._plugins_threads:
-            _thread_wait(thread, self.log)
-        self._plugins_threads = []
+            self._thread_wait(thread)
+        self._plugins_threads.clear()
 
         super().wait()
 
@@ -284,7 +227,7 @@ class Control(_HelperService):
         super().__init__(application)
         self._listener = SocketListener(self.config.get('socket'))
 
-    def _run(self):
+    def run(self):
         """ Do job
 
         :return None:
@@ -321,7 +264,7 @@ class Control(_HelperService):
         return 'control'
 
 
-class ChatManager(ChatManager_, CriticalService):
+class ChatManager(ChatManager_, _HelperService):
     """ Chat manager service implementation """
 
     def __init__(self, application: Application):
@@ -330,8 +273,6 @@ class ChatManager(ChatManager_, CriticalService):
         :param Application application:
         """
         super().__init__(application)
-
-        self._monitor_thread = threading.Thread(name=self.name() + '[Monitor]', target=self._monitor)
 
         self._reader_threads = []
         self._connections = []
@@ -357,7 +298,7 @@ class ChatManager(ChatManager_, CriticalService):
         self._reader_threads.append(self._create_reader_thread(connection))
         self._connections.append(connection)
 
-    def _monitor(self):
+    def run(self):
         """ Monitor app state
 
         :return None:
@@ -371,7 +312,7 @@ class ChatManager(ChatManager_, CriticalService):
 
             for i in range(len(self._connections)):
                 self._connections[i].disconnect()
-                _thread_wait(self._reader_threads[i], self.log)
+                self._thread_wait(self._reader_threads[i])
 
         except Exception as e:
             self.application.fatal_error(self._log_name(), e)
@@ -406,20 +347,6 @@ class ChatManager(ChatManager_, CriticalService):
                 kwargs={'logger': self.log, 'message': message},
                 daemon=True
             ).start()
-
-    def start(self):
-        """ Start thread
-
-        :return None:
-        """
-        self._monitor_thread.start()
-
-    def wait(self):
-        """ Wait until stopped
-
-        :return None:
-        """
-        _thread_wait(self._monitor_thread, self.log)
 
     @property
     def alive_chats(self) -> frozenset:

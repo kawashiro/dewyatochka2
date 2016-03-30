@@ -7,6 +7,7 @@ Classes
     Application           -- Abstract application class
     Registry              -- Registry pattern implementation
     Service               -- Abstract registrable service
+    StandaloneService     -- Service which can be launched in separate thread
     VoidApplication       -- Empty application, generally for test purposes
     UndefinedServiceError -- Error on unknown service
 
@@ -18,11 +19,14 @@ Attributes
 """
 
 import sys
+import threading
 from abc import ABCMeta, abstractmethod
 from threading import Event
 from logging import Logger
 
-__all__ = ['Application', 'Registry', 'Service', 'VoidApplication', 'UndefinedServiceError',
+from dewyatochka import __name__ as app_name
+
+__all__ = ['Application', 'Registry', 'Service', 'StandaloneService', 'VoidApplication', 'UndefinedServiceError',
            'EXIT_CODE_OK', 'EXIT_CODE_ERROR', 'EXIT_CODE_TERM']
 
 
@@ -181,7 +185,8 @@ class Service:
 
         :return str:
         """
-        return 'SVC::%s' % cls.name()
+        svc_name = cls.name()
+        return svc_name if svc_name.startswith(app_name) else 'dewyatochka.%s' % svc_name
 
     @property
     def log(self) -> Logger:
@@ -198,6 +203,63 @@ class Service:
         :return str:
         """
         return '.'.join((cls.__module__, cls.__name__))
+
+
+class StandaloneService(Service, metaclass=ABCMeta):
+    """ Service which can be launched in separate thread """
+
+    def __init__(self, application: Application):
+        """ Initialize service & attach an application to it
+
+        :param Application application:
+        """
+        super().__init__(application)
+
+        self._thread = threading.Thread(name=self.name() + '[Main]', target=self.run)
+
+    def start(self):
+        """ Start service
+
+        :return None:
+        """
+        self._thread.start()
+
+    @abstractmethod
+    def run(self):  # pragma: no cover
+        """ Do job
+
+        :return None:
+        """
+        pass
+
+    # noinspection PyMethodMayBeStatic
+    def stop(self):  # pragma: no cover
+        """ Stop simultaneously
+
+        Normally service should monitor Application.running event
+        but sometimes it's impossible due to 3rd-party libs usage,
+        service hang up or other issues
+
+        :return None:
+        """
+        pass
+
+    def wait(self):
+        """ Wait until stopped
+
+        :return None:
+        """
+        self._thread_wait(self._thread)
+
+    def _thread_wait(self, thread: threading.Thread):
+        """ Waiting for thread to complete
+
+        :param threading.Thread thread: Running thread instance
+        :return None:
+        """
+        if thread.is_alive():
+            self.log.debug('Waiting for thread "%s"', thread.name)
+            thread.join()
 
 
 class Registry:
